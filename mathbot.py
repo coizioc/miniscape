@@ -9,9 +9,10 @@ def extensions_generator():
     """Returns a generator for all cog files that aren't in do_not_use."""
     cog_path = "./cogs"
     do_not_use = ["__init__.py", "__pycache__", 'cap.py', 'pet.py', 'reddit.py', 'rs.py',
-                  'solver.py', 'stats.py', 'telos.py', "memers.py"]
+                  'solver.py', 'stats.py', 'telos.py', "memers.py", 'resources']
+    do_use = ['miniscape.py']
     for cog in os.listdir(cog_path):
-        if cog not in do_not_use:
+        if cog in do_use:
             yield f"cogs.{cog[:-3]}"
     # use = ["stats.py"]
     # for cog in os.listdir(cog_path):
