@@ -8,7 +8,7 @@ from PIL import ImageDraw
 from PIL import ImageFilter
 from PIL import ImageFont
 
-QUESTIONS_DIRECTORY = f'./subs/gastercoin/resources/questions/'
+QUESTIONS_DIRECTORY = f'./resources/questions/'
 QUESTION_FILES = [f for f in os.listdir(QUESTIONS_DIRECTORY)]
 
 QUESTION_CATEGORIES = [filename[:-4] for filename in QUESTION_FILES]
@@ -19,14 +19,14 @@ QUIZ_RULES = 'The rules of the competition are as follows: (1) First person to g
              'answered correctly is worth a point. (2) You both have 10 seconds to answer the question. The first to ' \
              'answer correctly will win that round.'
 
-QUESTIONS_JSON = './subs/gastercoin/resources/questions.json'
+QUESTIONS_JSON = './resources/questions.json'
 
-JEOPARDY_FONT = './subs/gastercoin/resources/Korinna Bold.ttf'
+JEOPARDY_FONT = './resources/Korinna Bold.ttf'
 JEOPARDY_BLUE = (6, 12, 233)
 JEOPARDY_SHADOW = (68, 68, 68)
 JEOPARDY_WIDTH, JEOPARDY_HEIGHT = (400, 300)
 
-OUT_FILE = './subs/gastercoin/resources/out.png'
+OUT_FILE = './resources/out.png'
 
 with open(QUESTIONS_JSON, 'r') as f:
     QUESTIONS = ujson.load(f)
