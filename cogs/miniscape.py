@@ -18,7 +18,7 @@ from cogs.helper import quiz
 from cogs.helper import slayer
 from cogs.helper import users
 
-RESOURCES_DIRECTORY = f'./subs/helper/resources/'
+RESOURCES_DIRECTORY = f'./resources/'
 
 PERMISSION_ERROR_STRING = f'Error: You do not have permission to use this command.'
 
@@ -323,7 +323,7 @@ class Miniscape():
                 else:
                     monster = ' '.join(args)
                     if monster == 'myself':
-                        with open('./subs/helper/resources/hotlines.txt', 'r') as f:
+                        with open('./resources/hotlines.txt', 'r') as f:
                             lines = f.read().splitlines()
                         out = '**If you need help, please call one of the following numbers**:\n'
                         for line in lines:
