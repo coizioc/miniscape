@@ -5,6 +5,8 @@ import traceback
 from discord.ext import commands
 import config
 
+from cogs.helper.files import HELP_FILE
+
 def extensions_generator():
     """Returns a generator for all cog files that aren't in do_not_use."""
     cog_path = "./cogs"
@@ -37,7 +39,7 @@ def submodules_generator():
     #             if sub == f"{item}.py" and sub in use:
     #                 yield f"subs.{item}.{sub[:-3]}"
 
-DESCRIPTION = "A basic bot that runs a couple of uninteresting cogs."
+DESCRIPTION = "A bot that runs a basic role-playing game."
 
 # log = logging.getLogger(__name__)
 
@@ -48,6 +50,7 @@ class MathBot(commands.Bot):
         super().__init__(command_prefix=["~"], description=DESCRIPTION)
         self.default_nick = "Miniscape"
         self.add_command(self.load)
+        self.remove_command('help')
 
         for extension in extensions_generator():
             try:
@@ -97,3 +100,10 @@ class MathBot(commands.Bot):
         except Exception:
             await ctx.send(f'Failed to load extension {extension}.', file=sys.stderr)
             traceback.print_exc()
+
+    @commands.command()
+    async def help(self, ctx):
+        """Sends the user a message listing the bot's commands."""
+        with open(HELP_FILE, 'r') as f:
+            message = f.read().splitlines()
+        await ctx.send_message(ctx.author, message)
