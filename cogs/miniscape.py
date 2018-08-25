@@ -1,6 +1,5 @@
 """Implements commands related to running a freemium-style text-based RPG."""
 import asyncio
-import math
 import random
 
 import discord
@@ -10,11 +9,9 @@ import config
 from cogs.helper import adventures as adv
 from cogs.helper import clues
 from cogs.helper import craft
-from cogs.helper import deathmatch as dm
 from cogs.helper import items
 from cogs.helper import monsters as mon
 from cogs.helper import quests
-from cogs.helper import quiz
 from cogs.helper import slayer
 from cogs.helper import users
 
@@ -97,98 +94,6 @@ class Miniscape():
         self.bot = bot
         self.bot.loop.create_task(self.check_adventures())
         self.bot.loop.create_task(self.backup_users())
-
-    @commands.command()
-    async def snap(self, ctx, *args):
-        """Determines whether you have been snapped by Thanos or not."""
-        if len(args) > 0:
-            name = ' '.join(args)
-        else:
-            name = get_display_name(ctx.author)
-        total = 0
-        for c in name:
-            total += ord(c)
-        if total % 2 == 0:
-            await ctx.send(f"{name.title()}, you were spared by Thanos.")
-        else:
-            await ctx.send(f'{name.title()}, you were slain by Thanos, for the good of the Universe.')
-
-    @commands.command()
-    async def ship(self, ctx, *args):
-        """Ships two users together to determine their relationship."""
-        if len(args) == 1:
-            person1 = ctx.author.name.lower().replace(' ', '')
-            person2 = args[0].lower().replace(' ', '')
-        elif len(args) == 2:
-            person1 = args[0].lower().replace(' ', '')
-            person2 = args[1].lower().replace(' ', '')
-        else:
-            return
-        total = 0
-
-        for name in [person1, person2]:
-            for c in name:
-                total += ord(c)
-        percent = (total + 32) % 101
-        out = f':heartpulse: __**MATCHMAKING**__ :heartpulse:\n' \
-              f':small_red_triangle_down: *`{person1}`*\n' \
-              f':small_red_triangle: *`{person2}`*\n\n' \
-              f'**{percent}%** ​`'
-
-        percent_bars = int(math.floor(percent / 10))
-        for _ in range(percent_bars):
-            out += '█'
-        for _ in range(10 - percent_bars):
-            out += ' ​'
-        out += '`\n\n'
-
-        descriptions = {
-            9: 'Awful :sob:',
-            19: 'Bad :cry:',
-            29: 'Pretty low :frowning:',
-            39: 'Not Too Great :confused:',
-            49: 'Worse Than Average :neutral_face:',
-            59: 'Barely :no_mouth:',
-            68: 'Not Bad :slight_smile:',
-            69: '( ͡° ͜ʖ ͡°)',
-            79: 'Pretty Good :smiley:',
-            89: 'Great :smile:',
-            99: 'Amazing :heart_eyes:',
-            100: 'PERFECT! :heart_exclamation:'
-        }
-
-        for max_value in descriptions.keys():
-            if percent <= max_value:
-                description_text = descriptions[max_value]
-                break
-        else:
-            description_text = descriptions[100]
-        out += description_text
-        await ctx.send(out)
-
-    @commands.command()
-    async def shipall(self, ctx, word, bottom=None):
-        """Compares a term against all users in the server."""
-        out = ':heartpulse: __**MATCHMAKING**__ :heartpulse:\n'
-        word = word.lower().replace(' ', '')
-        relationships = []
-        guild_members = ctx.guild.members
-        for member in guild_members:
-            name = member.name.lower().replace(' ', '')
-            total = 0
-
-            for name in [word, name]:
-                for c in name:
-                    total += ord(c)
-            percent = (total + 32) % 101
-            relationships.append(tuple((percent, member)))
-        if bottom is None:
-            relationships = sorted(relationships, key=lambda x: x[0], reverse=True)
-        else:
-            relationships = sorted(relationships, key=lambda x: x[0])
-        for i in range(10):
-            out += f'**{i + 1}**: `{word}` :heart: `{relationships[i][1].name}`: {relationships[i][0]}%\n'
-        await ctx.send(out)
 
     @commands.group(invoke_without_command=True)
     async def me(self, ctx):
@@ -721,121 +626,6 @@ class Miniscape():
                 food = ' '.join(args)
             out = craft.cook(ctx.author.id, food, n=number)
             await ctx.send(out)
-
-    @commands.group(aliases=['nq', 'jeo'], invoke_without_command=True)
-    async def jeopardy(self, ctx, textonly='f'):
-        """Gives users GasterCash in exchange for correct answers."""
-        if ctx.channel.id == JEOPARDY_CHANNEL:
-            question_args = quiz.get_new_question()
-            category = question_args[0]
-            value = question_args[1]
-            question = question_args[2]
-            answer = question_args[3]
-
-            if textonly != 't':
-                quiz.draw_jeopardy(question)
-                await ctx.send(f"*{ctx.author.name}: I'll take {category} for {value} coins, Alex.*",
-                               file=discord.File(quiz.OUT_FILE))
-            else:
-                await ctx.send(f"*{ctx.author.name}: I'll take {category} for {value} coins, Alex.*\n{question}")
-
-            while True:
-                message = await self.bot.wait_for('message')
-                if message.author == ctx.author:
-                    if message.content.lower() in answer.lower() and len(message.content) > 1:
-                        amount_formatted = '{:,}'.format(value)
-
-                        out = f"Answer {answer} is correct! "
-                        if not users.read_user(ctx.author.id, key=users.IRONMAN_KEY):
-                            users.update_inventory(ctx.author.id, value * ['0'])
-                            out += f"{ctx.author.name}'s balance has increased by {amount_formatted} coins!"
-                        await ctx.send(out)
-                        break
-                    else:
-                        await ctx.send(f"Answer {message.content} is incorrect. Correct answer was {answer}.")
-                        break
-
-    @commands.group(aliases=['dm'], invoke_without_command=True)
-    async def deathmatch(self, ctx, opponent='rand', bet=None):
-        """Allows users to duke it out in a 1v1 match."""
-        if ctx.channel.id == DUEL_CHANNEL or ctx.channel.id in GENERAL_CHANNELS:
-            author_name = get_display_name(ctx.author)
-            if bet is not None:
-                if users.read_user(ctx.author.id, key=users.IRONMAN_KEY):
-                    await ctx.send('Ironmen cannot start staked deathmatches.')
-                    return
-                try:
-                    bet = users.parse_int(bet)
-                except ValueError:
-                    await ctx.send(f'{bet} does not represent a valid number.')
-                bet_formatted = '{:,}'.format(bet)
-                if not users.item_in_inventory(ctx.author.id, '0', bet):
-                    await ctx.send(f'You do not have {bet_formatted} coins.')
-                    return
-                try:
-                    opponent_member = parse_name(ctx.message.guild, opponent)
-                except NameError:
-                    await ctx.send(f'{opponent} not found in server.')
-                    return
-                except AmbiguousInputError as members:
-                    await ctx.send(f'Input {opponent} can refer to multiple people ({members})')
-                    return
-                if opponent_member.id == ctx.author.id:
-                    await ctx.send('You cannot fight yourself.')
-                    return
-                if users.read_user(opponent_member.id, key=users.IRONMAN_KEY):
-                    await ctx.send('You cannot start a staked deathmatch with an ironman.')
-                    return
-                bet_formatted = '{:,}'.format(bet)
-                opponent_name = get_display_name(opponent_member)
-                if not users.item_in_inventory(opponent_member.id, '0', bet):
-                    await ctx.send(f'{opponent_name} does not have {bet_formatted} coins.')
-                    return
-                users.update_inventory(ctx.author.id, bet*['0'], remove=True)
-                out = f'Deathmatch set up between {author_name} and {opponent_member.mention} with bet ' \
-                      f'{bet_formatted} coins! To confirm this match, {opponent_name} must react to ' \
-                      f'this message with a :thumbsup: in the next minute. If a minute passes or if the ' \
-                      f'challenger reacts to this message, the deathmatch will be cancelled and the deposit ' \
-                      f'refunded.'
-                msg = await ctx.send(out)
-                await msg.add_reaction('\N{THUMBS UP SIGN}')
-
-                while True:
-                    try:
-                        reaction, user = await self.bot.wait_for('reaction_add', timeout=60)
-                        if str(reaction.emoji) == '👍' and user == opponent_member:
-                            users.update_inventory(opponent_member.id, bet*['0'], remove=True)
-                            deathmatch_messages = dm.do_deathmatch(ctx.author, opponent_member,
-                                                                   bet=bet_formatted)
-                            for message in deathmatch_messages[:-1]:
-                                await msg.edit(content=message)
-                                await asyncio.sleep(1)
-                            users.update_inventory(deathmatch_messages[-1], 2 * bet * ['0'])
-                            return
-                        elif user == ctx.author:
-                            users.update_inventory(ctx.author.id, bet * ['0'])
-                            await msg.edit(content=f'{author_name} has declined their challenge and '
-                                                   f'the deposit of {bet_formatted} coins has been returned.')
-                            return
-                    except asyncio.TimeoutError:
-                        users.update_inventory(ctx.author.id, bet * ['0'])
-                        await msg.edit(content=f'One minute has passed and the deathmatch has been cancelled. '
-                                               f'The deposit of {bet_formatted} coins has been returned.')
-                        return
-            else:
-                try:
-                    opponent_member = parse_name(ctx.message.guild, opponent)
-                except NameError:
-                    await ctx.send(f'{opponent} not found in server.')
-                    return
-                except AmbiguousInputError as members:
-                    await ctx.send(f'Input {opponent} can refer to multiple people ({members})')
-                    return
-                msg = await ctx.send(dm.DEATHMATCH_HEADER)
-                deathmatch_messages = dm.do_deathmatch(ctx.author, opponent_member)
-                for message in deathmatch_messages[:-1]:
-                    await msg.edit(content=message)
-                    await asyncio.sleep(1)
 
     @commands.command()
     async def balance(self, ctx, name=None):
