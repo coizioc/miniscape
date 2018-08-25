@@ -138,6 +138,14 @@ def get_max_rarity(loot_table):
     return max_rarity
 
 
+def get_quest_monsters(questid):
+    quest_monsters = []
+    for monsterid in MONSTERS.keys():
+        if get_attr(monsterid, key=QUEST_REQ_KEY) == questid:
+            quest_monsters.append(monsterid)
+    return quest_monsters
+
+
 def get_rares(monster_name):
     monsterid = find_by_name(monster_name)
     loottable = get_loot_table(monsterid)
