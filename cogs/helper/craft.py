@@ -230,6 +230,14 @@ def get_gather(person, *args):
     return out
 
 
+def get_quest_recipes(questid):
+    quest_recipes = []
+    for recipeid in RECIPES.keys():
+        if get_attr(recipeid, key=QUEST_REQ_KEY) == [questid]:
+            quest_recipes.append(recipeid)
+    return quest_recipes
+
+
 def print_list(userid, search):
     """Prints a list of the recipes a user can use."""
     # completed_quests = set(users.get_completed_quests(userid))
