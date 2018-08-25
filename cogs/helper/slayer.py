@@ -9,6 +9,7 @@ from cogs.helper import users
 
 from cogs.helper.files import XP_FACTOR
 
+LOWEST_NUM_TO_KILL = 35
 SLAYER_HEADER = ':skull_crossbones: __**SLAYER**__ :skull_crossbones:\n'
 
 
@@ -331,18 +332,19 @@ def get_task(userid):
     """Assigns a user a slayer task provided they are not in the middle of another adventure."""
     out = SLAYER_HEADER
     if not adv.is_on_adventure(userid):
-        user_level = users.xp_to_level(users.read_user(userid, key=users.COMBAT_XP_KEY))
+        cb_level = users.get_level(userid, key=users.COMBAT_XP_KEY)
+        slayer_level = users.get_level(userid, key=users.SLAYER_XP_KEY)
         completed_quests = set(users.get_completed_quests(userid))
         equipment = users.read_user(userid, key=users.EQUIPMENT_KEY)
         for _ in range(1000):
             monsterid = mon.get_random(slayer_level=users.xp_to_level(users.read_user(userid, key=users.SLAYER_XP_KEY)))
-            num_to_kill = mon.get_task_length(monsterid)
+            num_to_kill = random.randint(LOWEST_NUM_TO_KILL, LOWEST_NUM_TO_KILL + 3 * slayer_level)
             base_time, task_length = calc_length(userid, monsterid, num_to_kill)
             chance = calc_chance(userid, monsterid, num_to_kill)
             mon_level = mon.get_attr(monsterid, key=mon.LEVEL_KEY)
             # print(f'{monsterid} {task_length/base_time} {chance}')
-            if 0.25 <= task_length / base_time <= 2 and chance >= 20 and mon_level / user_level >= 0.8\
-                    and mon.get_attr(monsterid, key=mon.SLAYER_KEY) is True\
+            if 0.25 <= task_length / base_time <= 2 and chance >= 20 and mon_level / cb_level >= 0.8\
+                    and task_length <= 60 and mon.get_attr(monsterid, key=mon.SLAYER_KEY) is True\
                     and ({mon.get_attr(monsterid, key=mon.QUEST_REQ_KEY)}.issubset(completed_quests)
                     or mon.get_attr(monsterid, key=mon.QUEST_REQ_KEY) == 0):
                 break
