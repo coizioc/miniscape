@@ -225,6 +225,23 @@ def get_luck_factor(userid):
     return luck_factor
 
 
+def get_quest_shop_items(questid):
+    shop = open_shop()
+    quest_items = []
+    for itemid in shop.keys():
+        if shop[itemid] == questid:
+            quest_items.append(itemid)
+    return quest_items
+
+
+def get_quest_items(questid):
+    quest_item = []
+    for itemid in ITEMS.key():
+        if get_attr(itemid, key=QUEST_KEY) == questid:
+            quest_item.append(quest_item)
+    return quest_item
+
+
 def is_tradable(itemid):
     if get_attr(itemid, key=VALUE_KEY) < 1 or itemid in {'384', '267', '291'}:
         return False
