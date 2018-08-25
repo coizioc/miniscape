@@ -5,6 +5,8 @@ from collections import Counter
 from cogs.helper import adventures as adv
 from cogs.helper import items
 from cogs.helper import users
+from cogs.helper import craft
+from cogs.helper import monsters as mon
 
 from cogs.helper.files import QUESTS_JSON
 
@@ -131,13 +133,45 @@ def get_result(person, *args):
     out = f'{QUEST_HEADER}**{person.mention}, here is the result of your quest, {get_attr(questid)}**:\n'
     if adv.is_success(calc_chance(person.id, questid)):
         out += f'*{get_attr(questid, key=SUCCESS_KEY)}*\n\n'
+
         reward = get_attr(questid, key=REWARD_KEY)
-        out += f'**Reward**:\n'
-        loot = []
-        for itemid in reward:
-            loot.extend(reward[itemid] * [itemid])
-            out += f'{reward[itemid]} {items.get_attr(itemid)}\n'
-        users.update_inventory(person.id, loot)
+        if len(reward.keys()) > 0:
+            out += f'**Reward**:\n'
+            loot = []
+            for itemid in reward:
+                loot.extend(reward[itemid] * [itemid])
+                out += f'{reward[itemid]} {items.get_attr(itemid)}\n'
+            users.update_inventory(person.id, loot)
+            out += '\n'
+
+        quest_items = items.get_quest_items(questid)
+        if len(quest_items) > 0:
+            out += f'**You Can Now Use**:\n'
+            for itemid in quest_items:
+                out += f'{mon.get_attr(itemid)}\n'
+            out += '\n'
+
+        quest_shop_items = items.get_quest_shop_items(questid)
+        if len(quest_shop_items) > 0:
+            out += f'**You Can Now Buy:**:\n'
+            for itemid in quest_shop_items:
+                out += f'{items.get_attr(itemid)}\n'
+            out += '\n'
+
+        quest_recipes = craft.get_quest_recipes(questid)
+        if len(quest_recipes) > 0:
+            out += f'**You Can Now Craft**:\n'
+            for itemid in quest_recipes:
+                out += f'{items.get_attr(itemid)}\n'
+            out += '\n'
+
+        quest_monsters = mon.get_quest_monsters(questid)
+        if len(quest_monsters) > 0:
+            out += f'**You Can Now Fight**:\n'
+            for monsterid in quest_monsters:
+                out += f'{mon.get_attr(monsterid)}\n'
+            out += '\n'
+
         users.update_user(person.id, questid, key=users.QUESTS_KEY)
     else:
         out += f'*{get_attr(questid, key=FAILURE_KEY)}*'
