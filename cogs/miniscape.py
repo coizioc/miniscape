@@ -6,6 +6,7 @@ import discord
 from discord.ext import commands
 
 import config
+from cogs.helper.files import HELP_FILE
 from cogs.helper import adventures as adv
 from cogs.helper import clues
 from cogs.helper import craft
@@ -94,6 +95,13 @@ class Miniscape():
         self.bot = bot
         self.bot.loop.create_task(self.check_adventures())
         self.bot.loop.create_task(self.backup_users())
+
+    # @commands.command()
+    # async def commands(self, ctx):
+    #     """Sends the user a message listing the bot's commands."""
+    #     with open(HELP_FILE, 'r') as f:
+    #         message = f.read().splitlines()
+    #     await ctx.send_message(ctx.author, message)
 
     @commands.group(invoke_without_command=True)
     async def me(self, ctx):
@@ -554,7 +562,6 @@ class Miniscape():
                 messages = quests.print_list(ctx.author.id)
                 for message in messages:
                     await ctx.send(message)
-
 
     @quests.command(name='start')
     async def _start(self, ctx, questid):
