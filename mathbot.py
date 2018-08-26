@@ -47,7 +47,7 @@ class MathBot(commands.Bot):
     """Defines the mathbot class and functions."""
 
     def __init__(self):
-        super().__init__(command_prefix=["~"], description=DESCRIPTION)
+        super().__init__(command_prefix=["~", "%"], description=DESCRIPTION)
         self.default_nick = "Miniscape"
         self.add_command(self.load)
         self.remove_command('help')
@@ -101,9 +101,3 @@ class MathBot(commands.Bot):
             await ctx.send(f'Failed to load extension {extension}.', file=sys.stderr)
             traceback.print_exc()
 
-    @commands.command()
-    async def help(self, ctx):
-        """Sends the user a message listing the bot's commands."""
-        with open(HELP_FILE, 'r') as f:
-            message = f.read().splitlines()
-        await ctx.send_message(ctx.author, message)
