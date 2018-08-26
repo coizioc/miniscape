@@ -236,7 +236,7 @@ def get_quest_shop_items(questid):
 
 def get_quest_items(questid):
     quest_item = []
-    for itemid in ITEMS.key():
+    for itemid in ITEMS.keys():
         if get_attr(itemid, key=QUEST_KEY) == questid:
             quest_item.append(quest_item)
     return quest_item
