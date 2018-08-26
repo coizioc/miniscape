@@ -8,18 +8,13 @@ from PIL import ImageDraw
 from PIL import ImageFilter
 from PIL import ImageFont
 
-QUESTIONS_DIRECTORY = f'./resources/questions/'
-QUESTION_FILES = [f for f in os.listdir(QUESTIONS_DIRECTORY)]
-
-QUESTION_CATEGORIES = [filename[:-4] for filename in QUESTION_FILES]
-
 QUIZ_TARGET_SCORE = 5
 
 QUIZ_RULES = 'The rules of the competition are as follows: (1) First person to get to 5 points wins. Each question ' \
              'answered correctly is worth a point. (2) You both have 10 seconds to answer the question. The first to ' \
              'answer correctly will win that round.'
 
-QUESTIONS_JSON = './resources/questions.json'
+QUESTIONS_JSON = './resources/jeopardy.json'
 
 JEOPARDY_FONT = './resources/Korinna Bold.ttf'
 JEOPARDY_BLUE = (6, 12, 233)
