@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 """Implements methods related to the quiz commands of mathbot.cogs.miniscape."""
 import os
 import random
