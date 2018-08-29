@@ -51,6 +51,11 @@ def calc_length(userid, monsterid, number):
     player_dam, player_acc, player_arm = users.get_equipment_stats(equipment)
     monster_arm = mon.get_attr(monsterid, key=mon.ARMOUR_KEY)
     monster_xp = mon.get_attr(monsterid, key=mon.XP_KEY)
+    monsters_fought = users.read_user(userid, key=users.MONSTERS_KEY)
+    if monsterid in monsters_fought.keys():
+        time_bonus = 1 - 0.2 * min(monsters_fought[monsterid] / 5000, 1)
+    else:
+        time_bonus = 1
     if mon.get_attr(monsterid, key=mon.DRAGON_KEY) == 1:
         if equipment['7'] == '266' or equipment['7'] == '293':
             monster_base = 1
@@ -75,7 +80,11 @@ def calc_length(userid, monsterid, number):
 
     c = combat_level
     dam_multiplier = 1 + player_acc / 200
+<<<<<<< HEAD
     base_time = math.floor(number * monster_xp / 10)
+=======
+    base_time = math.floor(number * monster_xp / 10) * time_bonus
+>>>>>>> 650b10722bc5ce315ece966a4f6a3ed379fcff11
     time = round(base_time * monster_arm * monster_base / (player_dam * dam_multiplier + c))
     return base_time, time
 
@@ -342,7 +351,11 @@ def get_task(userid):
             base_time, task_length = calc_length(userid, monsterid, num_to_kill)
             chance = calc_chance(userid, monsterid, num_to_kill)
             mon_level = mon.get_attr(monsterid, key=mon.LEVEL_KEY)
+<<<<<<< HEAD
             print(f'{num_to_kill} {monsterid} {task_length/base_time} {chance}')
+=======
+            # print(f'{monsterid} {task_length/base_time} {chance}')
+>>>>>>> 650b10722bc5ce315ece966a4f6a3ed379fcff11
             if 0.25 <= task_length / base_time <= 2 and chance >= 20 and mon_level / cb_level >= 0.8\
                     and task_length <= 3600 and mon.get_attr(monsterid, key=mon.SLAYER_KEY) is True\
                     and ({mon.get_attr(monsterid, key=mon.QUEST_REQ_KEY)}.issubset(completed_quests)
