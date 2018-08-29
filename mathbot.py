@@ -5,9 +5,12 @@ import traceback
 from discord.ext import commands
 import config
 
+from cogs.helper.files import HELP_FILE
+
 def extensions_generator():
     """Returns a generator for all cog files that aren't in do_not_use."""
     cog_path = "./cogs"
+<<<<<<< HEAD
     do_not_use = ["__init__.py", "__pycache__", "other.py", "cap.py", "pet.py", "reddit.py", "rs.py", "solver.py" "telos.py", "memers.py", "helper"]
     use = ["miniscape.py", "other.py"]
     for cog in os.listdir(cog_path):
@@ -36,7 +39,7 @@ def submodules_generator():
     #             if sub == f"{item}.py" and sub in use:
     #                 yield f"subs.{item}.{sub[:-3]}"
 
-DESCRIPTION = "A basic bot that runs a couple of uninteresting cogs."
+DESCRIPTION = "A bot that runs a basic role-playing game."
 
 # log = logging.getLogger(__name__)
 
@@ -44,9 +47,10 @@ class MathBot(commands.Bot):
     """Defines the mathbot class and functions."""
 
     def __init__(self):
-        super().__init__(command_prefix=["~"], description=DESCRIPTION)
+        super().__init__(command_prefix=["~", "%"], description=DESCRIPTION)
         self.default_nick = "Miniscape"
         self.add_command(self.load)
+        self.remove_command('help')
 
         for extension in extensions_generator():
             try:
@@ -95,3 +99,4 @@ class MathBot(commands.Bot):
         except Exception:
             await ctx.send(f'Failed to load extension {extension}.', file=sys.stderr)
             traceback.print_exc()
+
