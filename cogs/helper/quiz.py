@@ -1,5 +1,9 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 """Implements methods related to the quiz commands of mathbot.cogs.miniscape."""
+=======
+"""Implements methods related to the quiz commands of mathbot.cogs.gastercoin."""
+>>>>>>> refs/remotes/origin/master
 import os
 import random
 import ujson
