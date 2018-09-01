@@ -80,15 +80,7 @@ def calc_length(userid, monsterid, number):
 
     c = combat_level
     dam_multiplier = 1 + player_acc / 200
-<<<<<<< HEAD
-<<<<<<< HEAD
-    base_time = math.floor(number * monster_xp / 10)
-=======
     base_time = math.floor(number * monster_xp / 10) * time_bonus
->>>>>>> 650b10722bc5ce315ece966a4f6a3ed379fcff11
-=======
-    base_time = math.floor(number * monster_xp / 10) * time_bonus
->>>>>>> refs/remotes/origin/master
     time = round(base_time * monster_arm * monster_base / (player_dam * dam_multiplier + c))
     return base_time, time
 
@@ -355,15 +347,7 @@ def get_task(userid):
             base_time, task_length = calc_length(userid, monsterid, num_to_kill)
             chance = calc_chance(userid, monsterid, num_to_kill)
             mon_level = mon.get_attr(monsterid, key=mon.LEVEL_KEY)
-<<<<<<< HEAD
-<<<<<<< HEAD
-            print(f'{num_to_kill} {monsterid} {task_length/base_time} {chance}')
-=======
-            # print(f'{monsterid} {task_length/base_time} {chance}')
->>>>>>> 650b10722bc5ce315ece966a4f6a3ed379fcff11
-=======
-            # print(f'{monsterid} {task_length/base_time} {chance}')
->>>>>>> refs/remotes/origin/master
+            # print(f'{num_to_kill} {monsterid} {task_length/base_time} {chance}')
             if 0.25 <= task_length / base_time <= 2 and chance >= 20 and mon_level / cb_level >= 0.8\
                     and task_length <= 3600 and mon.get_attr(monsterid, key=mon.SLAYER_KEY) is True\
                     and ({mon.get_attr(monsterid, key=mon.QUEST_REQ_KEY)}.issubset(completed_quests)
