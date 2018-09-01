@@ -164,9 +164,13 @@ def get_kill(userid, monster, length=-1, number=-1):
         else:
             return 'Error: argument missing (number or kill length).'
 
-        grind = adv.format_line(1, userid, adv.get_finish_time(length * 60), monsterid, monster_name, number, length)
+        chance = calc_chance(userid, monsterid, number)
+
+        grind = adv.format_line(1, userid, adv.get_finish_time(length * 60),
+                                monsterid, monster_name, number, length, chance)
         adv.write(grind)
-        out += f'You are now killing {mon.add_plural(number, monsterid, with_zero=True)} for {length} minutes. '
+        out += f'You are now killing {mon.add_plural(number, monsterid, with_zero=True)} for {length} minutes. ' \
+               f'You have a {chance}% chance of successfully killing this many monsters without dying.'
     else:
         out = adv.print_adventure(userid)
         out += adv.print_on_adventure_error('kill')
@@ -176,7 +180,7 @@ def get_kill(userid, monster, length=-1, number=-1):
 def get_kill_result(person, *args):
     """Determines the loot of a monster grind."""
     try:
-        monsterid, monster_name, num_to_kill, length = args[0]
+        monsterid, monster_name, num_to_kill, length, chance = args[0]
     except ValueError as e:
         print(e)
         raise ValueError
@@ -187,7 +191,10 @@ def get_kill_result(person, *args):
     else:
         factor = 1
 
+    is_success = adv.is_success(chance)
+    factor *= 1 if is_success else int(chance) / 100
     factor *= items.get_luck_factor(person.id)
+
     loot = mon.get_loot(monsterid, int(num_to_kill), factor=factor)
     users.update_inventory(person.id, loot)
     out += print_loot(loot, person, monster_name, num_to_kill)
@@ -216,51 +223,36 @@ def get_result(person, *args):
         raise ValueError
     out = ''
     users.add_counter(person.id, monsterid, num_to_kill)
-    if adv.is_success(calc_chance(person.id, monsterid, num_to_kill)):
-        users.remove_potion(person.id)
-        loot = mon.get_loot(monsterid, int(num_to_kill), factor=items.get_luck_factor(person.id))
-        users.update_inventory(person.id, loot)
-        out += print_loot(loot, person, monster_name, num_to_kill)
+    chance = calc_chance(person.id, monsterid, num_to_kill)
+    is_success = adv.is_success(chance)
+    factor = 1 if is_success else int(chance)/100
+    factor *= items.get_luck_factor(person.id)
 
-        xp_gained = XP_FACTOR * mon.get_attr(monsterid, key=mon.XP_KEY) * int(num_to_kill)
-        cb_level_before = users.xp_to_level(users.read_user(person.id, users.COMBAT_XP_KEY))
-        slay_level_before = users.xp_to_level(users.read_user(person.id, users.SLAYER_XP_KEY))
-        users.update_user(person.id, xp_gained, users.SLAYER_XP_KEY)
-        users.update_user(person.id, round(0.7 * xp_gained), users.COMBAT_XP_KEY)
-        cb_level_after = users.xp_to_level(users.read_user(person.id, users.COMBAT_XP_KEY))
-        slay_level_after = users.xp_to_level(users.read_user(person.id, users.SLAYER_XP_KEY))
+    users.remove_potion(person.id)
+    loot = mon.get_loot(monsterid, int(num_to_kill), factor=factor)
+    users.update_inventory(person.id, loot)
+    out += print_loot(loot, person, monster_name, num_to_kill)
 
-        slayer_xp_formatted = '{:,}'.format(xp_gained)
-        combat_xp_formatted = '{:,}'.format(round(0.7 * xp_gained))
-        out += f'\nYou have also gained {slayer_xp_formatted} slayer xp and {combat_xp_formatted} combat xp. '
-        if cb_level_after > cb_level_before:
-            out += f'In addition, you have gained {cb_level_after - cb_level_before} combat levels. '
-        if slay_level_after > slay_level_before:
-            out += f'Also, as well, you have gained {slay_level_after - slay_level_before} slayer levels. '
-    else:
-        users.remove_potion(person.id)
-        factor = int(chance)/100
-        factor *= items.get_luck_factor(person.id)
-        loot = mon.get_loot(monsterid, int(num_to_kill), factor=factor)
-        users.update_inventory(person.id, loot)
-        out += print_loot(loot, person, monster_name, num_to_kill)
+    xp_gained = round(XP_FACTOR * mon.get_attr(monsterid, key=mon.XP_KEY) * int(num_to_kill) * factor)
+    cb_level_before = users.xp_to_level(users.read_user(person.id, users.COMBAT_XP_KEY))
+    slay_level_before = users.xp_to_level(users.read_user(person.id, users.SLAYER_XP_KEY))
+    users.update_user(person.id, xp_gained, users.SLAYER_XP_KEY)
+    users.update_user(person.id, round(0.7 * xp_gained), users.COMBAT_XP_KEY)
+    cb_level_after = users.xp_to_level(users.read_user(person.id, users.COMBAT_XP_KEY))
+    slay_level_after = users.xp_to_level(users.read_user(person.id, users.SLAYER_XP_KEY))
 
-        xp_gained = round(XP_FACTOR * mon.get_attr(monsterid, key=mon.XP_KEY) * int(num_to_kill) * factor)
-        cb_level_before = users.xp_to_level(users.read_user(person.id, users.COMBAT_XP_KEY))
-        slay_level_before = users.xp_to_level(users.read_user(person.id, users.SLAYER_XP_KEY))
-        users.update_user(person.id, xp_gained, users.SLAYER_XP_KEY)
-        users.update_user(person.id, round(0.7 * xp_gained), users.COMBAT_XP_KEY)
-        cb_level_after = users.xp_to_level(users.read_user(person.id, users.COMBAT_XP_KEY))
-        slay_level_after = users.xp_to_level(users.read_user(person.id, users.SLAYER_XP_KEY))
+    slayer_xp_formatted = '{:,}'.format(xp_gained)
+    combat_xp_formatted = '{:,}'.format(round(0.7 * xp_gained))
 
-        slayer_xp_formatted = '{:,}'.format(xp_gained)
-        combat_xp_formatted = '{:,}'.format(round(0.7 * xp_gained))
-        out += f'\nYou have received lower loot and experience because you have died.'\
-               f'\nYou have received {slayer_xp_formatted} slayer xp and {combat_xp_formatted} combat xp. '
-        if cb_level_after > cb_level_before:
-            out += f'In addition, you have gained {cb_level_after - cb_level_before} combat levels. '
-        if slay_level_after > slay_level_before:
-            out += f'Also, as well, you have gained {slay_level_after - slay_level_before} slayer levels. '
+    out += f'\nYou have received {slayer_xp_formatted} slayer xp and {combat_xp_formatted} combat xp.\n'
+    if not is_success:
+        out += f'You have received lower loot and experience because you have died.\n'
+    out += f'\nYou have also gained {slayer_xp_formatted} slayer xp and {combat_xp_formatted} combat xp. '
+    if cb_level_after > cb_level_before:
+        out += f'In addition, you have gained {cb_level_after - cb_level_before} combat levels. '
+    if slay_level_after > slay_level_before:
+        out += f'Also, as well, you have gained {slay_level_after - slay_level_before} slayer levels. '
+
     return out
 
 
