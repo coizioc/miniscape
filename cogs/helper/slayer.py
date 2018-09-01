@@ -246,7 +246,6 @@ def get_result(person, *args):
     slayer_xp_formatted = '{:,}'.format(xp_gained)
     combat_xp_formatted = '{:,}'.format(round(0.7 * xp_gained))
 
-    out += f'\nYou have received {slayer_xp_formatted} slayer xp and {combat_xp_formatted} combat xp.\n'
     if not is_success:
         out += f'You have received lower loot and experience because you have died.\n'
     out += f'\nYou have also gained {slayer_xp_formatted} slayer xp and {combat_xp_formatted} combat xp. '
@@ -342,11 +341,7 @@ def get_task(userid):
             base_time, task_length = calc_length(userid, monsterid, num_to_kill)
             chance = calc_chance(userid, monsterid, num_to_kill)
             mon_level = mon.get_attr(monsterid, key=mon.LEVEL_KEY)
-<<<<<<< HEAD
             # print(f'{num_to_kill} {monsterid} {task_length/base_time} {chance}')
-=======
-            # print(f'{monsterid} {task_length/base_time} {chance}')
->>>>>>> d5de6d8e14dd755f8a8339c3867ee6e00d77c1c3
             if 0.25 <= task_length / base_time <= 2 and chance >= 20 and mon_level / cb_level >= 0.8\
                     and task_length <= 3600 and mon.get_attr(monsterid, key=mon.SLAYER_KEY) is True\
                     and ({mon.get_attr(monsterid, key=mon.QUEST_REQ_KEY)}.issubset(completed_quests)
@@ -474,9 +469,10 @@ def print_chance(userid, monsterid, monster_dam=-1, monster_acc=-1, monster_arm=
 
 
 def print_kill_status(time_left, *args):
-    monsterid, monster_name, number, length = args[0]
+    monsterid, monster_name, number, length, chance = args[0]
     out = f'{SLAYER_HEADER}' \
           f'You are currently killing {mon.add_plural(number, monsterid, with_zero=True)} for {length} minutes. ' \
+          f'You currently have a {chance}% chance of killing this many monsters without dying. '\
           f'You can see your loot {time_left}.'
     return out
 
