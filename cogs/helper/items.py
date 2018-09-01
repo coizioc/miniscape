@@ -107,8 +107,7 @@ def claim(userid, itemname, number):
         return f'You do not have {add_plural(number, itemid)} in your inventory.'
 
     out = '__**CLAIM**__ :moneybag:\n'
-
-    if int(itemid) == 402:
+    if itemid == "402":
         out += 'You have received:\n'
         gems = {
             25: 4,
@@ -131,6 +130,10 @@ def claim(userid, itemname, number):
             out += f'{add_plural(loot_counter[gemid], gemid)}\n'
         out += f'from your {add_plural(number, itemid)}.'
         users.update_inventory(userid, number * [itemid], remove=True)
+    elif itemid == "370":
+        xp_per_effigy = 30000
+        skills = users.SKILLS
+
     else:
         out += f'{get_attr(itemid)} is not claimable.'
     return out

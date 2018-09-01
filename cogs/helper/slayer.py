@@ -13,7 +13,7 @@ LOWEST_NUM_TO_KILL = 35
 SLAYER_HEADER = ':skull_crossbones: __**SLAYER**__ :skull_crossbones:\n'
 
 
-def calc_chance(userid, monsterid, number):
+def calc_chance(userid, monsterid, number, remove_food=False):
     """Calculates the chance of success of a task."""
 
     equipment = users.read_user(userid, key=users.EQUIPMENT_KEY)
@@ -41,6 +41,14 @@ def calc_chance(userid, monsterid, number):
     d = 1 + player_combat / 99
     dam_multiplier = monster_base + monster_acc / 200
     chance = round(min(100 * max(0, (2 * d * player_arm) / (number / 50 * monster_dam * dam_multiplier + c)), 100))
+    player_food = users.read_user(userid, key=users.FOOD_KEY)
+    food_bonus = items.get_attr(player_food, key=items.EAT_KEY)
+    if food_bonus > 0:
+        num_food = users.count_item_in_inventory(userid, player_food)
+        chance += food_bonus if num_food >= number else int(food_bonus * num_food / number)
+        loot = num_food * [player_food]
+        if remove_food:
+            users.update_inventory(userid, loot, remove=True)
     return chance
 
 
@@ -56,6 +64,7 @@ def calc_length(userid, monsterid, number):
         time_bonus = 1 - 0.2 * min(monsters_fought[monsterid] / 5000, 1)
     else:
         time_bonus = 1
+
     if mon.get_attr(monsterid, key=mon.DRAGON_KEY) == 1:
         if equipment['7'] == '266' or equipment['7'] == '293':
             monster_base = 1
@@ -190,6 +199,7 @@ def get_kill_result(person, *args):
     else:
         factor = 1
 
+    chance = calc_chance(person.id, monsterid, num_to_kill, remove_food=True)
     is_success = adv.is_success(chance)
     factor *= 1 if is_success else int(chance) / 100
     factor *= items.get_luck_factor(person.id)
@@ -225,7 +235,8 @@ def get_result(person, *args):
         raise ValueError
     out = ''
     users.add_counter(person.id, monsterid, num_to_kill)
-    chance = calc_chance(person.id, monsterid, num_to_kill)
+
+    chance = calc_chance(person.id, monsterid, num_to_kill, remove_food=True)
     is_success = adv.is_success(chance)
     factor = 1 if is_success else int(chance)/100
     factor *= items.get_luck_factor(person.id)
@@ -246,6 +257,7 @@ def get_result(person, *args):
     slayer_xp_formatted = '{:,}'.format(xp_gained)
     combat_xp_formatted = '{:,}'.format(round(0.7 * xp_gained))
 
+    out += f'\nYou have received {slayer_xp_formatted} slayer xp and {combat_xp_formatted} combat xp.\n'
     if not is_success:
         out += f'You have received lower loot and experience because you have died.\n'
     out += f'\nYou have also gained {slayer_xp_formatted} slayer xp and {combat_xp_formatted} combat xp. '
@@ -341,7 +353,7 @@ def get_task(userid):
             base_time, task_length = calc_length(userid, monsterid, num_to_kill)
             chance = calc_chance(userid, monsterid, num_to_kill)
             mon_level = mon.get_attr(monsterid, key=mon.LEVEL_KEY)
-            # print(f'{num_to_kill} {monsterid} {task_length/base_time} {chance}')
+            # print(f'{monsterid} {task_length/base_time} {chance}')
             if 0.25 <= task_length / base_time <= 2 and chance >= 20 and mon_level / cb_level >= 0.8\
                     and task_length <= 3600 and mon.get_attr(monsterid, key=mon.SLAYER_KEY) is True\
                     and ({mon.get_attr(monsterid, key=mon.QUEST_REQ_KEY)}.issubset(completed_quests)
@@ -472,7 +484,7 @@ def print_kill_status(time_left, *args):
     monsterid, monster_name, number, length, chance = args[0]
     out = f'{SLAYER_HEADER}' \
           f'You are currently killing {mon.add_plural(number, monsterid, with_zero=True)} for {length} minutes. ' \
-          f'You currently have a {chance}% chance of killing this many monsters without dying. '\
+          f'You currently have a {chance}% chance of killing this many monsters without dying. ' \
           f'You can see your loot {time_left}.'
     return out
 
@@ -506,3 +518,4 @@ def print_task(userid, reaper=False):
     out += f'This will take {task_length} minutes '
     out += f'and has a success rate of {chance}% with your current gear. '
     return out
+
