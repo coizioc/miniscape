@@ -185,3 +185,4 @@ def start_clue(userid, difficulty):
         out = adv.print_adventure(userid)
         out += adv.print_on_adventure_error('clue scroll')
     return out
+

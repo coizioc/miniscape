@@ -51,6 +51,8 @@ DEFAULT_ACCOUNT = {IRONMAN_KEY: False,
                    LAST_REAPER_KEY: datetime.date.today() - datetime.timedelta(days=1),
                    QUESTS_KEY: "0x0"}   # What's this?
 
+SKILLS = [COMBAT_XP_KEY, SLAYER_XP_KEY, GATHER_XP_KEY, ARTISAN_XP_KEY, COOK_XP_KEY]
+
 CHARACTER_HEADER = f'__**:crossed_swords: $NAME :crossed_swords:**__\n'
 
 
@@ -319,31 +321,16 @@ def parse_int(number_as_string):
 
 def print_account(userid, nickname, printequipment=True):
     """Writes a string showing basic user information."""
-    combat_xp = read_user(userid, key=COMBAT_XP_KEY)
-    slayer_xp = read_user(userid, key=SLAYER_XP_KEY)
-    gather_xp = read_user(userid, key=GATHER_XP_KEY)
-    artisan_xp = read_user(userid, key=ARTISAN_XP_KEY)
-    cooking_xp = read_user(userid, key=COOK_XP_KEY)
-    combat_xp_formatted = '{:,}'.format(combat_xp)
-    slayer_xp_formatted = '{:,}'.format(slayer_xp)
-    gather_xp_formatted = '{:,}'.format(gather_xp)
-    artisan_xp_formatted = '{:,}'.format(artisan_xp)
-    cooking_xp_formatted = '{:,}'.format(cooking_xp)
+    out = f"{CHARACTER_HEADER.replace('$NAME', nickname.upper())}"
 
-    combat_level = xp_to_level(combat_xp)
-    slayer_level = xp_to_level(slayer_xp)
-    gather_level = xp_to_level(gather_xp)
-    artisan_level = xp_to_level(artisan_xp)
-    cooking_level = xp_to_level(cooking_xp)
+    for skill in SKILLS:
+        xp_formatted = '{:,}'.format(read_user(userid, key=skill))
+        level = get_level(userid, skill)
+        out += f'**{skill.title()} Level**: {level} *({xp_formatted} xp)*\n'
+
     total = get_total_level(userid)
-    out = f"{CHARACTER_HEADER.replace('$NAME', nickname.upper())}"\
-          f'**Combat Level**: {combat_level} *({combat_xp_formatted} xp)*\n'\
-          f'**Slayer Level**: {slayer_level} *({slayer_xp_formatted} xp)*\n' \
-          f'**Gathering Level**: {gather_level} *({gather_xp_formatted} xp)*\n' \
-          f'**Artisan Level**: {artisan_level} *({artisan_xp_formatted} xp)*\n' \
-          f'**Cooking Level**: {cooking_level} *({cooking_xp_formatted} xp)*\n' \
-          f'**Skill Total**: {total}/{5 * 99}\n\n'\
-          f'**Quests Completed**: {len(get_completed_quests(userid))}/{len(quests.QUESTS.keys())}\n\n'
+    out += f'**Skill Total**: {total}/{len(SKILLS) * 99}\n\n'
+    out += f'**Quests Completed**: {len(get_completed_quests(userid))}/{len(quests.QUESTS.keys())}\n\n'
 
     if printequipment:
         out += print_equipment(userid)
