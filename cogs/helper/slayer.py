@@ -13,7 +13,7 @@ LOWEST_NUM_TO_KILL = 35
 SLAYER_HEADER = ':skull_crossbones: __**SLAYER**__ :skull_crossbones:\n'
 
 
-def calc_chance(userid, monsterid, number):
+def calc_chance(userid, monsterid, number, remove_food=False):
     """Calculates the chance of success of a task."""
 
     equipment = users.read_user(userid, key=users.EQUIPMENT_KEY)
@@ -41,6 +41,14 @@ def calc_chance(userid, monsterid, number):
     d = 1 + player_combat / 99
     dam_multiplier = monster_base + monster_acc / 200
     chance = round(min(100 * max(0, (2 * d * player_arm) / (number / 50 * monster_dam * dam_multiplier + c)), 100))
+    player_food = users.read_user(userid, key=users.FOOD_KEY)
+    food_bonus = items.get_attr(player_food, key=items.EAT_KEY)
+    if food_bonus > 0:
+        num_food = users.count_item_in_inventory(userid, player_food)
+        chance += food_bonus if num_food >= number else int(food_bonus * num_food / number)
+        loot = num_food * [player_food]
+        if remove_food:
+            users.update_inventory(userid, loot, remove=True)
     return chance
 
 
@@ -191,6 +199,7 @@ def get_kill_result(person, *args):
     else:
         factor = 1
 
+    chance = calc_chance(person.id, monsterid, num_to_kill, remove_food=True)
     is_success = adv.is_success(chance)
     factor *= 1 if is_success else int(chance) / 100
     factor *= items.get_luck_factor(person.id)
@@ -226,7 +235,8 @@ def get_result(person, *args):
         raise ValueError
     out = ''
     users.add_counter(person.id, monsterid, num_to_kill)
-    chance = calc_chance(person.id, monsterid, num_to_kill)
+
+    chance = calc_chance(person.id, monsterid, num_to_kill, remove_food=True)
     is_success = adv.is_success(chance)
     factor = 1 if is_success else int(chance)/100
     factor *= items.get_luck_factor(person.id)
@@ -471,9 +481,10 @@ def print_chance(userid, monsterid, monster_dam=-1, monster_acc=-1, monster_arm=
 
 
 def print_kill_status(time_left, *args):
-    monsterid, monster_name, number, length = args[0]
+    monsterid, monster_name, number, length, chance = args[0]
     out = f'{SLAYER_HEADER}' \
           f'You are currently killing {mon.add_plural(number, monsterid, with_zero=True)} for {length} minutes. ' \
+          f'You currently have a {chance}% chance of killing this many monsters without dying. ' \
           f'You can see your loot {time_left}.'
     return out
 

@@ -34,7 +34,7 @@ GATHER_XP_KEY = 'gather'        # User's gathering xp, stored as an int.
 ARTISAN_XP_KEY = 'artisan'      # User's artisan xp, stored as an int.
 COOK_XP_KEY = 'cook'            # User's cooking xp, stored as an int.
 LAST_REAPER_KEY = 'reaper'      # Date of user's last reaper task, stored as a date object.
-POTION_KEY = 'potion'           # User's active potion, stored as an int.
+FOOD_KEY = 'food'               # User's active food, stored as an int.
 QUESTS_KEY = 'quests'           # User's completed quests. Stored as a hexadecimal number whose bits represent
                                 # whether a user has completed a quest with that questid.
 DEFAULT_ACCOUNT = {IRONMAN_KEY: False,
@@ -48,6 +48,7 @@ DEFAULT_ACCOUNT = {IRONMAN_KEY: False,
                    GATHER_XP_KEY: 0,
                    ARTISAN_XP_KEY: 0,
                    COOK_XP_KEY: 0,
+                   FOOD_KEY: -1,
                    LAST_REAPER_KEY: datetime.date.today() - datetime.timedelta(days=1),
                    QUESTS_KEY: "0x0"}   # What's this?
 
@@ -94,6 +95,23 @@ def clear_inventory(userid, under=None):
         if inventory[itemid] > 0 and 0 < value < max_sell and itemid not in locked_items:
             inventory[itemid] = 0
     update_user(userid, inventory, key=ITEMS_KEY)
+
+
+def eat(userid, item):
+    if item == 'none' or item == 'nothing':
+        update_user(userid, '-1', key=FOOD_KEY)
+        return f'You are now eating nothing.'
+    try:
+        itemid = items.find_by_name(item)
+    except KeyError:
+        return f'{item} does not exist.'
+    item_name = items.get_attr(itemid)
+    edible = items.get_attr(itemid, key=items.EAT_KEY)
+    if edible > 0:
+        update_user(userid, itemid, key=FOOD_KEY)
+        return f'You are now eating {item}!'
+    else:
+        return f'You cannot eat {item_name}.'
 
 
 def equip_item(userid, item):
@@ -152,14 +170,14 @@ def unequip_item(userid, item):
         return f'You do not have {item_name} equipped.'
 
 
-def get_coins_in_inventory(userid):
-    """Gets the number of coins in a user's inventory."""
+def count_item_in_inventory(userid, itemid):
+    """Gets the number of a given item from a user's inventory."""
     inventory = read_user(userid, key=ITEMS_KEY)
     try:
-        coins = int(inventory['0'])
+        number = int(inventory[str(itemid)])
     except KeyError:
-        coins = 0
-    return coins
+        number = 0
+    return number
 
 
 def get_total_level(userid):
@@ -180,7 +198,7 @@ def get_values_by_account(key=ITEMS_KEY):
         userid = userfile[:-5]
 
         if key == ITEMS_KEY:
-            value = get_coins_in_inventory(userid)
+            value = count_item_in_inventory(userid, '0')
         elif key == QUESTS_KEY:
             value = len(get_completed_quests(userid))
         elif key == 'total':

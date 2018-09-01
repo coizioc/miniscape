@@ -158,6 +158,14 @@ class Miniscape():
             await ctx.send(users.print_account(member.id, name))
 
     @commands.command()
+    async def eat(self, ctx, *args):
+        """Sets a food to eat during adventures."""
+        if ctx.channel.id == BANK_CHANNEL or ctx.channel.id in GENERAL_CHANNELS:
+            item = ' '.join(args)
+            out = users.eat(ctx.author.id, item.lower())
+            await ctx.send(out)
+
+    @commands.command()
     async def equip(self, ctx, *args):
         """Equips an item from a user's inventory."""
         if ctx.channel.id == BANK_CHANNEL or ctx.channel.id in GENERAL_CHANNELS:
@@ -638,7 +646,7 @@ class Miniscape():
     async def balance(self, ctx, name=None):
         """Checks the user's balance."""
         if name is None:
-            amount = '{:,}'.format(users.get_coins_in_inventory(ctx.author.id))
+            amount = '{:,}'.format(users.count_item_in_inventory(ctx.author.id, '0'))
             name = get_display_name(ctx.author)
             await ctx.send(f'{name} has {amount} coins')
         elif name == 'universe':
@@ -647,7 +655,7 @@ class Miniscape():
             try:
                 person_member = parse_name(ctx.message.guild, name)
                 name = get_display_name(person_member)
-                amount = '{:,}'.format(users.get_coins_in_inventory(ctx.author.id))
+                amount = '{:,}'.format(users.count_item_in_inventory(ctx.author.id, '0'))
                 await ctx.send(f'{name} has {amount} coins')
             except NameError:
                 await ctx.send(f'Name {name} not found in server.')
