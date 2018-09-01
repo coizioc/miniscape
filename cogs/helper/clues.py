@@ -1,4 +1,5 @@
 import math
+# import logging
 import random
 from collections import Counter
 
@@ -22,6 +23,9 @@ CLUE_HEADER = f':map: __**CLUE SCROLL**__ :map:\n'
 EASY_CLUE_SCROLL_ID = 184
 ROLLS_PER_CLUE = 5
 
+# logger = logging.getLogger()
+# logger.setLevel(logger.DEBUG)
+# logger.debug("msg")
 
 def calc_length(userid, difficulty):
     """Calculates the time it takes to do a clue scroll."""
@@ -41,6 +45,7 @@ def calc_length(userid, difficulty):
 
 
 def get_clue_scroll(person, *args):
+    # logger.debug("In get_clue_scroll")
     try:
         difficulty, length = args[0]
     except ValueError as e:
@@ -54,6 +59,7 @@ def get_clue_scroll(person, *args):
           f'{person.mention}, you have finished your {DIFFICULTY[int(difficulty)]} clue scroll! ' \
           f'You have received the following items:\n'
     out += print_loot(loot, difficulty)
+    # logger.get_logger().debug(f"Returning {out} from get_clue_scroll")
     return out
 
 
