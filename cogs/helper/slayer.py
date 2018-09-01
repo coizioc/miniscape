@@ -205,10 +205,13 @@ def get_kill_result(person, *args):
     cb_level_after = users.xp_to_level(users.read_user(person.id, users.COMBAT_XP_KEY))
 
     combat_xp_formatted = '{:,}'.format(xp_gained)
+
     out += f'\nYou have also gained {combat_xp_formatted} combat xp'
     if cb_level_after > cb_level_before:
         out += f' and {cb_level_after - cb_level_before} combat levels'
-    out += '.'
+    out += '.\n'
+    if not is_success:
+        out += f'You have received lower loot and experience because you have died.\n'
     users.remove_potion(person.id)
 
     return out
