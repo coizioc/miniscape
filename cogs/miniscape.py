@@ -798,7 +798,7 @@ class Miniscape():
         while not self.bot.is_closed():
             finished_tasks = adv.get_finished()
             for task in finished_tasks:
-                with open('./subs/helper/resources/finished_tasks.txt', 'a+') as f:
+                with open('./resources/finished_tasks.txt', 'a+') as f:
                     f.write(';'.join(task) + '\n')
                 adventureid, userid = int(task[0]), int(task[1])
                 bot_self = self.bot.get_guild(config.guild_id).get_channel(NOTIFICATIONS_CHANNEL)
