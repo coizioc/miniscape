@@ -35,10 +35,6 @@ TEST_CHANNEL = 408424622648721410
 GENERAL_CHANNELS = [MINISCAPE_1_CHANNEL, MINISCAPE_2_CHANNEL, TEST_CHANNEL]
 
 
-def write_debug(text):
-    with open('./resources/debug.txt', 'a+') as f:
-        f.write(f'{datetime.datetime.now()}: {text}\n') 
-
 class AmbiguousInputError(Exception):
     """Error raised for input that refers to multiple users"""
     def __init__(self, output):
@@ -837,11 +833,8 @@ class Miniscape():
         """Check if any actions are complete and notifies the user if they are done."""
         await self.bot.wait_until_ready()
         while not self.bot.is_closed():
-            write_debug("about to get finished tasks.")
             finished_tasks = adv.get_finished()
-            write_debug("finished getting tasks.")
             for task in finished_tasks:
-                write_debug(task)
                 with open('./resources/finished_tasks.txt', 'a+') as f:
                     f.write(';'.join(task) + '\n')
                 adventureid, userid = int(task[0]), int(task[1])
@@ -857,7 +850,6 @@ class Miniscape():
                     5: slayer.get_reaper_result
                 }
                 out = adventures[adventureid](person, task[3:])
-                write_debug("Task successfully finished")
                 await bot_self.send(out)
             await asyncio.sleep(60)
 

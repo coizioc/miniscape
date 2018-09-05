@@ -242,10 +242,12 @@ def get_luck_factor(userid):
             item_luck = get_attr(itemid, key=LUCK_KEY)
             if item_luck > luck_factor:
                 luck_factor = item_luck
+
     user_prayer = users.read_user(userid, key=users.PRAY_KEY)
-    prayer_factor = prayer.get_attr(user_prayer, key=prayer.FACTOR_KEY)
-    if prayer_factor > luck_factor:
-        luck_factor = prayer_factor
+    if user_prayer != -1:
+        prayer_factor = prayer.get_attr(user_prayer, key=prayer.FACTOR_KEY)
+        if prayer_factor > luck_factor:
+            luck_factor = prayer_factor
     return luck_factor
 
 

@@ -386,7 +386,7 @@ def print_equipment(userid, name=None, with_header=False):
                    f'*(dam: {items.get_attr(equipment[slot], key=items.DAMAGE_KEY)}, ' \
                    f'acc: {items.get_attr(equipment[slot], key=items.ACCURACY_KEY)}, ' \
                    f'arm: {items.get_attr(equipment[slot], key=items.ARMOUR_KEY)}, ' \
-                   f'pray: {items.get_attr(equipment[slot], key=items.PRAYER_KEY)})\n'
+                   f'pray: {items.get_attr(equipment[slot], key=items.PRAYER_KEY)})*\n'
         else:
             out += f'none *(dam: 0, acc: 0, arm: 0, pray: 0)*\n'
     return out

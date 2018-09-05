@@ -219,13 +219,14 @@ def get_kill_result(person, *args):
         raise ValueError
     out = ''
     users.add_counter(person.id, monsterid, num_to_kill)
+
     chance = calc_chance(person.id, monsterid, num_to_kill, remove_food=True)
     is_success = adv.is_success(chance)
     if not is_success and users.read_user(person.id, users.PRAY_KEY) == '16' and random.randint(0, 1):
         is_success = True
-
     factor = 1 if is_success else int(chance) / 100
     factor *= items.get_luck_factor(person.id)
+
     loot = mon.get_loot(monsterid, int(num_to_kill), factor=factor)
     users.update_inventory(person.id, loot)
     out += print_loot(loot, person, monster_name, num_to_kill)
@@ -234,9 +235,7 @@ def get_kill_result(person, *args):
     cb_level_before = users.xp_to_level(users.read_user(person.id, users.COMBAT_XP_KEY))
     users.update_user(person.id, xp_gained, users.COMBAT_XP_KEY)
     cb_level_after = users.xp_to_level(users.read_user(person.id, users.COMBAT_XP_KEY))
-
     combat_xp_formatted = '{:,}'.format(xp_gained)
-
     out += f'\nYou have also gained {combat_xp_formatted} combat xp'
     if cb_level_after > cb_level_before:
         out += f' and {cb_level_after - cb_level_before} combat levels'
@@ -244,7 +243,6 @@ def get_kill_result(person, *args):
     if not is_success:
         out += f'You have received lower loot and experience because you have died.\n'
     users.remove_potion(person.id)
-
     return out
 
 
