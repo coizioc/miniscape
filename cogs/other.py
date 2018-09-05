@@ -7,7 +7,6 @@ import discord
 from discord.ext import commands
 
 from cogs.helper import deathmatch as dm
-from cogs.helper import quiz
 from cogs.helper import users
 
 RESOURCES_DIRECTORY = f'./resources/'
@@ -174,39 +173,6 @@ class Other():
         for i in range(10):
             out += f'**{i + 1}**: `{word}` :heart: `{relationships[i][1].name}`: {relationships[i][0]}%\n'
         await ctx.send(out)
-
-    # @commands.group(aliases=['nq', 'jeo'], invoke_without_command=True)
-    # async def jeopardy(self, ctx, textonly='f'):
-    #     """Gives users GasterCash in exchange for correct answers."""
-    #     if ctx.channel.id == JEOPARDY_CHANNEL:
-    #         question_args = quiz.get_new_question()
-    #         category = question_args[0]
-    #         value = question_args[1]
-    #         question = question_args[2]
-    #         answer = question_args[3]
-    #
-    #         if textonly != 't':
-    #             quiz.draw_jeopardy(question)
-    #             await ctx.send(f"*{ctx.author.name}: I'll take {category} for {value} coins, Alex.*",
-    #                            file=discord.File(quiz.OUT_FILE))
-    #         else:
-    #             await ctx.send(f"*{ctx.author.name}: I'll take {category} for {value} coins, Alex.*\n{question}")
-    #
-    #         while True:
-    #             message = await self.bot.wait_for('message')
-    #             if message.author == ctx.author:
-    #                 if message.content.lower() in answer.lower() and len(message.content) > 1:
-    #                     amount_formatted = '{:,}'.format(value)
-    #
-    #                     out = f"Answer {answer} is correct! "
-    #                     if not users.read_user(ctx.author.id, key=users.IRONMAN_KEY):
-    #                         users.update_inventory(ctx.author.id, value * ['0'])
-    #                         out += f"{ctx.author.name}'s balance has increased by {amount_formatted} coins!"
-    #                     await ctx.send(out)
-    #                     break
-    #                 else:
-    #                     await ctx.send(f"Answer {message.content} is incorrect. Correct answer was {answer}.")
-    #                     break
 
     @commands.group(aliases=['dm'], invoke_without_command=True)
     async def deathmatch(self, ctx, opponent='rand', bet=None):
