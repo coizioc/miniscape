@@ -6,6 +6,7 @@ from collections import Counter
 from cogs.helper import clues
 from cogs.helper import monsters as mon
 from cogs.helper import users
+from cogs.helper import prayer
 
 from cogs.helper.files import ITEM_JSON, SHOP_FILE
 
@@ -18,7 +19,8 @@ NICK_KEY = 'nick'           # list of nicknames for an item.
 VALUE_KEY = 'value'         # High alch value of the item
 DAMAGE_KEY = 'damage'       # Damage stat of the item
 ACCURACY_KEY = 'accuracy'   # Accuracy stat of the item
-ARMOUR_KEY = 'armour'       # Armuour stat of the item
+ARMOUR_KEY = 'armour'       # Armour stat of the item
+PRAYER_KEY = 'prayer'       # Prayer drain bonus of the item.
 SLOT_KEY = 'slot'           # Slot item can be equipped
 AFFINITY_KEY = 'aff'        # Item affinity, 0:Melee, 1:Range, 2:Magic
 LEVEL_KEY = 'level'         # Level item can be equipped/gathered
@@ -30,6 +32,7 @@ ROCK_KEY = 'rock'           # Boolean whether gatherable is a rock.
 FISH_KEY = 'fish'           # Boolean whether gatherable is a fish.
 POT_KEY = 'potion'          # Boolean whether consumable is a potion.
 COOK_KEY = 'cook'           # Boolean whether item can be cooked.
+BURY_KEY = 'bury'           # Boolean whether item can be buried.
 EAT_KEY = 'eat'             # Int representing chance improvement by item when set as food.
 LUCK_KEY = 'luck'           # float representing factor of luck enhancement
 DEFAULT_ITEM = {NAME_KEY: 'unknown item',
@@ -39,6 +42,7 @@ DEFAULT_ITEM = {NAME_KEY: 'unknown item',
                 DAMAGE_KEY: 0,
                 ACCURACY_KEY: 0,
                 ARMOUR_KEY: 0,
+                PRAYER_KEY: 0,
                 SLOT_KEY: 0,
                 AFFINITY_KEY: 0,
                 LEVEL_KEY: 1,
@@ -50,6 +54,7 @@ DEFAULT_ITEM = {NAME_KEY: 'unknown item',
                 FISH_KEY: False,
                 POT_KEY: False,
                 COOK_KEY: False,
+                BURY_KEY: False,
                 EAT_KEY: 0,
                 LUCK_KEY: 1
                 }
@@ -106,7 +111,7 @@ def claim(userid, itemname, number):
     if not users.item_in_inventory(userid, itemid, number):
         return f'You do not have {add_plural(number, itemid)} in your inventory.'
 
-    out = '__**CLAIM**__ :moneybag:\n'
+    out = ':moneybag: __**CLAIM**__ :moneybag:\n'
     if itemid == "402":
         out += 'You have received:\n'
         gems = {
@@ -132,8 +137,17 @@ def claim(userid, itemname, number):
         users.update_inventory(userid, number * [itemid], remove=True)
     elif itemid == "370":
         xp_per_effigy = 30000
-        skills = users.SKILLS
-
+        skills = Counter()
+        for _ in range(number):
+            skill = random.sample(users.SKILLS, 1)[0]
+            skills[skill] += 1
+        users.update_inventory(userid, number * ['371'])
+        out += f"You have received the following xp from your {add_plural(number, '370')}!\n"
+        for skill in skills.keys():
+            xp_gained = skills[skill] * xp_per_effigy
+            users.update_user(userid, xp_gained, key=skill)
+            xp_gained_formatted = '{:,}'.format(xp_gained)
+            out += f'{xp_gained_formatted} {skill} xp\n'
     else:
         out += f'{get_attr(itemid)} is not claimable.'
     return out
@@ -153,16 +167,19 @@ def compare(item1, item2):
     item1_acc = get_attr(item1id, key=ACCURACY_KEY)
     item1_dam = get_attr(item1id, key=DAMAGE_KEY)
     item1_arm = get_attr(item1id, key=ARMOUR_KEY)
+    item1_pra = get_attr(item1id, key=PRAYER_KEY)
 
     item2_acc = get_attr(item2id, key=ACCURACY_KEY)
     item2_dam = get_attr(item2id, key=DAMAGE_KEY)
     item2_arm = get_attr(item2id, key=ARMOUR_KEY)
+    item2_pra = get_attr(item2id, key=PRAYER_KEY)
 
-    out = f'__**:moneybag: COMPARE :moneybag:**__\n'\
+    out = f':moneybag: __**COMPARE**__ :moneybag:\n'\
           f'**{item1} vs {item2}:**\n\n'\
           f'**Accuracy**: {item1_acc} vs {item2_acc} *({item1_acc - item2_acc})*\n' \
           f'**Damage**: {item1_dam} vs {item2_dam} *({item1_dam - item2_dam})*\n' \
-          f'**Armour**: {item1_arm} vs {item2_arm} *({item1_arm - item2_arm})*'
+          f'**Armour**: {item1_arm} vs {item2_arm} *({item1_arm - item2_arm})*\n' \
+          f'**Prayer Bonus**: {item1_pra} vs {item2_pra} *({item1_pra - item2_pra})*'
     return out
 
 
@@ -225,6 +242,10 @@ def get_luck_factor(userid):
             item_luck = get_attr(itemid, key=LUCK_KEY)
             if item_luck > luck_factor:
                 luck_factor = item_luck
+    user_prayer = users.read_user(userid, key=users.PRAY_KEY)
+    prayer_factor = prayer.get_attr(user_prayer, key=prayer.FACTOR_KEY)
+    if prayer_factor > luck_factor:
+        luck_factor = prayer_factor
     return luck_factor
 
 

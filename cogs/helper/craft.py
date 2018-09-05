@@ -6,6 +6,7 @@ from collections import Counter
 from cogs.helper import adventures as adv
 from cogs.helper import items
 from cogs.helper import users
+from cogs.helper import prayer
 
 from cogs.helper.files import RECIPE_JSON, XP_FACTOR
 
@@ -136,6 +137,7 @@ def calc_burn(userid, itemid):
 
 def calc_length(userid, itemid, number):
     """Calculates the length of gathering a number of an item."""
+    user_prayer = users.read_user(userid, key=users.PRAY_KEY)
     gather_level = users.xp_to_level(users.read_user(userid, key=users.GATHER_XP_KEY))
     item_xp = items.get_attr(itemid, key=items.XP_KEY)
     item_level = items.get_attr(itemid, key=items.LEVEL_KEY)
@@ -155,8 +157,16 @@ def calc_length(userid, itemid, number):
 
     time_multiplier = gather_level / item_level
     base_time = math.floor(number * item_xp * (100 - item_level) / 200)
-    time = round(item_multiplier * base_time / time_multiplier)
-    return base_time, time
+    time = item_multiplier * base_time / time_multiplier
+
+    if user_prayer == '17':
+        prayer_time = prayer.calc_drain_time(userid, user_prayer)
+        if prayer_time < time:
+            time /= max(1, 1.5 * prayer_time / time)
+        else:
+            time /= 1.5
+
+    return base_time, round(time)
 
 
 def calc_number(userid, itemid, time):

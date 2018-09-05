@@ -15,6 +15,7 @@ from cogs.helper import monsters as mon
 from cogs.helper import quests
 from cogs.helper import slayer
 from cogs.helper import users
+from cogs.helper import prayer
 
 RESOURCES_DIRECTORY = f'./resources/'
 
@@ -180,6 +181,35 @@ class Miniscape():
             item = ' '.join(args)
             out = users.unequip_item(ctx.author.id, item.lower())
             await ctx.send(out)
+
+    @commands.command()
+    async def bury(self, ctx, *args):
+        """Burys items for prayer experience."""
+        if ctx.channel.id == ADVENTURES_CHANNEL or ctx.channel.id in GENERAL_CHANNELS:
+            if args[0].isdigit():
+                number = int(args[0])
+                item = ' '.join(args[1:])
+            else:
+                number = 1
+                item = ' '.join(args)
+            out = prayer.bury(ctx.author.id, item, number)
+            await ctx.send(out)
+
+    @commands.group(aliases=['pray', 'prayers'])
+    async def prayer(self, ctx, *args):
+        if len(args) == 0:
+            messages = prayer.print_list(ctx.author.id)
+            for message in messages:
+                await ctx.send(message)
+        else:
+            out = prayer.set_prayer(ctx.author.id, ' '.join(args))
+            await ctx.send(out)
+
+    @prayer.command(name='info')
+    async def prayer_info(self, ctx, *args):
+        current_prayer = ' '.join(args)
+        out = prayer.print_info(current_prayer)
+        await ctx.send(out)
 
     @commands.group(aliases=['invent', 'inventory', 'item'], invoke_without_command=True)
     async def items(self, ctx, search=''):

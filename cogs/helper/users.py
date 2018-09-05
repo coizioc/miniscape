@@ -7,6 +7,7 @@ from collections import Counter
 
 from cogs.helper import items
 from cogs.helper import quests
+from cogs.helper import prayer
 
 from cogs.helper.files import USER_DIRECTORY, BACKUP_DIRECTORY, XP_FILE, ARMOUR_SLOTS_FILE
 
@@ -33,8 +34,10 @@ SLAYER_XP_KEY = 'slayer'        # User's slayer xp, stored as an int.
 GATHER_XP_KEY = 'gather'        # User's gathering xp, stored as an int.
 ARTISAN_XP_KEY = 'artisan'      # User's artisan xp, stored as an int.
 COOK_XP_KEY = 'cook'            # User's cooking xp, stored as an int.
+PRAY_XP_KEY = 'prayer'          # User's prayer xp, stored as an int.
 LAST_REAPER_KEY = 'reaper'      # Date of user's last reaper task, stored as a date object.
 FOOD_KEY = 'food'               # User's active food, stored as an int.
+PRAY_KEY = 'pray'               # User's current prayer, stored as an int.
 QUESTS_KEY = 'quests'           # User's completed quests. Stored as a hexadecimal number whose bits represent
                                 # whether a user has completed a quest with that questid.
 DEFAULT_ACCOUNT = {IRONMAN_KEY: False,
@@ -48,11 +51,13 @@ DEFAULT_ACCOUNT = {IRONMAN_KEY: False,
                    GATHER_XP_KEY: 0,
                    ARTISAN_XP_KEY: 0,
                    COOK_XP_KEY: 0,
+                   PRAY_XP_KEY: 0,
                    FOOD_KEY: -1,
+                   PRAY_KEY: -1,
                    LAST_REAPER_KEY: datetime.date.today() - datetime.timedelta(days=1),
                    QUESTS_KEY: "0x0"}   # What's this?
 
-SKILLS = [COMBAT_XP_KEY, SLAYER_XP_KEY, GATHER_XP_KEY, ARTISAN_XP_KEY, COOK_XP_KEY]
+SKILLS = [COMBAT_XP_KEY, SLAYER_XP_KEY, GATHER_XP_KEY, ARTISAN_XP_KEY, COOK_XP_KEY, PRAY_XP_KEY]
 
 CHARACTER_HEADER = f'__**:crossed_swords: $NAME :crossed_swords:**__\n'
 
@@ -182,12 +187,9 @@ def count_item_in_inventory(userid, itemid):
 
 def get_total_level(userid):
     """Gets the total level of a user."""
-    combat_level = get_level(userid, key=COMBAT_XP_KEY)
-    slayer_level = get_level(userid, key=SLAYER_XP_KEY)
-    gather_level = get_level(userid, key=GATHER_XP_KEY)
-    artisan_level = get_level(userid, key=ARTISAN_XP_KEY)
-    cooking_level = get_level(userid, key=COOK_XP_KEY)
-    total_level = combat_level + slayer_level + gather_level + artisan_level + cooking_level
+    total_level = 0
+    for skill in SKILLS:
+        total_level += get_level(userid, key=skill)
     return total_level
 
 
@@ -221,19 +223,28 @@ def get_completed_quests(userid):
     return completed_quests
 
 
-def get_equipment_stats(equipment):
+def get_equipment_stats(equipment, userid=None):
     """Gets the total combat stats for the current equipment worn by a user."""
     damage = 0
     accuracy = 0
     armour = 0
+    prayer_bonus = 0
     for itemid in equipment.values():
         try:
             damage += items.get_attr(itemid, key=items.DAMAGE_KEY)
             accuracy += items.get_attr(itemid, key=items.ACCURACY_KEY)
             armour += items.get_attr(itemid, key=items.ARMOUR_KEY)
+            prayer_bonus += items.get_attr(itemid, key=items.PRAYER_KEY)
         except KeyError:
             pass
-    return damage, accuracy, armour
+
+    if userid is not None:
+        user_prayer = read_user(userid, key=PRAY_KEY)
+        damage *= prayer.get_attr(user_prayer, key=prayer.DAMAGE_KEY) / 100
+        accuracy *= prayer.get_attr(user_prayer, key=prayer.ACCURACY_KEY) / 100
+        armour *= prayer.get_attr(user_prayer, key=prayer.ARMOUR_KEY) / 100
+
+    return damage, accuracy, armour, prayer_bonus
 
 
 def get_level(userid, key):
@@ -363,19 +374,21 @@ def print_equipment(userid, name=None, with_header=False):
     else:
         out = ''
     equipment = read_user(userid, key=EQUIPMENT_KEY)
-    damage, accuracy, armour = get_equipment_stats(equipment)
+    damage, accuracy, armour, prayer = get_equipment_stats(equipment)
     out += f'**Damage**: {damage}\n' \
            f'**Accuracy**: {accuracy}\n' \
-           f'**Armour**: {armour}\n\n'
+           f'**Armour**: {armour}\n' \
+           f'**Prayer Bonus**: {prayer}\n\n'
     for slot in equipment.keys():
         out += f'**{SLOTS[str(slot)].title()}**: '
         if int(equipment[slot]) > -1:
             out += f'{items.get_attr(equipment[slot])} ' \
                    f'*(dam: {items.get_attr(equipment[slot], key=items.DAMAGE_KEY)}, ' \
                    f'acc: {items.get_attr(equipment[slot], key=items.ACCURACY_KEY)}, ' \
-                   f'arm: {items.get_attr(equipment[slot], key=items.ARMOUR_KEY)})*\n'
+                   f'arm: {items.get_attr(equipment[slot], key=items.ARMOUR_KEY)}, ' \
+                   f'pray: {items.get_attr(equipment[slot], key=items.PRAYER_KEY)})\n'
         else:
-            out += f'none *(dam: 0, acc: 0, arm: 0)*\n'
+            out += f'none *(dam: 0, acc: 0, arm: 0, pray: 0)*\n'
     return out
 
 
@@ -477,7 +490,7 @@ def update_user(userid, value, key=ITEMS_KEY):
     except FileNotFoundError:
         userjson = DEFAULT_ACCOUNT
 
-    if key in {COMBAT_XP_KEY, SLAYER_XP_KEY, GATHER_XP_KEY, ARTISAN_XP_KEY, COOK_XP_KEY}:
+    if key in SKILLS:
         current_xp = userjson[key]
         userjson[key] = current_xp + value
     elif key == QUESTS_KEY:
@@ -498,4 +511,3 @@ def xp_to_level(xp):
             return int(XP[level_xp]) - 1
     else:
         return 99
-

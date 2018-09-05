@@ -1,0 +1,163 @@
+import ujson
+
+from cogs.helper import items, users
+from cogs.helper import adventures as adv
+from cogs.helper.files import PRAYERS_JSON
+
+with open(PRAYERS_JSON, 'r') as f:
+    PRAYERS = ujson.load(f)
+
+NAME_KEY = 'name'                       # Name of prayer, stored as a string.
+NICK_KEY = 'nick'                       # List of nicknames of prayer.
+DESC_KEY = 'description'                # Description of function of prayer.
+PRAYER_KEY = 'prayer'                   # Prayer requirement.
+DRAIN_KEY = 'drain'                     # Drain rate for prayer.
+DAMAGE_KEY = 'damage'                   # Percent damage increase for prayer.
+ACCURACY_KEY = 'accuracy'               # Percent accuracy increase for prayer.
+ARMOUR_KEY = 'armour'                   # Percent armour increase for prayer.
+CHANCE_KEY = 'chance'                   # Percent chance increase for prayer.
+FACTOR_KEY = 'factor'                   # Factor multiplier increase for prayer.
+KEEP_FACTOR_KEY = 'keepfactorondeath'   # Boolean whether factor can be kept on death.
+GATHER_KEY = 'gather'                   # Factor of gather time decrease for prayer.
+AFFINITY_KEY = 'aff'                    # Int representing the kinds of monsters the prayer works against.
+QUEST_KEY = 'quest'                     # Quest requirement for prayer.
+
+DEFAULT_PRAYER = {
+    NAME_KEY: 'unknown prayer',
+    NICK_KEY: [],
+    DESC_KEY: 'unknown description',
+    PRAYER_KEY: 1,
+    DRAIN_KEY: 100,
+    DAMAGE_KEY: 0,
+    ACCURACY_KEY: 0,
+    ARMOUR_KEY: 0,
+    CHANCE_KEY: 0,
+    FACTOR_KEY: 1,
+    KEEP_FACTOR_KEY: False,
+    GATHER_KEY: 1,
+    QUEST_KEY: -1
+}
+
+PRAYER_HEADER = f':pray: __**PRAYER**__ :pray:\n'
+
+
+def bury(userid, item, number):
+    """Buries (a given amount) of an item and gives the user prayer xp."""
+    try:
+        itemid = items.find_by_name(item)
+        number = int(number)
+    except KeyError:
+        return f'Error: {item} is not an item.'
+    except ValueError:
+        return f'Error: {number} is not a number.'
+    item_name = items.get_attr(itemid)
+    if not items.get_attr(itemid, key=items.BURY_KEY):
+        return f"You cannot bury {item_name}."
+    if not users.item_in_inventory(userid, itemid, number):
+        return f'You do not have {items.add_plural(number, itemid)} in your inventory.'
+    xp = items.get_attr(itemid, key=items.XP_KEY)
+    prayer_xp = number * xp
+    prayer_xp_formatted = '{:,}'.format(prayer_xp)
+    users.update_inventory(userid, number * [itemid], remove=True)
+    users.update_user(userid, prayer_xp, key=users.PRAY_XP_KEY)
+    out = PRAYER_HEADER
+    out += f'You get {prayer_xp_formatted} prayer xp from your {items.add_plural(number, itemid)}!'
+    return out
+
+
+def calc_drain_time(userid, prayerid):
+    """Calculates the effective drain rate of a prayer."""
+    equipment_prayer = users.get_equipment_stats(userid)[3]
+    user_potion = users.read_user(userid, key=users.EQUIPMENT_KEY)['15']
+    user_prayer = users.get_level(userid, key=users.PRAY_KEY)
+    prayer_drain = get_attr(prayerid, key=DRAIN_KEY)
+
+    if user_potion == '199':
+        potion_base = 2
+    else:
+        potion_base = 1
+
+    base_time = float(36 / prayer_drain)
+    effective_time = 5 * user_prayer * base_time * potion_base * (1 + equipment_prayer / 30)
+    return effective_time
+
+
+def find_by_name(name):
+    """Finds a prayer's ID from its name."""
+    name = name.lower()
+    for prayerid in list(PRAYERS.keys()):
+        if name == PRAYERS[prayerid][NAME_KEY]:
+            return prayerid
+        if any([name == nick for nick in get_attr(prayerid, key=NICK_KEY)]):
+            return prayerid
+    else:
+        raise KeyError
+
+
+def get_attr(prayerid, key=NAME_KEY):
+    """Gets an prayer's attribute from its id."""
+    prayerid = str(prayerid)
+    if prayerid in set(PRAYERS.keys()):
+        try:
+            return PRAYERS[prayerid][key]
+        except KeyError:
+            PRAYERS[prayerid][key] = DEFAULT_PRAYER[key]
+            return PRAYERS[prayerid][key]
+    else:
+        raise KeyError
+
+
+def print_info(prayer):
+    """Prints information about a particular prayer"""
+    try:
+        prayerid = find_by_name(prayer)
+    except KeyError:
+        return f'{prayer} is not a prayer.'
+
+    out = PRAYER_HEADER
+    out += f'**Name**: {get_attr(prayerid)}\n'
+    aliases = get_attr(prayerid, key=NICK_KEY)
+    if len(aliases) > 0:
+        out += f"**Aliases**: {', '.join(aliases)}\n"
+    out += f'**Prayer**: {get_attr(prayerid, key=PRAYER_KEY)}\n'
+    out += f'\n*{get_attr(prayerid, key=DESC_KEY}}*'
+    return out
+
+
+def print_list(userid):
+    """Lists the prayers the the user can use."""
+    messages = []
+    out = PRAYER_HEADER
+
+    prayer_lvl = users.get_level(userid, key=users.PRAY_XP_KEY)
+    completed_quests = users.get_completed_quests(userid)
+
+    prayer_list = []
+    for prayerid in list(PRAYERS.keys()):
+        name = get_attr(prayerid)
+        level = get_attr(prayerid, key=PRAYER_KEY)
+        prayer_list.append((level, name))
+    for prayer in sorted(prayer_list):
+        if get_attr(prayer, key=QUEST_KEY) in completed_quests and prayer_lvl >= get_attr(prayer, key=PRAYER_KEY):
+            out += f'**{prayer[1].title()}** *(level {prayer[0]})*\n'
+            if len(out) > 1800:
+                messages.append(out)
+                out = f'{PRAYER_HEADER}'
+    out += 'Type `~prayer info [name]` to get more information about a particular prayer.'
+    messages.append(out)
+    return messages
+
+
+def set_prayer(userid, prayer):
+    """Sets a user's prayer."""
+    if adv.is_on_adventure(userid):
+        return 'You cannot change your prayer while on an adventure.'
+
+    try:
+        prayerid = find_by_name(prayer)
+    except KeyError:
+        return f'{prayer} is not a prayer.'
+
+    users.update_user(userid, prayerid, key=users.PRAY_KEY)
+    out = f'{PRAYER_HEADER}Your prayer has been set to {get_attr(prayerid)}!'
+    return out
