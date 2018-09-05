@@ -58,7 +58,7 @@ def calc_chance(userid, monsterid, number, remove_food=False):
             if remove_food:
                 users.update_inventory(userid, loot, remove=True)
 
-    if 10 <= user_prayer <= 12:
+    if 10 <= int(user_prayer) <= 12:
         monster_affinity = mon.get_attr(monsterid, key=mon.AFFINITY_KEY)
         if monster_affinity == 0 and user_prayer == '12' or monster_affinity == 1 and user_prayer == '11'\
                 or monster_affinity == 2 and user_prayer == '10':

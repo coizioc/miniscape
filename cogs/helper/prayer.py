@@ -115,12 +115,13 @@ def print_info(prayer):
         return f'{prayer} is not a prayer.'
 
     out = PRAYER_HEADER
-    out += f'**Name**: {get_attr(prayerid)}\n'
+    out += f'**Name**: {get_attr(prayerid).title()}\n'
     aliases = get_attr(prayerid, key=NICK_KEY)
     if len(aliases) > 0:
         out += f"**Aliases**: {', '.join(aliases)}\n"
     out += f'**Prayer**: {get_attr(prayerid, key=PRAYER_KEY)}\n'
-    out += f'\n*{get_attr(prayerid, key=DESC_KEY}}*'
+    out += f'**Drain Rate**: {get_attr(prayerid, key=DRAIN_KEY)}\n'
+    out += f'\n*{get_attr(prayerid, key=DESC_KEY)}*'
     return out
 
 
@@ -134,12 +135,14 @@ def print_list(userid):
 
     prayer_list = []
     for prayerid in list(PRAYERS.keys()):
-        name = get_attr(prayerid)
         level = get_attr(prayerid, key=PRAYER_KEY)
-        prayer_list.append((level, name))
+        prayer_list.append((level, prayerid))
     for prayer in sorted(prayer_list):
-        if get_attr(prayer, key=QUEST_KEY) in completed_quests and prayer_lvl >= get_attr(prayer, key=PRAYER_KEY):
-            out += f'**{prayer[1].title()}** *(level {prayer[0]})*\n'
+        prayer_quest = get_attr(prayer[1], key=QUEST_KEY)
+        if prayer_quest not in completed_quests and prayer_quest != -1:
+            continue
+        if prayer_lvl >= get_attr(prayer[1], key=PRAYER_KEY):
+            out += f'**{get_attr(prayer[1]).title()}** *(level {prayer[0]})*\n'
             if len(out) > 1800:
                 messages.append(out)
                 out = f'{PRAYER_HEADER}'
@@ -157,6 +160,9 @@ def set_prayer(userid, prayer):
         prayerid = find_by_name(prayer)
     except KeyError:
         return f'{prayer} is not a prayer.'
+
+    if get_attr(prayerid, key=QUEST_KEY) not in users.get_completed_quests(userid) and get_attr(prayerid, key=QUEST_KEY) != -1:
+        return f'You do not have the required quest to use this prayer.'
 
     users.update_user(userid, prayerid, key=users.PRAY_KEY)
     out = f'{PRAYER_HEADER}Your prayer has been set to {get_attr(prayerid)}!'
