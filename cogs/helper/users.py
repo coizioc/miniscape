@@ -114,7 +114,7 @@ def eat(userid, item):
     edible = items.get_attr(itemid, key=items.EAT_KEY)
     if edible > 0:
         update_user(userid, itemid, key=FOOD_KEY)
-        return f'You are now eating {item}!'
+        return f'You are now eating {items.add_plural(0, itemid)}!'
     else:
         return f'You cannot eat {item_name}.'
 

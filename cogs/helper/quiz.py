@@ -1,4 +1,4 @@
-"""Implements methods related to the quiz commands of mathbot.cogs.gastercoin."""
+"""Implements methods related to the quiz commands of mathbot.cogs.miniscape."""
 import os
 import random
 import ujson
@@ -23,8 +23,8 @@ JEOPARDY_WIDTH, JEOPARDY_HEIGHT = (400, 300)
 
 OUT_FILE = './resources/out.png'
 
-with open(QUESTIONS_JSON, 'r') as f:
-    QUESTIONS = ujson.load(f)
+# with open(QUESTIONS_JSON, 'r') as f:
+#    QUESTIONS = ujson.load(f)
 
 
 def makeShadow(image, iterations, border, offset, backgroundColour, shadowColour):

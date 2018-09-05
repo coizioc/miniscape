@@ -91,7 +91,6 @@ class MathBot(commands.Bot):
             await after.edit(nick=self.default_nick)
 
     @commands.command()
-    @commands.is_owner()
     async def load(self, ctx, extension):
         """Loads a specified extension into the bot."""
         try:
