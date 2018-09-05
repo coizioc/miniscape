@@ -46,8 +46,9 @@ DEFAULT_QUEST = {
 QUEST_HEADER = ':crossed_swords: __**QUESTS**__ :shield:\n'
 
 
-def calc_chance(userid, questid):
+def calc_chance(userid, questid, remove_food=False):
     """Calculates the chance of success of a quest."""
+    user_prayer = users.read_user(userid, key=users.PRAY_KEY)
     equipment = users.read_user(userid, key=users.EQUIPMENT_KEY)
     player_arm = users.get_equipment_stats(equipment)[2]
     monster_acc = get_attr(questid, key=ACCURACY_KEY)
@@ -66,7 +67,21 @@ def calc_chance(userid, questid):
     d = player_combat / 200
     dam_multiplier = monster_base + monster_acc / 200
 
-    chance = round(min(100 * max(0, (player_arm / (monster_dam * dam_multiplier + c)) / 2 + d), 100))
+    chance = (2 * d * player_arm) / (monster_dam * dam_multiplier + c)
+    player_food = users.read_user(userid, key=users.FOOD_KEY)
+    food_bonus = items.get_attr(player_food, key=items.EAT_KEY)
+    number = monster_combat / 100
+    if food_bonus > 0:
+        num_food = users.count_item_in_inventory(userid, player_food)
+        chance += food_bonus if num_food >= number else int(food_bonus * num_food / number)
+        loot = num_food * [player_food]
+        if remove_food:
+            users.update_inventory(userid, loot, remove=True)
+
+    if chance > 100:
+        chance = 100
+    if chance < 0:
+        chance = 0
     return chance
 
 
@@ -74,7 +89,7 @@ def calc_length(userid, questid):
     """Calculates the length of success of a quest."""
     combat_level = users.xp_to_level(users.read_user(userid, key=users.COMBAT_XP_KEY))
     equipment = users.read_user(userid, key=users.EQUIPMENT_KEY)
-    player_dam, player_acc, player_arm = users.get_equipment_stats(equipment)
+    player_dam, player_acc, player_arm, player_pray = users.get_equipment_stats(equipment)
     monster_arm = get_attr(questid, key=ARMOUR_KEY)
     base_time = 60 * get_attr(questid, key=TIME_KEY)
     if get_attr(questid, key=DRAGON_KEY) and '266' not in equipment:
@@ -244,8 +259,9 @@ def print_quest(questid, time, chance):
     return out
 
 
-def print_status(time_left, *args):
+def print_status(userid, time_left, *args):
     questid, chance = args[0]
+    chance = calc_chance(userid, questid)
     out = f'{QUEST_HEADER}' \
           f'You are already on the quest {get_attr(questid)}. You can see the results of this quest {time_left}. ' \
           f'You currently have a {chance}% of succeeding with your current gear. '

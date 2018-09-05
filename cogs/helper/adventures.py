@@ -127,7 +127,7 @@ def print_adventure(userid):
         time_string = 'soon'
     else:
         time_string = f'in {time_left} minutes'
-    out = adventures[adventureid](time_string, adventure[3:])
+    out = adventures[adventureid](userid, time_string, adventure[3:])
     return out
 
 

@@ -6,6 +6,7 @@ from cogs.helper import adventures as adv
 from cogs.helper import monsters as mon
 from cogs.helper import quests
 from cogs.helper import users
+from cogs.helper import items
 
 from cogs.helper.files import CLUES_DIRECTORY
 
@@ -153,7 +154,7 @@ def print_loot(loot, difficulty):
     return out
 
 
-def print_status(time_left, *args):
+def print_status(userid, time_left, *args):
     """Prints a clue scroll and how long until it is finished."""
     difficulty, length = args[0]
     out = f'{CLUE_HEADER}' \

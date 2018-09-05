@@ -6,6 +6,7 @@ from cogs.helper import adventures as adv
 from cogs.helper import items
 from cogs.helper import monsters as mon
 from cogs.helper import users
+from cogs.helper import prayer
 
 from cogs.helper.files import XP_FACTOR
 
@@ -15,7 +16,7 @@ SLAYER_HEADER = ':skull_crossbones: __**SLAYER**__ :skull_crossbones:\n'
 
 def calc_chance(userid, monsterid, number, remove_food=False):
     """Calculates the chance of success of a task."""
-
+    user_prayer = users.read_user(userid, key=users.PRAY_KEY)
     equipment = users.read_user(userid, key=users.EQUIPMENT_KEY)
     player_arm = users.get_equipment_stats(equipment)[2]
     monster_acc = mon.get_attr(monsterid, key=mon.ACCURACY_KEY)
@@ -40,7 +41,7 @@ def calc_chance(userid, monsterid, number, remove_food=False):
     c = 1 + monster_combat / 200
     d = 1 + player_combat / 99
     dam_multiplier = monster_base + monster_acc / 200
-    chance = round(min(100 * max(0, (2 * d * player_arm) / (number / 50 * monster_dam * dam_multiplier + c)), 100))
+    chance = (2 * d * player_arm) / (number / 50 * monster_dam * dam_multiplier + c)
     player_food = users.read_user(userid, key=users.FOOD_KEY)
     food_bonus = items.get_attr(player_food, key=items.EAT_KEY)
     if food_bonus > 0:
@@ -49,14 +50,25 @@ def calc_chance(userid, monsterid, number, remove_food=False):
         loot = num_food * [player_food]
         if remove_food:
             users.update_inventory(userid, loot, remove=True)
-    return chance
+    if 10 <= user_prayer <= 12:
+        monster_affinity = mon.get_attr(monsterid, key=mon.AFFINITY_KEY)
+        if monster_affinity == 0 and user_prayer == '12' or monster_affinity == 1 and user_prayer == '11'\
+                or monster_affinity == 2 and user_prayer == '10':
+            chance += prayer.get_attr(user_prayer, key=prayer.CHANCE_KEY)
+
+    if chance > 100:
+        chance = 100
+    if chance < 0:
+        chance = 0
+    return round(chance)
 
 
 def calc_length(userid, monsterid, number):
     """Calculates the length of a task."""
+    user_prayer = users.read_user(userid, key=users.PRAY_KEY)
     combat_level = users.xp_to_level(users.read_user(userid, key=users.COMBAT_XP_KEY))
     equipment = users.read_user(userid, key=users.EQUIPMENT_KEY)
-    player_dam, player_acc, player_arm = users.get_equipment_stats(equipment)
+    player_dam, player_acc, player_arm, player_pray = users.get_equipment_stats(equipment)
     monster_arm = mon.get_attr(monsterid, key=mon.ARMOUR_KEY)
     monster_xp = mon.get_attr(monsterid, key=mon.XP_KEY)
     monsters_fought = users.read_user(userid, key=users.MONSTERS_KEY)
@@ -91,6 +103,11 @@ def calc_length(userid, monsterid, number):
     dam_multiplier = 1 + player_acc / 200
     base_time = math.floor(number * monster_xp / 10) * time_bonus
     time = round(base_time * monster_arm * monster_base / (player_dam * dam_multiplier + c))
+
+    # prayer_time = prayer.calc_drain_time(userid, user_prayer)
+    # if prayer_time < time:
+    #    1 + prayer_time / time
+
     return base_time, time
 
 
@@ -98,7 +115,7 @@ def calc_number(userid, monsterid, time):
     """Calculates the number of monsters that can be killed in a given time period."""
     combat_level = users.xp_to_level(users.read_user(userid, key=users.COMBAT_XP_KEY))
     equipment = users.read_user(userid, key=users.EQUIPMENT_KEY)
-    player_dam, player_acc, player_arm = users.get_equipment_stats(equipment)
+    player_dam, player_acc, player_arm, player_pray = users.get_equipment_stats(equipment)
     monster_arm = mon.get_attr(monsterid, key=mon.ARMOUR_KEY)
     monster_xp = mon.get_attr(monsterid, key=mon.XP_KEY)
     if mon.get_attr(monsterid, key=mon.DRAGON_KEY) and '266' not in equipment:
@@ -201,6 +218,9 @@ def get_kill_result(person, *args):
 
     chance = calc_chance(person.id, monsterid, num_to_kill, remove_food=True)
     is_success = adv.is_success(chance)
+    if not is_success and users.read_user(person.id, users.PRAY_KEY) == '16' and random.randint(0, 1):
+        is_success = True
+
     factor *= 1 if is_success else int(chance) / 100
     factor *= items.get_luck_factor(person.id)
 
@@ -453,7 +473,7 @@ def print_loot(loot, person, monster_name, num_to_kill, add_mention=True):
 
 def print_chance(userid, monsterid, monster_dam=-1, monster_acc=-1, monster_arm=-1, monster_combat=-1, xp=-1, number=100, dragonfire=False):
     equipment = users.read_user(userid, key=users.EQUIPMENT_KEY)
-    player_dam, player_acc, player_arm = users.get_equipment_stats(equipment)
+    player_dam, player_acc, player_arm, player_pray = users.get_equipment_stats(equipment)
     player_combat = users.xp_to_level(users.read_user(userid, key=users.SLAYER_XP_KEY))
     if monster_dam == -1:
         monster_dam = mon.get_attr(monsterid, key=mon.DAMAGE_KEY)
@@ -480,8 +500,9 @@ def print_chance(userid, monsterid, monster_dam=-1, monster_acc=-1, monster_arm=
     return out
 
 
-def print_kill_status(time_left, *args):
+def print_kill_status(userid, time_left, *args):
     monsterid, monster_name, number, length, chance = args[0]
+    chance = calc_chance(userid, monsterid, num_to_kill)
     out = f'{SLAYER_HEADER}' \
           f'You are currently killing {mon.add_plural(number, monsterid, with_zero=True)} for {length} minutes. ' \
           f'You currently have a {chance}% chance of killing this many monsters without dying. ' \
@@ -489,8 +510,9 @@ def print_kill_status(time_left, *args):
     return out
 
 
-def print_status(time_left, *args):
+def print_status(userid, time_left, *args):
     monsterid, monster_name, num_to_kill, chance = args[0]
+    chance = calc_chance(userid, monsterid, num_to_kill)
     out = f'{SLAYER_HEADER}' \
           f'You are currently slaying {mon.add_plural(num_to_kill, monsterid, with_zero=True)}. ' \
           f'You can see the results of this slayer task {time_left}. ' \
@@ -498,8 +520,9 @@ def print_status(time_left, *args):
     return out
 
 
-def print_reaper_status(time_left, *args):
+def print_reaper_status(userid, time_left, *args):
     monsterid, monster_name, num_to_kill, chance = args[0]
+    chance = calc_chance(userid, monsterid, num_to_kill)
     out = f'{SLAYER_HEADER}' \
           f'You are currently on a reaper task of {mon.add_plural(num_to_kill, monsterid, with_zero=True)}. ' \
           f'You can see the results of this slayer task {time_left}. ' \
