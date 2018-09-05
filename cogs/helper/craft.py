@@ -280,7 +280,7 @@ def print_recipe(userid, recipe):
     return out
 
 
-def print_status(time_left, *args):
+def print_status(userid, time_left, *args):
     """Prints a gathering and how long until it is finished."""
     itemid, item_name, number, length = args[0]
     out = f'{GATHER_HEADER}' \

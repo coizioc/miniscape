@@ -114,13 +114,13 @@ def claim(userid, itemname, number):
             26: 16,
             27: 64,
             28: 128,
-            463: 1024,
-            465: 2048
+            463: 256,
+            465: 512
         }
         loot = []
         for _ in range(number):
             while True:
-                gem_type = random.choice(gems.keys(), 1)[0]
+                gem_type = random.sample(gems.keys(), 1)[0]
                 if random.randint(1, gems[gem_type]) == 1:
                     loot.append(gem_type)
                     break

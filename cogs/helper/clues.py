@@ -159,7 +159,7 @@ def print_loot(loot, difficulty):
     return out
 
 
-def print_status(time_left, *args):
+def print_status(userid, ime_left, *args):
     """Prints a clue scroll and how long until it is finished."""
     difficulty, length = args[0]
     out = f'{CLUE_HEADER}' \

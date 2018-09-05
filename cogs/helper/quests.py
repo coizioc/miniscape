@@ -244,8 +244,9 @@ def print_quest(questid, time, chance):
     return out
 
 
-def print_status(time_left, *args):
+def print_status(userid, time_left, *args):
     questid, chance = args[0]
+    chance = calc_chance(userid, questid)
     out = f'{QUEST_HEADER}' \
           f'You are already on the quest {get_attr(questid)}. You can see the results of this quest {time_left}. ' \
           f'You currently have a {chance}% of succeeding with your current gear. '

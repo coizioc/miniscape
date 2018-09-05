@@ -23,6 +23,12 @@ def calc_chance(userid, monsterid, number, remove_food=False):
     monster_combat = mon.get_attr(monsterid, key=mon.LEVEL_KEY)
     player_combat = users.xp_to_level(users.read_user(userid, key=users.SLAYER_XP_KEY))
     number = int(number)
+    monsters_fought = users.read_user(userid, key=users.MONSTERS_KEY)
+    if monsterid in monsters_fought.keys():
+        chance_bonus = 20 * min(monsters_fought[monsterid] / 5000, 1)
+    else:
+        chance_bonus = 0 
+
     if mon.get_attr(monsterid, key=mon.DRAGON_KEY):
         if equipment['7'] == '266' or equipment['7'] == '293':
             monster_base = 1
@@ -40,16 +46,21 @@ def calc_chance(userid, monsterid, number, remove_food=False):
     c = 1 + monster_combat / 200
     d = 1 + player_combat / 99
     dam_multiplier = monster_base + monster_acc / 200
-    chance = round(min(100 * max(0, (2 * d * player_arm) / (number / 50 * monster_dam * dam_multiplier + c)), 100))
+    chance = (200 * d * player_arm) / (number / 50 * monster_dam * dam_multiplier + c) + chance_bonus
     player_food = users.read_user(userid, key=users.FOOD_KEY)
-    food_bonus = items.get_attr(player_food, key=items.EAT_KEY)
-    if food_bonus > 0:
-        num_food = users.count_item_in_inventory(userid, player_food)
-        chance += food_bonus if num_food >= number else int(food_bonus * num_food / number)
-        loot = num_food * [player_food]
-        if remove_food:
-            users.update_inventory(userid, loot, remove=True)
-    return chance
+    if int(player_food) > -1:
+        food_bonus = items.get_attr(player_food, key=items.EAT_KEY)
+        if food_bonus > 0:
+            num_food = users.count_item_in_inventory(userid, player_food)
+            chance += food_bonus if num_food >= number else int(food_bonus * num_food / number)
+            loot = number * [player_food] if num_food >= number else num_food * [player_food]
+            if remove_food:
+                users.update_inventory(userid, loot, remove=True)
+    if chance > 100:
+        chance = 100
+    if chance < 0:
+        chance = 0
+    return round(chance)
 
 
 def calc_length(userid, monsterid, number):
@@ -194,16 +205,10 @@ def get_kill_result(person, *args):
         raise ValueError
     out = ''
     users.add_counter(person.id, monsterid, num_to_kill)
-    if mon.get_attr(monsterid, key=mon.SLAYER_KEY):
-        factor = 0.75
-    else:
-        factor = 1
-
     chance = calc_chance(person.id, monsterid, num_to_kill, remove_food=True)
     is_success = adv.is_success(chance)
-    factor *= 1 if is_success else int(chance) / 100
+    factor = 1 if is_success else int(chance) / 100
     factor *= items.get_luck_factor(person.id)
-
     loot = mon.get_loot(monsterid, int(num_to_kill), factor=factor)
     users.update_inventory(person.id, loot)
     out += print_loot(loot, person, monster_name, num_to_kill)
@@ -257,10 +262,9 @@ def get_result(person, *args):
     slayer_xp_formatted = '{:,}'.format(xp_gained)
     combat_xp_formatted = '{:,}'.format(round(0.7 * xp_gained))
 
-    out += f'\nYou have received {slayer_xp_formatted} slayer xp and {combat_xp_formatted} combat xp.\n'
     if not is_success:
-        out += f'You have received lower loot and experience because you have died.\n'
-    out += f'\nYou have also gained {slayer_xp_formatted} slayer xp and {combat_xp_formatted} combat xp. '
+        out += f'\nYou have received lower loot and experience because you have died. '
+    out += f'\nYou have gained {slayer_xp_formatted} slayer xp and {combat_xp_formatted} combat xp. '
     if cb_level_after > cb_level_before:
         out += f'In addition, you have gained {cb_level_after - cb_level_before} combat levels. '
     if slay_level_after > slay_level_before:
@@ -480,17 +484,19 @@ def print_chance(userid, monsterid, monster_dam=-1, monster_acc=-1, monster_arm=
     return out
 
 
-def print_kill_status(time_left, *args):
-    monsterid, monster_name, number, length, chance = args[0]
+def print_kill_status(userid, time_left, *args):
+    monsterid, monster_name, num_to_kill, length, chance = args[0]
+    chance = calc_chance(userid, monsterid, num_to_kill)
     out = f'{SLAYER_HEADER}' \
-          f'You are currently killing {mon.add_plural(number, monsterid, with_zero=True)} for {length} minutes. ' \
+          f'You are currently killing {mon.add_plural(num_to_kill, monsterid, with_zero=True)} for {length} minutes. ' \
           f'You currently have a {chance}% chance of killing this many monsters without dying. ' \
           f'You can see your loot {time_left}.'
     return out
 
 
-def print_status(time_left, *args):
+def print_status(userid, time_left, *args):
     monsterid, monster_name, num_to_kill, chance = args[0]
+    chance = calc_chance(userid, monsterid, num_to_kill)
     out = f'{SLAYER_HEADER}' \
           f'You are currently slaying {mon.add_plural(num_to_kill, monsterid, with_zero=True)}. ' \
           f'You can see the results of this slayer task {time_left}. ' \
@@ -498,8 +504,9 @@ def print_status(time_left, *args):
     return out
 
 
-def print_reaper_status(time_left, *args):
+def print_reaper_status(userid, time_left, *args):
     monsterid, monster_name, num_to_kill, chance = args[0]
+    chance = calc_chance(userid, monsterid, num_to_kill)
     out = f'{SLAYER_HEADER}' \
           f'You are currently on a reaper task of {mon.add_plural(num_to_kill, monsterid, with_zero=True)}. ' \
           f'You can see the results of this slayer task {time_left}. ' \
