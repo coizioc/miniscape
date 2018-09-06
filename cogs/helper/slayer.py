@@ -111,10 +111,12 @@ def calc_length(userid, monsterid, number):
     dam_multiplier = 1 + player_acc / 200
     base_time = math.floor(number * monster_xp / 10) * time_bonus
     time = round(base_time * monster_arm * monster_base / (player_dam * dam_multiplier + c))
-
-    # prayer_time = prayer.calc_drain_time(userid, user_prayer)
-    # if prayer_time < time:
-    #    1 + prayer_time / time
+    if user_prayer != -1:
+        prayer_time = prayer.calc_drain_time(userid, user_prayer)
+        if prayer_time < time:
+            time /= max(1, 1 + prayer_time / time)
+    # else:
+    #   time /= prayer_time
 
     return base_time, time
 
@@ -152,6 +154,8 @@ def calc_number(userid, monsterid, time):
 
     number = math.floor((10 * time * (player_dam * dam_multiplier + combat_level)) /
                         (monster_arm * monster_base * monster_xp))
+    if number < 0:
+        number = 0
     return number
 
 

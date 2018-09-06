@@ -68,21 +68,23 @@ def calc_chance(userid, questid, remove_food=False):
     dam_multiplier = monster_base + monster_acc / 200
 
     chance = (2 * d * player_arm) / (monster_dam * dam_multiplier + c)
-    player_food = users.read_user(userid, key=users.FOOD_KEY)
-    food_bonus = items.get_attr(player_food, key=items.EAT_KEY)
-    number = monster_combat / 100
-    if food_bonus > 0:
-        num_food = users.count_item_in_inventory(userid, player_food)
-        chance += food_bonus if num_food >= number else int(food_bonus * num_food / number)
-        loot = num_food * [player_food]
-        if remove_food:
-            users.update_inventory(userid, loot, remove=True)
+    
+    # player_food = users.read_user(userid, key=users.FOOD_KEY)
+    # if player_food != -1:
+    #     food_bonus = items.get_attr(player_food, key=items.EAT_KEY)
+    #     number = monster_combat / 100
+    #     if food_bonus > 0:
+    #         num_food = users.count_item_in_inventory(userid, player_food)
+    #         chance += food_bonus if num_food >= number else int(food_bonus * num_food / number)
+    #         loot = num_food * [player_food]
+    #         if remove_food:
+    #             users.update_inventory(userid, loot, remove=True)
 
     if chance > 100:
         chance = 100
     if chance < 0:
         chance = 0
-    return chance
+    return round(chance)
 
 
 def calc_length(userid, questid):

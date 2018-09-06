@@ -730,6 +730,7 @@ class Miniscape():
                 users.GATHER_XP_KEY: 'gather',
                 users.ARTISAN_XP_KEY: 'artisan',
                 users.COOK_XP_KEY: 'cooking',
+                users.PRAY_XP_KEY: 'prayer',
                 users.QUESTS_KEY: 'quest points',
                 'total': 'total level'
             }

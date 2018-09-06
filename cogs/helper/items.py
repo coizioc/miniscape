@@ -342,6 +342,7 @@ def print_stats(item):
     damage = get_attr(itemid, key=DAMAGE_KEY)
     accuracy = get_attr(itemid, key=ACCURACY_KEY)
     armour = get_attr(itemid, key=ARMOUR_KEY)
+    prayer = get_attr(itemid, key=PRAYER_KEY)
     slot = get_attr(itemid, key=SLOT_KEY)
     level = get_attr(itemid, key=LEVEL_KEY)
 
@@ -354,6 +355,7 @@ def print_stats(item):
         out += f'**Damage**: {damage}\n'
         out += f'**Accuracy**: {accuracy}\n'
         out += f'**Armour**: {armour}\n'
+        out += f'**Prayer Bonus**: {prayer}\n'
         out += f'**Slot**: {users.SLOTS[str(slot)].title()}\n'
         out += f'**Combat Requirement**: {level}\n'
     if get_attr(itemid, key=GATHER_KEY):

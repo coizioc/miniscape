@@ -71,9 +71,10 @@ def bury(userid, item, number):
 
 def calc_drain_time(userid, prayerid):
     """Calculates the effective drain rate of a prayer."""
-    equipment_prayer = users.get_equipment_stats(userid)[3]
-    user_potion = users.read_user(userid, key=users.EQUIPMENT_KEY)['15']
-    user_prayer = users.get_level(userid, key=users.PRAY_KEY)
+    user_equipment = users.read_user(userid, key=users.EQUIPMENT_KEY)
+    equipment_prayer = users.get_equipment_stats(user_equipment)[3]
+    user_potion = user_equipment['15']
+    user_prayer = users.get_level(userid, key=users.PRAY_XP_KEY)
     prayer_drain = get_attr(prayerid, key=DRAIN_KEY)
 
     if user_potion == '199':
@@ -82,7 +83,7 @@ def calc_drain_time(userid, prayerid):
         potion_base = 1
 
     base_time = float(36 / prayer_drain)
-    effective_time = 5 * user_prayer * base_time * potion_base * (1 + equipment_prayer / 30)
+    effective_time = 60 * user_prayer * base_time * potion_base * (1 + equipment_prayer / 30)
     return effective_time
 
 
