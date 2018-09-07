@@ -142,6 +142,7 @@ def claim(userid, itemname, number):
             skill = random.sample(users.SKILLS, 1)[0]
             skills[skill] += 1
         users.update_inventory(userid, number * ['371'])
+        users.update_inventory(userid, number * [itemid], remove=True)
         out += f"You have received the following xp from your {add_plural(number, '370')}!\n"
         for skill in skills.keys():
             xp_gained = skills[skill] * xp_per_effigy
