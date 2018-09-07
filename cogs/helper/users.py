@@ -15,7 +15,7 @@ XP = {}
 with open(XP_FILE, 'r') as f:
     for line in f.read().splitlines():
         line_split = line.split(';')
-        XP[line_split[0]] = line_split[1]
+        XP[line_split[0]] = int(line_split[1])
 
 SLOTS = {}
 with open(ARMOUR_SLOTS_FILE, 'r') as f:
@@ -95,11 +95,16 @@ def calc_xp_to_level(userid, skill, level):
     if level is None:
         level = get_level(userid, key=skill) + 1
 
-    if level >= 99:
+    if level > 99:
         return f'You have already attained the maximum level in this skill.'
 
     current_xp = read_user(userid, key=skill)
-    xp_needed = XP[level] - current_xp
+    for xp_value in XP.keys():
+        if XP[xp_value] == level:
+            xp_needed = int(xp_value) - current_xp
+            break
+    else:
+        raise KeyError
     xp_formatted = '{:,}'.format(xp_needed)
 
     out = f'You need {xp_formatted} xp to get level {level} in {skill}.'
