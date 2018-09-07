@@ -47,17 +47,16 @@ def get_clue_scroll(person, *args):
     except ValueError as e:
         print(e)
         raise ValueError
-    print('in get_clue_scroll')
+
     difficulty = int(difficulty)
     loot = get_loot(difficulty)
     users.update_inventory(person.id, loot)
-    print(1)
+
     users.add_counter(person.id, str(difficulty), 1, key=users.CLUES_KEY)
     out = f'{CLUE_HEADER}' \
           f'{person.mention}, you have finished your {DIFFICULTY[int(difficulty)]} clue scroll! ' \
           f'You have received the following items:\n'
     out += print_loot(loot, difficulty)
-    print(2)
     return out
 
 

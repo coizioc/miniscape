@@ -2,7 +2,7 @@ import random
 import ujson
 from collections import Counter
 
-from cogs.helper import items, users
+from cogs.helper import items, users, quests
 
 from cogs.helper.files import MONSTERS_JSON, MONSTER_DIRECTORY
 
@@ -242,6 +242,9 @@ def print_monster(monster):
 
     if len(aliases) > 0:
         out += f'**Aliases**: {aliases}\n'
+    quest_req = get_attr(monsterid, key=QUEST_REQ_KEY)
+    if quest_req > -1:
+        out += f'**Quest Requirement: {quests.get_attr(quest_req)}\n'
     slayer_req = get_attr(monsterid, key=SLAYER_REQ_KEY)
     if slayer_req > 1:
         out += f'**Slayer Requirement**: {slayer_req}\n'

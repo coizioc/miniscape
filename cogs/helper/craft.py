@@ -285,7 +285,8 @@ def print_recipe(userid, recipe):
 
     out = f'{CRAFT_HEADER}'\
           f'**Name**: {items.get_attr(recipeid).title()}\n'\
-          f'**Artisan Requirement**: {get_attr(recipeid, key=ARTISAN_REQ_KEY)}\n\n'\
+          f'**Artisan Requirement**: {get_attr(recipeid, key=ARTISAN_REQ_KEY)}\n'\
+          f'**XP Per Item**: {items.get_attr(recipeid, key=items.XP_KEY)}'\
           f'**Inputs**:\n'
     inputs = get_attr(recipeid, key=INPUTS_KEY)
     for inputid in list(inputs.keys()):
