@@ -111,7 +111,6 @@ def get_loot_table(monsterid):
 def get_loot(monsterid, num_to_kill, factor=1):
     """Generates a Counter from a number of killed monsters given its id."""
     loot_table = get_loot_table(monsterid)
-    max_rarity = get_max_rarity(loot_table)
     num_to_kill = int(num_to_kill)
     loot = []
     for key in loot_table.keys():

@@ -45,12 +45,17 @@ def cook(userid, food, n=1):
 
     burn_chance = calc_burn(userid, foodid)
     num_cooked = 0
+    bonus = 0
     if burn_chance == 0:
         num_cooked = n
     else:
         for _ in range(n):
             if random.randint(1, 100) > burn_chance:
                 num_cooked += 1
+    if cooking_level == 99:
+        for _ in range(n):
+            if random.randint(1, 20) == 1:
+                bonus += 1
 
     inputs = get_attr(foodid)
     food_input = []
@@ -70,8 +75,10 @@ def cook(userid, food, n=1):
 
     xp_formatted = '{:,}'.format(xp)
     out = f'After cooking {items.add_plural(n, foodid)}, you successfully cook ' \
-          f'{num_cooked} and burn {n - num_cooked}! ' \
-          f'You have also gained {xp_formatted} cooking xp! '
+          f'{num_cooked} and burn {n - num_cooked}! '
+    if bonus > 0:
+        out += f'Due to your cooking perk, you have also cooked an additional {bonus} {items.add_plural(n, foodid)}! '
+    out += f'You have also gained {xp_formatted} cooking xp! '
     if level_after > cooking_level:
         out += f'You have also gained {level_after - cooking_level} cooking levels!'
     return out
@@ -126,7 +133,7 @@ def craft(userid, recipe, n=1):
 
 def calc_burn(userid, itemid):
     """Calculates the burn chance for a given food."""
-    cook_level = users.read_user(userid, key=users.COOK_XP_KEY)
+    cook_level = users.get_level(userid, key=users.COOK_XP_KEY)
     cook_req = items.get_attr(itemid, key=items.COOK_KEY)
     equipment = users.read_user(userid, key=users.EQUIPMENT_KEY)
     c = 10 if equipment['9'] == '493' else 0

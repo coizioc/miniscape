@@ -87,6 +87,25 @@ def backup():
         shutil.copy(f'{USER_DIRECTORY}{file}', destination)
 
 
+def calc_xp_to_level(userid, skill, level):
+    """Calculates the xp needed to get to a level."""
+    if skill not in SKILLS:
+        return f'{skill} is not a skill.'
+
+    if level is None:
+        level = get_level(userid, key=skill) + 1
+
+    if level >= 99:
+        return f'You have already attained the maximum level in this skill.'
+
+    current_xp = read_user(userid, key=skill)
+    xp_needed = XP[level] - current_xp
+    xp_formatted = '{:,}'.format(xp_needed)
+
+    out = f'You need {xp_formatted} xp to get level {level} in {skill}.'
+    return out
+
+
 def clear_inventory(userid, under=None):
     """Removes all items (with value) in an account's inventory."""
     if under is not None:

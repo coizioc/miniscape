@@ -160,6 +160,19 @@ class Miniscape():
             await ctx.send(users.print_account(member.id, name))
 
     @commands.command()
+    async def tolevel(self, ctx, *args):
+        """Shows the user how much xp they need to get to a (specified) level."""
+        if ctx.channel.id == BANK_CHANNEL or ctx.channel.id in GENERAL_CHANNELS:
+            if args[0].isdigit():
+                level = int(args[0])
+                skill = ' '.join(args[1:])
+            else:
+                level = None
+                skill = ' '.join(args)
+            out = users.calc_xp_to_level(ctx.author.id, skill, level)
+            await ctx.send(out)
+
+    @commands.command()
     async def eat(self, ctx, *args):
         """Sets a food to eat during adventures."""
         if ctx.channel.id == BANK_CHANNEL or ctx.channel.id in GENERAL_CHANNELS:
