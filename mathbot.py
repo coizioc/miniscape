@@ -12,7 +12,7 @@ def extensions_generator():
     cog_path = "./cogs"
     do_not_use = ["__init__.py", "__pycache__", 'cap.py', 'pet.py', 'reddit.py', 'rs.py',
                   'solver.py', 'stats.py', 'telos.py', "memers.py", 'resources']
-    do_use = ['miniscape.py', 'others.py']
+    do_use = ['miniscape.py', 'other.py']
     for cog in os.listdir(cog_path):
         if cog in do_use:
             yield f"cogs.{cog[:-3]}"
