@@ -394,8 +394,9 @@ def print_account(userid, nickname, printequipment=True):
 
     if total < 99 * len(SKILLS):
         for itemid in read_user(userid, key=EQUIPMENT_KEY).values():
-            if items.get_attr(itemid, key=items.MAX_KEY):
-                unequip_item(userid, itemid, isitemid=True)
+            if itemid != -1:
+                if items.get_attr(itemid, key=items.MAX_KEY):
+                    unequip_item(userid, itemid, isitemid=True)
     if printequipment:
         out += print_equipment(userid)
 
