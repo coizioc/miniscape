@@ -244,7 +244,7 @@ def print_monster(monster):
         out += f'**Aliases**: {aliases}\n'
     quest_req = get_attr(monsterid, key=QUEST_REQ_KEY)
     if quest_req > -1:
-        out += f'**Quest Requirement: {quests.get_attr(quest_req)}\n'
+        out += f'**Quest Requirement**: {quests.get_attr(quest_req)}\n'
     slayer_req = get_attr(monsterid, key=SLAYER_REQ_KEY)
     if slayer_req > 1:
         out += f'**Slayer Requirement**: {slayer_req}\n'

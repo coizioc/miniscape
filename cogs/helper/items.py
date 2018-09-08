@@ -33,6 +33,7 @@ FISH_KEY = 'fish'           # Boolean whether gatherable is a fish.
 POT_KEY = 'potion'          # Boolean whether consumable is a potion.
 COOK_KEY = 'cook'           # Boolean whether item can be cooked.
 BURY_KEY = 'bury'           # Boolean whether item can be buried.
+MAX_KEY = 'max'		    # Boolean whether max skill total is a req to wear item.
 EAT_KEY = 'eat'             # Int representing chance improvement by item when set as food.
 LUCK_KEY = 'luck'           # float representing factor of luck enhancement
 DEFAULT_ITEM = {NAME_KEY: 'unknown item',
@@ -55,6 +56,7 @@ DEFAULT_ITEM = {NAME_KEY: 'unknown item',
                 POT_KEY: False,
                 COOK_KEY: False,
                 BURY_KEY: False,
+                MAX_KEY: False,
                 EAT_KEY: 0,
                 LUCK_KEY: 1
                 }

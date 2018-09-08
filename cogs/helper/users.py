@@ -157,6 +157,10 @@ def equip_item(userid, item):
         if item_in_inventory(userid, itemid):
             slot = str(items.get_attr(itemid, key=items.SLOT_KEY))
             if int(slot) > 0:
+                if items.get_attr(itemid, key=items.MAX_KEY):
+                    total = get_total_level(userid)
+                    if total != 99 * len(SKILLS):
+                        return f"You cannot equip this item since you do not have {99 * len(SKILLS)} skill total."
                 equipment = read_user(userid, key=EQUIPMENT_KEY)
                 if slot not in equipment.keys() or equipment[slot] == -1:
                     equipment[slot] = itemid
@@ -174,13 +178,16 @@ def equip_item(userid, item):
         return f'Error: Insufficient level to equip item ({item_level}). Your current combat level is {user_cb_level}.'
 
 
-def unequip_item(userid, item):
+def unequip_item(userid, item, isitemid=False):
     """Takes an item out of a user's equipment and places it into their inventory."""
-    try:
-        itemid = items.find_by_name(item)
-    except KeyError:
-        return f'Error: {item} does not exist.'
-
+    if isitemid == False:
+        try:
+            itemid = items.find_by_name(item)
+        except KeyError:
+            return f'Error: {item} does not exist.'
+    else:
+        itemid=item
+    
     item_name = items.get_attr(itemid)
     equipment = read_user(userid, key=EQUIPMENT_KEY)
     if itemid in equipment.values():
@@ -385,6 +392,10 @@ def print_account(userid, nickname, printequipment=True):
     out += f'**Skill Total**: {total}/{len(SKILLS) * 99}\n\n'
     out += f'**Quests Completed**: {len(get_completed_quests(userid))}/{len(quests.QUESTS.keys())}\n\n'
 
+    if total < 99 * len(SKILLS):
+        for itemid in read_user(userid, key=EQUIPMENT_KEY).values():
+            if items.get_attr(itemid, key=items.MAX_KEY):
+                unequip_item(userid, itemid, isitemid=True)
     if printequipment:
         out += print_equipment(userid)
 
