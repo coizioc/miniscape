@@ -602,6 +602,32 @@ class Miniscape():
                 await msg.edit(content=f'Your request has timed out. Please retype the command to try again.')
                 return
 
+    @commands.command()
+    async def deironman(self, ctx):
+        """Lets a user become an normal user."""
+        out = ':tools: __**IRONMAN**__ :tools:\n' \
+              'If you want to remove your ironman status, please react to this post with a :thumbsup:. ' \
+              'This will keep your account the same as it is right now, but you will be able to trade with others. ' \
+              'If you want to re-ironman, you can type `~ironman`, but you will have to reset your account.'
+        msg = await ctx.send(out)
+        await msg.add_reaction('\N{THUMBS UP SIGN}')
+
+        while True:
+            try:
+                reaction, user = await self.bot.wait_for('reaction_add', timeout=60)
+                if str(reaction.emoji) == '👍' and user == ctx.author and reaction.message.id == msg.id:
+                    users.reset_account(ctx.author.id)
+                    users.update_user(ctx.author.id, False, key=users.IRONMAN_KEY)
+                    ironman_role = discord.utils.get(ctx.guild.roles, name="Ironman")
+                    await ctx.author.remove_roles(ironman_role, reason="Bot mute ended.")
+                    name = get_display_name(ctx.author)
+                    await msg.edit(content=f':tools: __**IRONMAN**__ :tools:\nCongratulations, {name}, you are now '
+                                           'a normal user.!')
+                    return
+            except asyncio.TimeoutError:
+                await msg.edit(content=f'Your request has timed out. Please retype the command to try again.')
+                return
+
     @commands.group(invoke_without_command=True, aliases=['quest'])
     async def quests(self, ctx, questid=None):
         if ctx.channel.id == ADVENTURES_CHANNEL or ctx.channel.id in GENERAL_CHANNELS:
