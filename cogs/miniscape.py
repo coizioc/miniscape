@@ -616,13 +616,12 @@ class Miniscape():
             try:
                 reaction, user = await self.bot.wait_for('reaction_add', timeout=60)
                 if str(reaction.emoji) == '👍' and user == ctx.author and reaction.message.id == msg.id:
-                    users.reset_account(ctx.author.id)
                     users.update_user(ctx.author.id, False, key=users.IRONMAN_KEY)
                     ironman_role = discord.utils.get(ctx.guild.roles, name="Ironman")
                     await ctx.author.remove_roles(ironman_role, reason="Bot mute ended.")
                     name = get_display_name(ctx.author)
                     await msg.edit(content=f':tools: __**IRONMAN**__ :tools:\nCongratulations, {name}, you are now '
-                                           'a normal user.!')
+                                           'a normal user!')
                     return
             except asyncio.TimeoutError:
                 await msg.edit(content=f'Your request has timed out. Please retype the command to try again.')
@@ -873,8 +872,12 @@ class Miniscape():
         """Check if any actions are complete and notifies the user if they are done."""
         await self.bot.wait_until_ready()
         while not self.bot.is_closed():
+            with open('./resources/debug.txt', 'w+') as f:
+                f.write(f'Bot check at {datetime.datetime.now()}:\n')
             finished_tasks = adv.get_finished()
             for task in finished_tasks:
+                with open('./resources/debug.txt', 'a+') as f:
+                    f.write(task + '\n')
                 with open('./resources/finished_tasks.txt', 'a+') as f:
                     f.write(';'.join(task) + '\n')
                 adventureid, userid = int(task[0]), int(task[1])
@@ -889,7 +892,11 @@ class Miniscape():
                     4: clues.get_clue_scroll,
                     5: slayer.get_reaper_result
                 }
-                out = adventures[adventureid](person, task[3:])
+                try:
+                    out = adventures[adventureid](person, task[3:])
+                except Exception as e:
+                    with open('./resources/debug.txt', 'a+') as f:
+                        f.write(e + '\n')
                 await bot_self.send(out)
             await asyncio.sleep(60)
 
