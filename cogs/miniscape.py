@@ -846,7 +846,7 @@ class Miniscape():
                                 name = f'User {user_id}'
                             out += f'**({1 + i}) {name}**: '
                             if key == users.ITEMS_KEY:
-                                out += f'{amount_formatted}  coins\n'
+                                out += f'{amount_formatted} coins\n'
                             elif key == users.QUESTS_KEY:
                                 out += f'{amount_formatted} quests\n'
                             elif key == 'total':
@@ -875,9 +875,10 @@ class Miniscape():
             finished_tasks = adv.get_finished()
             for task in finished_tasks:
                 with open('./resources/debug.txt', 'a+') as f:
-                    f.write(task + '\n')
+                    f.write(';'.join(task) + '\n')
                 with open('./resources/finished_tasks.txt', 'a+') as f:
                     f.write(';'.join(task) + '\n')
+
                 adventureid, userid = int(task[0]), int(task[1])
                 bot_self = self.bot.get_guild(config.guild_id).get_channel(NOTIFICATIONS_CHANNEL)
                 person = self.bot.get_guild(config.guild_id).get_member(int(userid))
@@ -892,10 +893,10 @@ class Miniscape():
                 }
                 try:
                     out = adventures[adventureid](person, task[3:])
+                    await bot_self.send(out)
                 except Exception as e:
                     with open('./resources/debug.txt', 'a+') as f:
-                        f.write(e + '\n')
-                await bot_self.send(out)
+                        f.write(f'{e}\n')
             await asyncio.sleep(60)
 
 
