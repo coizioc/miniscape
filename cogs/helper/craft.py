@@ -247,6 +247,22 @@ def get_gather(person, *args):
     return out
 
 
+def get_gather_list():
+    """Gets list of all gatherable items."""
+    gatherables = []
+    for itemid in items.ITEMS.keys():
+        if items.get_attr(itemid, key=items.GATHER_KEY)
+            gatherables.append((items.get_attr(itemid, key=items.LEVEL_KEY), itemid))
+    messages = []
+    out = GATHER_HEADER
+    for level, itemid in sorted(gatherables):
+        out += f'**{items.get_attr(itemid)}** *(level {level})*\n'
+        if len(out) > 1800:
+            messages.append(out)
+            out = GATHER_HEADER
+    return messages
+
+
 def get_quest_recipes(questid):
     quest_recipes = []
     for recipeid in RECIPES.keys():
