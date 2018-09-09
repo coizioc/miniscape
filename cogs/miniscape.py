@@ -660,13 +660,11 @@ class Miniscape():
                     out = craft.start_gather(ctx.author.id, item, length=length)
                 else:
                     out = 'Error: there must be a number or length of gathering in args.'
-
+                await ctx.send(out)
             else:
-                if adv.is_on_adventure(ctx.author.id):
-                    out = slayer.get_kill(ctx.author.id, 'GET_UPDATE')
-                else:
-                    out = 'args not valid. Please put in the form `[number] [item name] [length]`'
-            await ctx.send(out)
+                messages = craft.get_gather_list()
+                for messages in messages:
+                    await ctx.send(messages)
 
     @commands.group(invoke_without_command=True, aliases=['recipe'])
     async def recipes(self, ctx, *args):
@@ -872,7 +870,7 @@ class Miniscape():
         """Check if any actions are complete and notifies the user if they are done."""
         await self.bot.wait_until_ready()
         while not self.bot.is_closed():
-            with open('./resources/debug.txt', 'w+') as f:
+            with open('./resources/debug.txt', 'a+') as f:
                 f.write(f'Bot check at {datetime.datetime.now()}:\n')
             finished_tasks = adv.get_finished()
             for task in finished_tasks:

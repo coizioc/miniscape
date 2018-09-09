@@ -251,7 +251,7 @@ def get_gather_list():
     """Gets list of all gatherable items."""
     gatherables = []
     for itemid in items.ITEMS.keys():
-        if items.get_attr(itemid, key=items.GATHER_KEY)
+        if items.get_attr(itemid, key=items.GATHER_KEY):
             gatherables.append((items.get_attr(itemid, key=items.LEVEL_KEY), itemid))
     messages = []
     out = GATHER_HEADER
