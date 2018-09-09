@@ -256,10 +256,11 @@ def get_gather_list():
     messages = []
     out = GATHER_HEADER
     for level, itemid in sorted(gatherables):
-        out += f'**{items.get_attr(itemid)}** *(level {level})*\n'
+        out += f'**{items.get_attr(itemid).title()}** *(level: {level}, xp: {items.get_attr(itemid, key=items.XP_KEY)})*\n'
         if len(out) > 1800:
             messages.append(out)
             out = GATHER_HEADER
+    messages.append(out)
     return messages
 
 

@@ -663,8 +663,8 @@ class Miniscape():
                 await ctx.send(out)
             else:
                 messages = craft.get_gather_list()
-                for messages in messages:
-                    await ctx.send(messages)
+                for message in messages:
+                    await ctx.send(message)
 
     @commands.group(invoke_without_command=True, aliases=['recipe'])
     async def recipes(self, ctx, *args):
