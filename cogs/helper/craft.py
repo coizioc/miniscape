@@ -77,7 +77,7 @@ def cook(userid, food, n=1):
     out = f'After cooking {items.add_plural(n, foodid)}, you successfully cook ' \
           f'{num_cooked} and burn {n - num_cooked}! '
     if bonus > 0:
-        out += f'Due to your cooking perk, you have also cooked an additional {bonus} {items.add_plural(n, foodid)}! '
+        out += f'Due to your cooking perk, you have also cooked an additional {bonus} {items.add_plural(bonus, foodid)}! '
     out += f'You have also gained {xp_formatted} cooking xp! '
     if level_after > cooking_level:
         out += f'You have also gained {level_after - cooking_level} cooking levels!'
@@ -304,7 +304,7 @@ def print_recipe(userid, recipe):
     out = f'{CRAFT_HEADER}'\
           f'**Name**: {items.get_attr(recipeid).title()}\n'\
           f'**Artisan Requirement**: {get_attr(recipeid, key=ARTISAN_REQ_KEY)}\n'\
-          f'**XP Per Item**: {items.get_attr(recipeid, key=items.XP_KEY)}'\
+          f'**XP Per Item**: {items.get_attr(recipeid, key=items.XP_KEY)}\n'\
           f'**Inputs**:\n'
     inputs = get_attr(recipeid, key=INPUTS_KEY)
     for inputid in list(inputs.keys()):
