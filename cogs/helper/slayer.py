@@ -30,6 +30,9 @@ def calc_chance(userid, monsterid, number, remove_food=False):
     else:
         chance_bonus = 0
 
+    if user_prayer != -1:
+        player_dam, player_acc, player_arm = prayer.calc_pray_bonus(userid)
+
     if mon.get_attr(monsterid, key=mon.DRAGON_KEY):
         if equipment['7'] == '266' or equipment['7'] == '293':
             monster_base = 1
@@ -85,6 +88,9 @@ def calc_length(userid, monsterid, number):
     else:
         time_bonus = 1
 
+    if user_prayer != -1:
+        player_dam, player_acc, player_arm = prayer.calc_pray_bonus(userid)
+
     if mon.get_attr(monsterid, key=mon.DRAGON_KEY) == 1:
         if equipment['7'] == '266' or equipment['7'] == '293':
             monster_base = 1
@@ -111,12 +117,6 @@ def calc_length(userid, monsterid, number):
     dam_multiplier = 1 + player_acc / 200
     base_time = math.floor(number * monster_xp / 10) * time_bonus
     time = round(base_time * monster_arm * monster_base / (player_dam * dam_multiplier + c))
-    if user_prayer != -1:
-        prayer_time = prayer.calc_drain_time(userid, user_prayer)
-        if prayer_time < time:
-            time /= max(1, 1 + prayer_time / time)
-    # else:
-    #   time /= prayer_time
 
     return base_time, time
 
