@@ -48,7 +48,7 @@ QUEST_HEADER = ':crossed_swords: __**QUESTS**__ :shield:\n'
 
 def calc_chance(userid, questid, remove_food=False):
     """Calculates the chance of success of a quest."""
-    user_prayer = users.read_user(userid, key=users.PRAY_KEY)
+    # user_prayer = users.read_user(userid, key=users.PRAY_KEY)
     equipment = users.read_user(userid, key=users.EQUIPMENT_KEY)
     player_arm = users.get_equipment_stats(equipment)[2]
     monster_acc = get_attr(questid, key=ACCURACY_KEY)
@@ -67,20 +67,20 @@ def calc_chance(userid, questid, remove_food=False):
     d = player_combat / 200
     dam_multiplier = monster_base + monster_acc / 200
 
-    chance = (2 * d * player_arm) / (monster_dam * dam_multiplier + c)
+    chance = 100 * (2 * d * player_arm) / (monster_dam * dam_multiplier + c)
     
-    # player_food = users.read_user(userid, key=users.FOOD_KEY)
-    # if player_food != -1:
-    #     food_bonus = items.get_attr(player_food, key=items.EAT_KEY)
-    #     number = monster_combat / 100
-    #     if food_bonus > 0:
-    #         num_food = users.count_item_in_inventory(userid, player_food)
-    #         chance += food_bonus if num_food >= number else int(food_bonus * num_food / number)
-    #         loot = num_food * [player_food]
-    #         if remove_food:
-    #             users.update_inventory(userid, loot, remove=True)
+    player_food = users.read_user(userid, key=users.FOOD_KEY)
+    if player_food != -1:
+        food_bonus = items.get_attr(player_food, key=items.EAT_KEY)
+        number = monster_combat / 100
+        if food_bonus > 0:
+            num_food = users.count_item_in_inventory(userid, player_food)
+            chance += food_bonus if num_food >= number else int(food_bonus * num_food / number)
+            loot = num_food * [player_food]
+            if remove_food:
+                users.update_inventory(userid, loot, remove=True)
 
-    if chance > 100:
+    if chance > 100 or monster_dam == 1:
         chance = 100
     if chance < 0:
         chance = 0
@@ -148,7 +148,7 @@ def get_result(person, *args):
         raise ValueError
 
     out = f'{QUEST_HEADER}**{person.mention}, here is the result of your quest, {get_attr(questid)}**:\n'
-    if adv.is_success(calc_chance(person.id, questid)):
+    if adv.is_success(calc_chance(person.id, questid, remove_food=True)):
         out += f'*{get_attr(questid, key=SUCCESS_KEY)}*\n\n'
 
         reward = get_attr(questid, key=REWARD_KEY)
