@@ -74,9 +74,9 @@ def calc_pray_bonus(userid, userprayer=None):
         userprayer = users.read_user(userid, key=users.PRAY_KEY)
     player_dam, player_acc, player_arm, player_pray = \
         users.get_equipment_stats(users.read_user(userid, key=users.EQUIPMENT_KEY))
-    player_dam *= 1 + get_attr(userprayer, key=DAMAGE_KEY) / 100.0
-    player_acc *= 1 + get_attr(userprayer, key=ACCURACY_KEY) / 100.0
-    player_arm *= 1 + get_attr(userprayer, key=ARMOUR_KEY) / 100.0
+    player_dam *= 1 + get_attr(userprayer, key=DAMAGE_KEY) / 50.0
+    player_acc *= 1 + get_attr(userprayer, key=ACCURACY_KEY) / 50.0
+    player_arm *= 1 + get_attr(userprayer, key=ARMOUR_KEY) / 50.0
     return player_dam, player_acc, player_arm
 
 
