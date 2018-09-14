@@ -160,7 +160,7 @@ def calc_length(userid, itemid, number):
         else:
             item_multiplier = 10
     elif items.get_attr(itemid, key=items.FISH_KEY):
-        if int(equipment['5']) == 555:
+        if int(equipment['5']) == 573:
             item_multiplier = 1.3
         else:
             item_multiplier = 2
