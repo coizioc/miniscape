@@ -303,7 +303,6 @@ def get_runecraft(person, *args):
     if rc_level_after > rc_level_before:
         out += f'In addition, you have gained {rc_level_after - rc_level_before} runecrafting levels!'
     users.remove_potion(person.id)
-    print('done')
     return out
 
 
