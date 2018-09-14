@@ -378,6 +378,9 @@ class Miniscape():
             elif adventureid == '5':
                 adv.remove(ctx.author.id)
                 out = 'Reaper task cancelled!'
+            elif adventureid == '6':
+                adv.remove(ctx.author.id)
+                out = 'Runecrafting session cancelled!'
             else:
                 out = f'Error: Invalid Adventure ID {adventureid}'
 
