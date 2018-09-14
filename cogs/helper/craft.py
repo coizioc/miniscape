@@ -282,25 +282,28 @@ def get_runecraft(person, *args):
     """Gets the result of a runecrafting session."""
     try:
         itemid, item_name, number, length = args[0]
+        number = int(number)
     except ValueError as e:
         print(e)
         raise ValueError
-    gather_level_before = users.xp_to_level(users.read_user(person.id, users.RC_XP_KEY))
+
+    rc_level_before = users.xp_to_level(users.read_user(person.id, users.RC_XP_KEY))
     rc_req = items.get_attr(itemid, key=items.LEVEL_KEY)
-    loot = int(number) * (1 + (gather_level_before - rc_req) / 20) * [itemid]
-    xp = XP_FACTOR * int(number) * items.get_attr(itemid, key=items.XP_KEY)
+    loot = int(number * (1 + (rc_level_before - rc_req) / 20)) * [itemid]
+    xp = XP_FACTOR * number * items.get_attr(itemid, key=items.XP_KEY)
     users.update_inventory(person.id, loot)
 
     users.update_user(person.id, xp, key=users.RC_XP_KEY)
-    gather_level_after = users.xp_to_level(users.read_user(person.id, users.RC_XP_KEY))
+    rc_level_after = users.xp_to_level(users.read_user(person.id, users.RC_XP_KEY))
 
     xp_formatted = '{:,}'.format(xp)
     out = f'{GATHER_HEADER}' \
           f'{person.mention}, your runecrafting session has finished! You have crafted ' \
           f'{items.add_plural(number, itemid)} and have gained {xp_formatted} runecrafting xp! '
-    if gather_level_after > gather_level_before:
-        out += f'In addition, you have gained {gather_level_after - gather_level_before} runecrafting levels!'
+    if rc_level_after > rc_level_before:
+        out += f'In addition, you have gained {rc_level_after - rc_level_before} runecrafting levels!'
     users.remove_potion(person.id)
+    print('done')
     return out
 
 
@@ -438,7 +441,7 @@ def start_runecraft(userid, item, number=1):
         if not items.get_attr(itemid, key=items.RUNE_KEY):
             return f'{items.get_attr(itemid)} is not a rune that can be crafted.'
 
-        talismanid = items.get_attr(itemid, key=items.TALISMAN_KEY)
+        talismanid = str(items.get_attr(itemid, key=items.TALISMAN_KEY))
         if not users.item_in_inventory(userid, talismanid, 1):
             return f'{items.get_attr(talismanid)} not found in inventory.'
 
