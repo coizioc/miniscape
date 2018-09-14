@@ -55,6 +55,13 @@ RARITY_NAMES = {
         8192: 'super duper rare'
     }
 
+AFFINITIES = {
+    0: "Melee",
+    1: "Range",
+    2: "Magic",
+    3: "None"
+}
+
 
 def add_plural(number, monsterid, with_zero=False):
     if int(number) > 0 or with_zero:
@@ -249,12 +256,13 @@ def print_monster(monster):
     if slayer_req > 1:
         out += f'**Slayer Requirement**: {slayer_req}\n'
 
-    out += f'**Level**: {MONSTERS[monsterid][LEVEL_KEY]}\n'\
-           f'**Accuracy**: {MONSTERS[monsterid][ACCURACY_KEY]}\n'\
-           f'**Damage**: {MONSTERS[monsterid][DAMAGE_KEY]}\n'\
-           f'**Armour**: {MONSTERS[monsterid][ARMOUR_KEY]}\n'\
-           f'**XP**: {MONSTERS[monsterid][XP_KEY]}\n\n'\
-           f'**Loot Table**:\n'
+    out += f'**Level**: {MONSTERS[monsterid][LEVEL_KEY]}\n'
+    out += f'**Accuracy**: {MONSTERS[monsterid][ACCURACY_KEY]}\n'
+    out += f'**Damage**: {MONSTERS[monsterid][DAMAGE_KEY]}\n'
+    out += f'**Armour**: {MONSTERS[monsterid][ARMOUR_KEY]}\n'
+    out += f'**Affinity**: {AFFINITIES[MONSTERS[monsterid][AFFINITY_KEY]]}\n'
+    out += f'**XP**: {MONSTERS[monsterid][XP_KEY]}\n\n'
+    out += f'**Loot Table**:\n'
 
     loottable = get_loot_table(monsterid)
 

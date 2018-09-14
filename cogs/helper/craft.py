@@ -77,7 +77,7 @@ def cook(userid, food, n=1):
     out = f'After cooking {items.add_plural(n, foodid)}, you successfully cook ' \
           f'{num_cooked} and burn {n - num_cooked}! '
     if bonus > 0:
-        out += f'Due to your cooking perk, you have also cooked an additional {bonus} {items.add_plural(bonus, foodid)}! '
+        out += f'Due to your cooking perk, you have also cooked an additional {items.add_plural(bonus, foodid)}! '
     out += f'You have also gained {xp_formatted} cooking xp! '
     if level_after > cooking_level:
         out += f'You have also gained {level_after - cooking_level} cooking levels!'
@@ -278,6 +278,32 @@ def get_quest_recipes(questid):
     return quest_recipes
 
 
+def get_runecraft(person, *args):
+    """Gets the result of a runecrafting session."""
+    try:
+        itemid, item_name, number, length = args[0]
+    except ValueError as e:
+        print(e)
+        raise ValueError
+    gather_level_before = users.xp_to_level(users.read_user(person.id, users.RC_XP_KEY))
+    rc_req = items.get_attr(itemid, key=items.LEVEL_KEY)
+    loot = int(number) * (1 + (gather_level_before - rc_req) / 20) * [itemid]
+    xp = XP_FACTOR * int(number) * items.get_attr(itemid, key=items.XP_KEY)
+    users.update_inventory(person.id, loot)
+
+    users.update_user(person.id, xp, key=users.RC_XP_KEY)
+    gather_level_after = users.xp_to_level(users.read_user(person.id, users.RC_XP_KEY))
+
+    xp_formatted = '{:,}'.format(xp)
+    out = f'{GATHER_HEADER}' \
+          f'{person.mention}, your runecrafting session has finished! You have crafted ' \
+          f'{items.add_plural(number, itemid)} and have gained {xp_formatted} runecrafting xp! '
+    if gather_level_after > gather_level_before:
+        out += f'In addition, you have gained {gather_level_after - gather_level_before} runecrafting levels!'
+    users.remove_potion(person.id)
+    return out
+
+
 def print_list(userid, search):
     """Prints a list of the recipes a user can use."""
     # completed_quests = set(users.get_completed_quests(userid))
@@ -326,6 +352,15 @@ def print_status(userid, time_left, *args):
     itemid, item_name, number, length = args[0]
     out = f'{GATHER_HEADER}' \
           f'You are currently gathering {items.add_plural(number, itemid)} for {length} minutes. ' \
+          f'You will finish {time_left}. '
+    return out
+
+
+def print_rc_status(userid, time_left, *args):
+    """Prints a gathering and how long until it is finished."""
+    itemid, item_name, number, length = args[0]
+    out = f'{GATHER_HEADER}' \
+          f'You are currently crafting {items.add_plural(number, itemid)} for {length} minutes. ' \
           f'You will finish {time_left}. '
     return out
 
@@ -385,4 +420,65 @@ def start_gather(userid, item, length=-1, number=-1):
     else:
         out = adv.print_adventure(userid)
         out += adv.print_on_adventure_error('gathering')
+    return out
+
+
+def start_runecraft(userid, item, number=1):
+    """Starts a runecrafting session."""
+    out = ''
+    if not adv.is_on_adventure(userid):
+        try:
+            itemid = items.find_by_name(item)
+            number = int(number)
+        except KeyError:
+            return f'{item} is not an item.'
+        except ValueError:
+            return f'{number} is not a valid number.'
+
+        if not items.get_attr(itemid, key=items.RUNE_KEY):
+            return f'{items.get_attr(itemid)} is not a rune that can be crafted.'
+
+        talismanid = items.get_attr(itemid, key=items.TALISMAN_KEY)
+        if not users.item_in_inventory(userid, talismanid, 1):
+            return f'{items.get_attr(talismanid)} not found in inventory.'
+
+        item_name = items.get_attr(itemid)
+        runecrafting_level = users.xp_to_level(users.read_user(userid, key=users.GATHER_XP_KEY))
+        runecraft_req = items.get_attr(itemid, key=items.LEVEL_KEY)
+        player_potion = users.read_user(userid, key=users.EQUIPMENT_KEY)['15']
+        if player_potion == '435':
+            boosted_level = runecrafting_level + 3
+        elif player_potion == '436':
+            boosted_level = runecrafting_level + 6
+        else:
+            boosted_level = runecrafting_level
+
+        if boosted_level < runecraft_req:
+            return f'Error: {item_name} has a runecrafting requirement ({runecraft_req}) higher ' \
+                   f'than your runecrafting level ({runecrafting_level})'
+        quest_req = items.get_attr(itemid, key=items.QUEST_KEY)
+        user_quests = set(users.get_completed_quests(userid))
+        if quest_req not in user_quests and quest_req > 0:
+            return f'You do not have the required quest to craft this rune.'
+        if 68 not in user_quests:
+            return f'You do not know how to craft runes.'
+
+        factor = 1 if 70 in user_quests else 2
+        bonus = 0
+        for n in range(568, 573):
+            if users.item_in_inventory(userid, n, 1):
+                bonus += items.get_attr(n, key=items.POUCH_KEY)
+
+        length = factor * math.ceil(number * 1.2 / (28.0 + bonus))
+
+        if not users.item_in_inventory(userid, '130', number):
+            return f'You do not have enough rune essence to craft this many runes.'
+        users.update_inventory(userid, number * ['130'], remove=True)
+
+        rc_session = adv.format_line(6, userid, adv.get_finish_time(length * 60), itemid, item_name, number, length)
+        adv.write(rc_session)
+        out += f'You are now crafting {items.add_plural(number, itemid)} for {length} minutes.'
+    else:
+        out = adv.print_adventure(userid)
+        out += adv.print_on_adventure_error('runecrafting session')
     return out
