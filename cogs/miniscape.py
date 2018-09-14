@@ -666,6 +666,19 @@ class Miniscape():
                 for message in messages:
                     await ctx.send(message)
 
+    @commands.command(aliases=['rc'])
+    async def runecraft(self, ctx, *args):
+        """Starts a runecrafting session."""
+        if ctx.channel.id == BANK_CHANNEL or ctx.channel.id in GENERAL_CHANNELS:
+            try:
+                number = int(args[0])
+                rune = ' '.join(args[1:])
+            except ValueError:
+                number = 1
+                rune = ' '.join(args)
+            out = craft.start_runecraft(ctx.author.id, rune, number)
+            await ctx.send(out)
+
     @commands.group(invoke_without_command=True, aliases=['recipe'])
     async def recipes(self, ctx, *args):
         """Prints a list of recipes a user can create."""
@@ -685,6 +698,7 @@ class Miniscape():
 
     @commands.command()
     async def craft(self, ctx, *args):
+        """Crafts (a given number of) an item."""
         if ctx.channel.id == BANK_CHANNEL or ctx.channel.id in GENERAL_CHANNELS:
             try:
                 number = int(args[0])
@@ -697,6 +711,7 @@ class Miniscape():
 
     @commands.command(aliases=['cock', 'fry', 'grill', 'saute', 'boil'])
     async def cook(self, ctx, *args):
+        """Cooks (a given amount of) an item."""
         if ctx.channel.id == BANK_CHANNEL or ctx.channel.id in GENERAL_CHANNELS:
             try:
                 number = int(args[0])
@@ -789,7 +804,7 @@ class Miniscape():
                             name = f'User {user_id}'
                         out += f'**({1 + i}) {name}**: '
                         if key == users.ITEMS_KEY:
-                            out += f'{amount_formatted}  coins\n'
+                            out += f'{amount_formatted} coins\n'
                         elif key == users.QUESTS_KEY:
                             out += f'{amount_formatted} quests\n'
                         elif key == 'total':
@@ -812,7 +827,7 @@ class Miniscape():
                                 name = f'User {user_id}'
                             out += f'**({1 + i}) {name}**: '
                             if key == users.ITEMS_KEY:
-                                out += f'{amount_formatted}  coins\n'
+                                out += f'{amount_formatted} coins\n'
                             elif key == users.QUESTS_KEY:
                                 out += f'{amount_formatted} quests\n'
                             elif key == 'total':
@@ -889,7 +904,8 @@ class Miniscape():
                     2: quests.get_result,
                     3: craft.get_gather,
                     4: clues.get_clue_scroll,
-                    5: slayer.get_reaper_result
+                    5: slayer.get_reaper_result,
+                    6: craft.get_runecraft
                 }
                 try:
                     out = adventures[adventureid](person, task[3:])

@@ -35,6 +35,7 @@ GATHER_XP_KEY = 'gather'        # User's gathering xp, stored as an int.
 ARTISAN_XP_KEY = 'artisan'      # User's artisan xp, stored as an int.
 COOK_XP_KEY = 'cook'            # User's cooking xp, stored as an int.
 PRAY_XP_KEY = 'prayer'          # User's prayer xp, stored as an int.
+RC_XP_KEY = 'runecrafting'      # User's runecrafting xp, stored as an int.
 LAST_REAPER_KEY = 'reaper'      # Date of user's last reaper task, stored as a date object.
 FOOD_KEY = 'food'               # User's active food, stored as an int.
 PRAY_KEY = 'pray'               # User's current prayer, stored as an int.
@@ -52,12 +53,13 @@ DEFAULT_ACCOUNT = {IRONMAN_KEY: False,
                    ARTISAN_XP_KEY: 0,
                    COOK_XP_KEY: 0,
                    PRAY_XP_KEY: 0,
+                   RC_XP_KEY: 0,
                    FOOD_KEY: -1,
                    PRAY_KEY: -1,
                    LAST_REAPER_KEY: datetime.date.today() - datetime.timedelta(days=1),
                    QUESTS_KEY: "0x0"}   # What's this?
 
-SKILLS = [COMBAT_XP_KEY, SLAYER_XP_KEY, GATHER_XP_KEY, ARTISAN_XP_KEY, COOK_XP_KEY, PRAY_XP_KEY]
+SKILLS = [COMBAT_XP_KEY, SLAYER_XP_KEY, GATHER_XP_KEY, ARTISAN_XP_KEY, COOK_XP_KEY, PRAY_XP_KEY, RC_XP_KEY]
 
 CHARACTER_HEADER = f'__**:crossed_swords: $NAME :crossed_swords:**__\n'
 
@@ -231,7 +233,7 @@ def get_values_by_account(key=ITEMS_KEY):
         userid = userfile[:-5]
 
         if key == ITEMS_KEY:
-            value = count_item_in_inventory(userid, '0')
+            value = get_value_of_inventory(userid)
         elif key == QUESTS_KEY:
             value = len(get_completed_quests(userid))
         elif key == 'total':

@@ -118,7 +118,8 @@ def print_adventure(userid):
         '2': quests.print_status,
         '3': craft.print_status,
         '4': clues.print_status,
-        '5': slayer.print_reaper_status
+        '5': slayer.print_reaper_status,
+        '6': craft.print_rc_status
     }
     time_left = get_delta(finish_time)
     if time_left == 1:
