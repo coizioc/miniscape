@@ -876,7 +876,7 @@ class Miniscape():
                     except ValueError:
                         await ctx.send(f'Name {name} not found in leaderboard.')
                     await ctx.send(out)
-
+    
     async def backup_users(self):
         """Backs up the userjson files into another directory."""
         await self.bot.wait_until_ready()
