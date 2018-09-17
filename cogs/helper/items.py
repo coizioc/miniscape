@@ -5,10 +5,9 @@ from collections import Counter
 
 from cogs.helper import clues
 from cogs.helper import monsters as mon
-from cogs.helper import users
 from cogs.helper import prayer
-
-from cogs.helper.files import ITEM_JSON, SHOP_FILE
+from cogs.helper import users
+from config import ITEM_JSON, SHOP_FILE
 
 with open(ITEM_JSON, 'r', encoding='utf-8-sig') as f:
     ITEMS = ujson.load(f)

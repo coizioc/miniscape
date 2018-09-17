@@ -3,12 +3,11 @@ import random
 from collections import Counter
 
 from cogs.helper import adventures as adv
+from cogs.helper import items
 from cogs.helper import monsters as mon
 from cogs.helper import quests
 from cogs.helper import users
-from cogs.helper import items
-
-from cogs.helper.files import CLUES_DIRECTORY
+from config import CLUES_DIRECTORY
 
 DIFFICULTY = {
     1: 'easy',

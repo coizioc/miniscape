@@ -5,10 +5,9 @@ import random
 from cogs.helper import adventures as adv
 from cogs.helper import items
 from cogs.helper import monsters as mon
-from cogs.helper import users
 from cogs.helper import prayer
-
-from cogs.helper.files import XP_FACTOR
+from cogs.helper import users
+from config import XP_FACTOR
 
 LOWEST_NUM_TO_KILL = 35
 SLAYER_HEADER = ':skull_crossbones: __**SLAYER**__ :skull_crossbones:\n'
@@ -63,7 +62,7 @@ def calc_chance(userid, monsterid, number, remove_food=False):
 
     if 10 <= int(user_prayer) <= 12:
         monster_affinity = mon.get_attr(monsterid, key=mon.AFFINITY_KEY)
-        if monster_affinity == 0 and user_prayer == '12' or monster_affinity == 1 and user_prayer == '11'\
+        if monster_affinity == 0 and user_prayer == '12' or monster_affinity == 1 and user_prayer == '11' \
                 or monster_affinity == 2 and user_prayer == '10':
             chance += prayer.get_attr(user_prayer, key=prayer.CHANCE_KEY)
 
@@ -262,7 +261,7 @@ def get_result(person, *args):
 
     chance = calc_chance(person.id, monsterid, num_to_kill, remove_food=True)
     is_success = adv.is_success(chance)
-    factor = 1 if is_success else int(chance)/100
+    factor = 1 if is_success else int(chance) / 100
     factor *= items.get_luck_factor(person.id)
 
     users.remove_potion(person.id)
@@ -327,7 +326,7 @@ def get_reaper_result(person, *args):
     else:
 
         users.remove_potion(person.id)
-        factor = int(chance)/170 * items.get_luck_factor(person.id)
+        factor = int(chance) / 170 * items.get_luck_factor(person.id)
         loot = mon.get_loot(monsterid, int(num_to_kill), factor=factor)
         loot.append('291')
         users.update_inventory(person.id, loot)
@@ -343,7 +342,7 @@ def get_reaper_result(person, *args):
 
         slayer_xp_formatted = '{:,}'.format(xp_gained)
         combat_xp_formatted = '{:,}'.format(round(0.7 * xp_gained))
-        out += f'\nYou have received lower loot and experience because you have died.'\
+        out += f'\nYou have received lower loot and experience because you have died.' \
                f'\nYou have received {slayer_xp_formatted} slayer xp and {combat_xp_formatted} combat xp. '
         if cb_level_after > cb_level_before:
             out += f'Also, you have gained {cb_level_after - cb_level_before} combat levels. '
@@ -377,10 +376,10 @@ def get_task(userid):
             chance = calc_chance(userid, monsterid, num_to_kill)
             mon_level = mon.get_attr(monsterid, key=mon.LEVEL_KEY)
             # print(f'{monsterid} {task_length/base_time} {chance}')
-            if 0.25 <= task_length / base_time <= 2 and chance >= 20 and mon_level / cb_level >= 0.8\
-                    and task_length <= 3600 and mon.get_attr(monsterid, key=mon.SLAYER_KEY) is True\
+            if 0.25 <= task_length / base_time <= 2 and chance >= 20 and mon_level / cb_level >= 0.8 \
+                    and task_length <= 3600 and mon.get_attr(monsterid, key=mon.SLAYER_KEY) is True \
                     and ({mon.get_attr(monsterid, key=mon.QUEST_REQ_KEY)}.issubset(completed_quests)
-                    or mon.get_attr(monsterid, key=mon.QUEST_REQ_KEY) == 0):
+                         or mon.get_attr(monsterid, key=mon.QUEST_REQ_KEY) == 0):
                 break
         else:
             return "Error: gear too low to fight any monsters. Please equip some better gear and try again. " \
@@ -424,9 +423,9 @@ def get_reaper_task(userid):
             chance = calc_chance(userid, monsterid, num_to_kill)
             # print(f'{monsterid} {task_length/base_time} {chance}')
             if 0.25 <= task_length / base_time <= 2 and chance >= 20 \
-                    and mon.get_attr(monsterid, key=mon.BOSS_KEY) is True\
+                    and mon.get_attr(monsterid, key=mon.BOSS_KEY) is True \
                     and ({mon.get_attr(monsterid, key=mon.QUEST_REQ_KEY)}.issubset(completed_quests)
-                    or mon.get_attr(monsterid, key=mon.QUEST_REQ_KEY) == 0):
+                         or mon.get_attr(monsterid, key=mon.QUEST_REQ_KEY) == 0):
                 break
         else:
             return "Error: gear too low to fight any monsters. Please equip some better gear and try again. " \
@@ -474,7 +473,8 @@ def print_loot(loot, person, monster_name, num_to_kill, add_mention=True):
     return out
 
 
-def print_chance(userid, monsterid, monster_dam=-1, monster_acc=-1, monster_arm=-1, monster_combat=-1, xp=-1, number=100, dragonfire=False):
+def print_chance(userid, monsterid, monster_dam=-1, monster_acc=-1, monster_arm=-1, monster_combat=-1, xp=-1,
+                 number=100, dragonfire=False):
     equipment = users.read_user(userid, key=users.EQUIPMENT_KEY)
     player_dam, player_acc, player_arm, player_pray = users.get_equipment_stats(equipment)
     player_combat = users.xp_to_level(users.read_user(userid, key=users.SLAYER_XP_KEY))
@@ -498,9 +498,10 @@ def print_chance(userid, monsterid, monster_dam=-1, monster_acc=-1, monster_arm=
     dam_multiplier = 1 + player_acc / 200
     base_time = math.floor(number * xp / 10)
     time = round(base_time * (monster_arm * monster_base / (player_dam * dam_multiplier + player_combat)))
-    out = f'level {monster_combat} monster with {monster_dam} dam {monster_acc} acc {monster_arm} arm giving {xp} xp: '\
+    out = f'level {monster_combat} monster with {monster_dam} dam {monster_acc} acc {monster_arm} arm giving {xp} xp: ' \
           f'chance: {chance}%, base time: {base_time}, time to kill {number}: {time}, time ratio: {time / base_time}.'
     return out
+
 
 def print_kill_status(userid, time_left, *args):
     monsterid, monster_name, num_to_kill, length, chance = args[0]

@@ -3,8 +3,7 @@ import math
 import random
 
 from cogs.helper import quests, slayer, craft, clues
-
-from cogs.helper.files import ADVENTURES_FILE
+from config import ADVENTURES_FILE
 
 # An adventure in the adventure file is stored as the following (with semicolon delimiters in between):
 # adventureid, userid, completion_time, *args

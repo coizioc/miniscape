@@ -5,10 +5,9 @@ from collections import Counter
 
 from cogs.helper import adventures as adv
 from cogs.helper import items
-from cogs.helper import users
 from cogs.helper import prayer
-
-from cogs.helper.files import RECIPE_JSON, XP_FACTOR
+from cogs.helper import users
+from config import RECIPE_JSON, XP_FACTOR
 
 GATHER_HEADER = f':hammer_pick: __**GATHERING**__ :hammer_pick: \n'
 CRAFT_HEADER = f':hammer_pick: __**CRAFTING**__ :hammer_pick: \n'

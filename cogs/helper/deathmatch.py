@@ -1,7 +1,7 @@
 """Implements methods related to the deathmatch commands of mathbot.cogs.gastercoin."""
 import random
 
-from cogs.helper.files import DEATHMATCH_FILE
+from config import DEATHMATCH_FILE
 
 DEATHMATCH_HEADER = '__**:anger:DEATHMATCH:anger:**__'
 
