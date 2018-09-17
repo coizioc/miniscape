@@ -93,17 +93,21 @@ def parse_name(guild, username):
 def has_post_permission(guildid, channelid):
     """Checks whether the bot can post in that channel."""
     guild_perms = cp.get_guild(guildid)
+    try:
+        for blacklist_channel in guild_perms[cp.BLACKLIST_KEY]:
+            if channelid == blacklist_channel:
+                return False
+    except KeyError:
+        pass
 
-    for blacklist_channel in guild_perms[cp.BLACKLIST_KEY]:
-        if channelid == blacklist_channel:
+    try:
+        for whitelist_channel in guild_perms[cp.WHITELIST_KEY]:
+            if channelid == whitelist_channel:
+                break
+        else:
             return False
-
-    for whitelist_channel in guild_perms[cp.WHITELIST_KEY]:
-        if channelid == whitelist_channel:
-            break
-    else:
-        return False
-
+    except KeyError:
+        pass
     return True
 
 

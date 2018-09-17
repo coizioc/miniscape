@@ -17,38 +17,38 @@ class Admin():
         self.bot = bot
 
     @commands.command()
-    @has_permissions(administrator=True)
+    @has_permissions(manage_guild=True)
     async def listchannels(self, ctx):
         """Lists the channels in which the bot is white/blacklisted."""
         guild_perms = cp.get_guild(ctx.guild.id)
         await ctx.send(guild_perms)
 
     @commands.command()
-    @has_permissions(adminstrator=True)
+    @has_permissions(manage_guild=True)
     async def addblacklist(self, ctx):
         channel_mentions = ctx.message.channel_mentions
 
         if len(channel_mentions) > 0:
             out = ''
             for channel in channel_mentions:
-                cp.add_channel(ctx.guild.id, channel, cp.BLACKLIST_KEY)
+                cp.add_channel(ctx.guild.id, channel.id, cp.BLACKLIST_KEY)
                 out += f'{channel.name}, '
             await ctx.send(f"{out[:-2]} added to blacklist!")
 
     @commands.command()
-    @has_permissions(adminstrator=True)
+    @has_permissions(manage_guild=True)
     async def addwhitelist(self, ctx):
         channel_mentions = ctx.message.channel_mentions
 
         if len(channel_mentions) > 0:
             out = ''
             for channel in channel_mentions:
-                cp.add_channel(ctx.guild.id, channel, cp.WHITELIST_KEY)
+                cp.add_channel(ctx.guild.id, channel.id, cp.WHITELIST_KEY)
                 out += f'{channel.name}, '
             await ctx.send(f"{out[:-2]} added to whitelist!")
 
     @commands.command()
-    @has_permissions(adminstrator=True)
+    @has_permissions(manage_guild=True)
     async def removeblacklist(self, ctx):
         channel_mentions = ctx.message.channel_mentions
 
@@ -65,7 +65,7 @@ class Admin():
             await ctx.send(f"{out[:-2]} removed from blacklist!")
 
     @commands.command()
-    @has_permissions(adminstrator=True)
+    @has_permissions(manage_guild=True)
     async def removewhitelist(self, ctx):
         channel_mentions = ctx.message.channel_mentions
 

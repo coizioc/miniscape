@@ -31,6 +31,8 @@ def get_file():
         with open(CHANNEL_PERMISSIONS_JSON, 'r') as f:
             return ujson.load(f)
     except FileNotFoundError:
+        with open(CHANNEL_PERMISSIONS_JSON, 'w+') as f:
+            ujson.dump({}, f)
         return {}
 
 
@@ -39,7 +41,7 @@ def get_guild(guildid):
     try:
         return get_file()[str(guildid)]
     except KeyError:
-        raise KeyError
+        return {}
 
 
 def remove_channel(guildid, channelid, key):
@@ -63,4 +65,4 @@ def remove_channel(guildid, channelid, key):
 def write(permissions_dict):
     """Writes the permissions dict to a json file."""
     with open(CHANNEL_PERMISSIONS_JSON, 'w+') as f:
-        ujson.dump(permissions_dict)
+        ujson.dump(permissions_dict, f)
