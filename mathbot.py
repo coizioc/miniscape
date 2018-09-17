@@ -2,10 +2,11 @@
 import os
 import sys
 import traceback
+
 from discord.ext import commands
+
 import config
 
-from cogs.helper.files import HELP_FILE
 
 def extensions_generator():
     """Returns a generator for all cog files that aren't in do_not_use."""

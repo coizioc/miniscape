@@ -6,10 +6,9 @@ import ujson
 from collections import Counter
 
 from cogs.helper import items
-from cogs.helper import quests
 from cogs.helper import prayer
-
-from cogs.helper.files import USER_DIRECTORY, BACKUP_DIRECTORY, XP_FILE, ARMOUR_SLOTS_FILE
+from cogs.helper import quests
+from config import USER_DIRECTORY, BACKUP_DIRECTORY, XP_FILE, ARMOUR_SLOTS_FILE
 
 XP = {}
 with open(XP_FILE, 'r') as f:
@@ -182,7 +181,7 @@ def equip_item(userid, item):
 
 def unequip_item(userid, item, isitemid=False):
     """Takes an item out of a user's equipment and places it into their inventory."""
-    if isitemid == False:
+    if not isitemid:
         try:
             itemid = items.find_by_name(item)
         except KeyError:

@@ -3,8 +3,7 @@ import ujson
 from collections import Counter
 
 from cogs.helper import items, users, quests
-
-from cogs.helper.files import MONSTERS_JSON, MONSTER_DIRECTORY
+from config import MONSTERS_JSON, MONSTER_DIRECTORY
 
 with open(MONSTERS_JSON, 'r') as f:
     MONSTERS = ujson.load(f)

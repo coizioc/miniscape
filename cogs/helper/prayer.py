@@ -1,8 +1,8 @@
 import ujson
 
-from cogs.helper import items, users
 from cogs.helper import adventures as adv
-from cogs.helper.files import PRAYERS_JSON
+from cogs.helper import items, users
+from config import PRAYERS_JSON
 
 with open(PRAYERS_JSON, 'r') as f:
     PRAYERS = ujson.load(f)

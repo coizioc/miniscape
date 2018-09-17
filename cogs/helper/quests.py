@@ -3,12 +3,11 @@ import ujson
 from collections import Counter
 
 from cogs.helper import adventures as adv
-from cogs.helper import items
-from cogs.helper import users
 from cogs.helper import craft
+from cogs.helper import items
 from cogs.helper import monsters as mon
-
-from cogs.helper.files import QUESTS_JSON
+from cogs.helper import users
+from config import QUESTS_JSON
 
 with open(QUESTS_JSON, 'r') as f:
     QUESTS = ujson.load(f)
