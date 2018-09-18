@@ -18,6 +18,7 @@ Adventure commands:
 * `~status` shows you what you are currently doing, if you are in the middle of doing something.
 
 Bank Commands: 
+* `~balance [user]` shows a user's balance. It shows your own if you do not give an argument.
 * `~bestiary [monster]` shows a list of all monsters in the game. Specifying a specific monster shows more data specific to that monster.
 * `~claim [item]` can be used to receive items from keys, gem stones, and other objects.
 * `~compare "[item1]" "[item2]"` compares the stats of two items.
@@ -30,6 +31,7 @@ Bank Commands:
 * `~items info [item]` allows you to see the stats and drop sources of a particular item.
 * `~items lock [item]` locks an item in your inventory to prevent it from being accidentally sold.
 * `~items unlock [item]` unlocks an item in your inventory to allow it to be sold again.
+* `~leaderboard [name]` shows the leaderboard of total levels 
 * `~me` shows your current levels, equipment, and other stats.
 * `~pray` shows the prayers you can use.
 * `~pray [prayer]` sets your prayer.
@@ -46,9 +48,18 @@ Store Commands:
 * `~sellall [max value]` sells all items (up to but not including a given max value) from a user's inventory to the store.
 * `~trade [name] [number] [item] [offer]` trades with another player.
 
+Other Commands:
+* `~dm [user] [amount]` allows you to fight another user.
+* `~ship [user] [user2]` allows you to ship two users.
+* `~shipall [user]` allows you to ship someone between everyone in the server and shows the top ten.
+* `~shipall [user] b` shows the bottom ten ranked ships between someone and the rest of the server.
+* `~snap [user]` tells whether a user has survived Thanos's snap.
+
 Admin Commands (needs manage channels permission):
-* `~addblacklist [channel] [channel] ...` adds channels to the server's blacklist.
-* `~addwhitelist [channel] [channel] ...` adds channels to the server's whitelist.
+* `~addblacklist [channel(s)] ...` adds channels to the server's blacklist.
+* `~addwhitelist [channel(s)] ...` adds channels to the server's whitelist.
 * `~listchannels` shows which channels are in your server's white/blacklist.
-* `~removeblacklist [channel] [channel] ...` remove channels from the server's blacklist.
-* `~removewhitelist [channel] [channel] ...` remove channels from the server's whitelist.
+* `~removeac [channel]` removes the announcement channel.
+* `~removeblacklist [channel(s)] ...` remove channels from the server's blacklist.
+* `~removewhitelist [channel(s)] ...` remove channels from the server's whitelist.
+* `~setac [channel]` sets the announcement channel. The default behaviour is to send the announcement to the channel from which the user sent the command.
