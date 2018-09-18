@@ -47,6 +47,12 @@ class Admin():
                 out += f'{channel.name}, '
             await ctx.send(f"{out[:-2]} added to whitelist!")
 
+    @commands.command(aliases=['removeac'])
+    @has_permissions(manage_guild=True)
+    async def removeannoucement(self, ctx):
+        cp.clear_channel(ctx.guild.id, cp.ANNOUNCEMENT_KEY)
+        await ctx.send(f"Removed annoucements channel!")
+
     @commands.command()
     @has_permissions(manage_guild=True)
     async def removeblacklist(self, ctx):
@@ -80,6 +86,16 @@ class Admin():
             if len(out) < 2:
                 out = 'No channels were  '
             await ctx.send(f"{out[:-2]} removed from whitelist!")
+
+    @commands.command(aliases=['setac'])
+    @has_permissions(manage_guild=True)
+    async def setannouncement(self, ctx):
+        channel_mentions = ctx.message.channel_mentions
+
+        if len(channel_mentions) > 0:
+            announcement_channel = channel_mentions[0]
+            cp.set_channel(ctx.guild.id, announcement_channel.id, cp.ANNOUNCEMENT_KEY)
+            await ctx.send(f"{announcement_channel.name} set as announcements channel!")
 
 
 def setup(bot):

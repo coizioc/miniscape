@@ -99,15 +99,17 @@ def has_post_permission(guildid, channelid):
                 return False
     except KeyError:
         pass
-    if len(guild_perms[cp.WHITELIST_KEY]) > 0:
-        try:
-            for whitelist_channel in guild_perms[cp.WHITELIST_KEY]:
-                if channelid == whitelist_channel:
-                    break
-            else:
-                return False
-        except KeyError:
-            pass
+
+    if cp.WHITELIST_KEY in guild_perms.keys():
+        if len(guild_perms[cp.WHITELIST_KEY]) > 0:
+            try:
+                for whitelist_channel in guild_perms[cp.WHITELIST_KEY]:
+                    if channelid == whitelist_channel:
+                        break
+                else:
+                    return False
+            except KeyError:
+                pass
     return True
 
 
@@ -917,22 +919,24 @@ class Miniscape():
         while not self.bot.is_closed():
             with open('./resources/debug.txt', 'a+') as f:
                 f.write(f'Bot check at {datetime.datetime.now()}:\n')
+            print(1)
             finished_tasks = adv.get_finished()
             for task in finished_tasks:
+                print(task)
                 with open('./resources/debug.txt', 'a+') as f:
                     f.write(';'.join(task) + '\n')
                 with open('./resources/finished_tasks.txt', 'a+') as f:
                     f.write(';'.join(task) + '\n')
-
+                print(2)
                 adventureid, userid, guildid, channelid = int(task[0]), int(task[1]), int(task[3]), int(task[4])
                 bot_guild = self.bot.get_guild(guildid)
                 try:
                     announcement_channel = cp.get_channel(guildid, cp.ANNOUNCEMENT_KEY)
-                    bot_self = bot_guild.get_channel(announcement_channel)
+                    bot_self = bot_guild.get_channel(int(announcement_channel))
                 except KeyError:
                     bot_self = bot_guild.get_channel(channelid)
                 person = self.bot.get_guild(config.guild_id).get_member(int(userid))
-
+                print(3)
                 adventures = {
                     0: slayer.get_result,
                     1: slayer.get_kill_result,
@@ -948,6 +952,7 @@ class Miniscape():
                 except Exception as e:
                     with open('./resources/debug.txt', 'a+') as f:
                         f.write(f'{e}\n')
+                print('done')
             await asyncio.sleep(60)
 
 
