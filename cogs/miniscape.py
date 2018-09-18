@@ -93,17 +93,21 @@ def parse_name(guild, username):
 def has_post_permission(guildid, channelid):
     """Checks whether the bot can post in that channel."""
     guild_perms = cp.get_guild(guildid)
-
-    for blacklist_channel in guild_perms[cp.BLACKLIST_KEY]:
-        if channelid == blacklist_channel:
-            return False
-
-    for whitelist_channel in guild_perms[cp.WHITELIST_KEY]:
-        if channelid == whitelist_channel:
-            break
-    else:
-        return False
-
+    try:
+        for blacklist_channel in guild_perms[cp.BLACKLIST_KEY]:
+            if channelid == blacklist_channel:
+                return False
+    except KeyError:
+        pass
+    if len(guild_perms[cp.WHITELIST_KEY]) > 0:
+        try:
+            for whitelist_channel in guild_perms[cp.WHITELIST_KEY]:
+                if channelid == whitelist_channel:
+                    break
+            else:
+                return False
+        except KeyError:
+            pass
     return True
 
 
@@ -899,7 +903,7 @@ class Miniscape():
                     except ValueError:
                         await ctx.send(f'Name {name} not found in leaderboard.')
                     await ctx.send(out)
-
+    
     async def backup_users(self):
         """Backs up the userjson files into another directory."""
         await self.bot.wait_until_ready()

@@ -69,7 +69,7 @@ def calc_chance(userid, questid, remove_food=False):
     chance = 100 * (2 * d * player_arm) / (monster_dam * dam_multiplier + c)
     
     player_food = users.read_user(userid, key=users.FOOD_KEY)
-    if player_food != -1:
+    if int(player_food) != -1:
         food_bonus = items.get_attr(player_food, key=items.EAT_KEY)
         number = monster_combat / 100
         if food_bonus > 0:
