@@ -930,7 +930,7 @@ class Miniscape():
                     announcement_channel = cp.get_channel(guildid, cp.ANNOUNCEMENT_KEY)
                     bot_self = bot_guild.get_channel(announcement_channel)
                 except KeyError:
-                    bot_self = bot_guild.get_channel(channelid)
+                    bot_self = bot_guild.get_channel(int(channelid))
                 person = self.bot.get_guild(config.guild_id).get_member(int(userid))
 
                 adventures = {
