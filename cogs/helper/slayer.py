@@ -354,7 +354,7 @@ def get_reaper_result(person, *args):
 def get_task_info(userid):
     """Gets the info associated with a user's slayer task and returns it as a tuple."""
     task = adv.read(userid)
-    taskid, userid, finish_time, monsterid, monster_name, num_to_kill, chance = task
+    taskid, userid, finish_time, guildid, channelid, monsterid, monster_name, num_to_kill, chance = task
 
     time_left = adv.get_delta(finish_time)
 

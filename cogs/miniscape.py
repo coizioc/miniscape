@@ -18,22 +18,6 @@ from cogs.helper import quests
 from cogs.helper import slayer
 from cogs.helper import users
 
-RESOURCES_DIRECTORY = f'./resources/'
-
-PERMISSION_ERROR_STRING = f'Error: You do not have permission to use this command.'
-
-ANNOUNCEMENTS_CHANNEL = 478965643862081546
-NOTIFICATIONS_CHANNEL = 478967834198933524
-ADVENTURES_CHANNEL = 478967314101043200
-BANK_CHANNEL = 478967336653815835
-SHOP_CHANNEL = 478967877517443073
-DUEL_CHANNEL = 479056789330067457
-JEOPARDY_CHANNEL = 479694071191961617
-MINISCAPE_1_CHANNEL = 479668572344287238
-MINISCAPE_2_CHANNEL = 479663988154695684
-TEST_CHANNEL = 408424622648721410
-GENERAL_CHANNELS = [MINISCAPE_1_CHANNEL, MINISCAPE_2_CHANNEL, TEST_CHANNEL]
-
 
 class AmbiguousInputError(Exception):
     """Error raised for input that refers to multiple users"""
@@ -919,7 +903,6 @@ class Miniscape():
         while not self.bot.is_closed():
             with open('./resources/debug.txt', 'a+') as f:
                 f.write(f'Bot check at {datetime.datetime.now()}:\n')
-            print(1)
             finished_tasks = adv.get_finished()
             for task in finished_tasks:
                 print(task)
@@ -927,16 +910,15 @@ class Miniscape():
                     f.write(';'.join(task) + '\n')
                 with open('./resources/finished_tasks.txt', 'a+') as f:
                     f.write(';'.join(task) + '\n')
-                print(2)
                 adventureid, userid, guildid, channelid = int(task[0]), int(task[1]), int(task[3]), int(task[4])
                 bot_guild = self.bot.get_guild(guildid)
                 try:
                     announcement_channel = cp.get_channel(guildid, cp.ANNOUNCEMENT_KEY)
                     bot_self = bot_guild.get_channel(int(announcement_channel))
                 except KeyError:
-                    bot_self = bot_guild.get_channel(int(channelid))
-                person = self.bot.get_guild(config.guild_id).get_member(int(userid))
-                print(3)
+                    bot_self = bot_guild.get_channel(channelid)
+                person = bot_guild.get_member(int(userid))
+                
                 adventures = {
                     0: slayer.get_result,
                     1: slayer.get_kill_result,
