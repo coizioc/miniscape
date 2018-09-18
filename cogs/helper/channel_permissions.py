@@ -26,6 +26,24 @@ def add_channel(guildid, channelid, key):
     write(perms)
 
 
+def clear_channel(guildid, key):
+    """Removes a channel from the file."""
+    guildid = str(guildid)
+    try:
+        perms = get_file()
+        guild_perms = perms[str(guildid)]
+    except KeyError:
+        raise ValueError
+
+    try:
+        perms[guildid].pop(key, None)
+        write(perms)
+    except KeyError:
+        raise ValueError
+    except ValueError:
+        raise ValueError
+
+
 def get_channel(guildid, key):
     """Gets the channelid associated with the key."""
     guildid = str(guildid)
@@ -74,6 +92,18 @@ def remove_channel(guildid, channelid, key):
         raise ValueError
     except ValueError:
         raise ValueError
+
+
+def set_channel(guildid, channelid, key):
+    """Sets the channelid associated with the key."""
+    guildid = str(guildid)
+    try:
+        perms = get_file()
+        perms[guildid][key] = channelid
+    except KeyError:
+        perms[guildid] = {}
+        perms[guildid][key] = channelid
+    write(perms)
 
 
 def write(permissions_dict):
