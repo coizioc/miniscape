@@ -99,15 +99,15 @@ def has_post_permission(guildid, channelid):
                 return False
     except KeyError:
         pass
-
-    try:
-        for whitelist_channel in guild_perms[cp.WHITELIST_KEY]:
-            if channelid == whitelist_channel:
-                break
-        else:
-            return False
-    except KeyError:
-        pass
+    if len(guild_perms[cp.WHITELIST_KEY]) > 0:
+        try:
+            for whitelist_channel in guild_perms[cp.WHITELIST_KEY]:
+                if channelid == whitelist_channel:
+                    break
+            else:
+                return False
+        except KeyError:
+            pass
     return True
 
 
