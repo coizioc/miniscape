@@ -366,7 +366,7 @@ def print_rc_status(userid, time_left, *args):
     return out
 
 
-def start_gather(userid, item, length=-1, number=-1):
+def start_gather(guildid, channelid, userid, item, length=-1, number=-1):
     """Starts a gathering session."""
     out = ''
     if not adv.is_on_adventure(userid):
@@ -415,7 +415,8 @@ def start_gather(userid, item, length=-1, number=-1):
             length = math.floor(calc_length(userid, itemid, number)[1] / 60)
         else:
             return 'Error: argument missing (number or kill length).'
-        gather = adv.format_line(3, userid, adv.get_finish_time(length * 60), itemid, item_name, number, length)
+        gather = adv.format_line(3, userid, adv.get_finish_time(length * 60), guildid, channelid,
+                                 itemid, item_name, number, length)
         adv.write(gather)
         out += f'You are now gathering {items.add_plural(number, itemid)} for {length} minutes.'
     else:
@@ -424,7 +425,7 @@ def start_gather(userid, item, length=-1, number=-1):
     return out
 
 
-def start_runecraft(userid, item, number=1):
+def start_runecraft(guildid, channelid, userid, item, number=1):
     """Starts a runecrafting session."""
     out = ''
     if not adv.is_on_adventure(userid):
@@ -476,7 +477,8 @@ def start_runecraft(userid, item, number=1):
             return f'You do not have enough rune essence to craft this many runes.'
         users.update_inventory(userid, number * ['130'], remove=True)
 
-        rc_session = adv.format_line(6, userid, adv.get_finish_time(length * 60), itemid, item_name, number, length)
+        rc_session = adv.format_line(6, userid, adv.get_finish_time(length * 60), guildid, channelid,
+                                     itemid, item_name, number, length)
         adv.write(rc_session)
         out += f'You are now crafting {items.add_plural(number, itemid)} for {length} minutes.'
     else:

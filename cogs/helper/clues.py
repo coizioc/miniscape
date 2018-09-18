@@ -164,7 +164,7 @@ def print_status(userid, time_left, *args):
     return out
 
 
-def start_clue(userid, difficulty):
+def start_clue(guildid, channelid, userid, difficulty):
     """Starts a clue scroll."""
     out = f'{CLUE_HEADER}'
     if not adv.is_on_adventure(userid):
@@ -174,7 +174,7 @@ def start_clue(userid, difficulty):
         users.update_inventory(userid, [scrollid], remove=True)
 
         length = math.floor(calc_length(userid, difficulty) / 60)
-        clue = adv.format_line(4, userid, adv.get_finish_time(length * 60), difficulty, length)
+        clue = adv.format_line(4, userid, adv.get_finish_time(length * 60), guildid, channelid, difficulty, length)
         adv.write(clue)
         out += f'You are now doing a {DIFFICULTY[difficulty]} clue scroll for {length} minutes.'
     else:

@@ -277,14 +277,14 @@ class Miniscape():
     async def slayer(self, ctx):
         """Gives the user a slayer task."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            out = slayer.get_task(ctx.author.id)
+            out = slayer.get_task(ctx.guild.id, ctx.channel.id, ctx.author.id)
             await ctx.send(out)
 
     @commands.command()
     async def reaper(self, ctx):
         """Gives the user a reaper task."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            out = slayer.get_reaper_task(ctx.author.id)
+            out = slayer.get_reaper_task(ctx.guild.id, ctx.channel.id, ctx.author.id)
             await ctx.send(out)
 
     @commands.group(invoke_without_command=True, aliases=['grind', 'fring'])
@@ -296,11 +296,11 @@ class Miniscape():
                 if args[0].isdigit():
                     number = args[0]
                     monster = ' '.join(args[1:])
-                    out = slayer.get_kill(ctx.author.id, monster, number=number)
+                    out = slayer.get_kill(ctx.guild.id, ctx.channel.id, ctx.author.id, monster, number=number)
                 elif args[-1].isdigit():
                     length = args[-1]
                     monster = ' '.join(args[:-1])
-                    out = slayer.get_kill(ctx.author.id, monster, length=length)
+                    out = slayer.get_kill(ctx.guild.id, ctx.channel.id, ctx.author.id, monster, length=length)
                 else:
                     monster = ' '.join(args)
                     if monster == 'myself':
@@ -313,7 +313,7 @@ class Miniscape():
                         out = 'Error: there must be a number or length of kill in args.'
             else:
                 if adv.is_on_adventure(ctx.author.id):
-                    out = slayer.get_kill(ctx.author.id, 'GET_UPDATE')
+                    out = slayer.get_kill(ctx.guild.id, ctx.channel.id, ctx.author.id, 'GET_UPDATE')
                 else:
                     out = 'args not valid. Please put in the form `[number] [monster name] [length]`'
             await ctx.send(out)
@@ -448,7 +448,7 @@ class Miniscape():
                     return
                 else:
                     parsed_difficulty = int(difficulty)
-            out = clues.start_clue(ctx.author.id, parsed_difficulty)
+            out = clues.start_clue(ctx.guild.id, ctx.channel.id, ctx.author.id, parsed_difficulty)
             await ctx.send(out)
 
     @commands.command(aliases=['drank', 'chug', 'suckle'])
@@ -666,7 +666,7 @@ class Miniscape():
     async def _start(self, ctx, questid):
         """lets a user start a quest."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            out = quests.start_quest(ctx.author.id, questid)
+            out = quests.start_quest(ctx.guild.id, ctx.channel.id, ctx.author.id, questid)
             await ctx.send(out)
 
     @commands.command()
@@ -677,11 +677,11 @@ class Miniscape():
                 if args[0].isdigit():
                     number = args[0]
                     item = ' '.join(args[1:])
-                    out = craft.start_gather(ctx.author.id, item, number=number)
+                    out = craft.start_gather(ctx.guild.id, ctx.channel.id, ctx.author.id, item, number=number)
                 elif args[-1].isdigit():
                     length = args[-1]
                     item = ' '.join(args[:-1])
-                    out = craft.start_gather(ctx.author.id, item, length=length)
+                    out = craft.start_gather(ctx.guild.id, ctx.channel.id, ctx.author.id, item, length=length)
                 else:
                     out = 'Error: there must be a number or length of gathering in args.'
                 await ctx.send(out)
@@ -700,7 +700,7 @@ class Miniscape():
             except ValueError:
                 number = 1
                 rune = ' '.join(args)
-            out = craft.start_runecraft(ctx.author.id, rune, number)
+            out = craft.start_runecraft(ctx.guild.id, ctx.channel.id, ctx.author.id, rune, number)
             await ctx.send(out)
 
     @commands.group(invoke_without_command=True, aliases=['recipe'])
@@ -920,8 +920,13 @@ class Miniscape():
                 with open('./resources/finished_tasks.txt', 'a+') as f:
                     f.write(';'.join(task) + '\n')
 
-                adventureid, userid = int(task[0]), int(task[1])
-                bot_self = self.bot.get_guild(config.guild_id).get_channel(NOTIFICATIONS_CHANNEL)
+                adventureid, userid, guildid, channelid = int(task[0]), int(task[1]), int(task[3]), int(task[4])
+                bot_guild = self.bot.get_guild(guildid)
+                try:
+                    announcement_channel = cp.get_channel(guildid, cp.ANNOUNCEMENT_KEY)
+                    bot_self = bot_guild.get_channel(announcement_channel)
+                except KeyError:
+                    bot_self = bot_guild.get_channel(channelid)
                 person = self.bot.get_guild(config.guild_id).get_member(int(userid))
 
                 adventures = {
@@ -934,7 +939,7 @@ class Miniscape():
                     6: craft.get_runecraft
                 }
                 try:
-                    out = adventures[adventureid](person, task[3:])
+                    out = adventures[adventureid](person, task[5:])
                     await bot_self.send(out)
                 except Exception as e:
                     with open('./resources/debug.txt', 'a+') as f:

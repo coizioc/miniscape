@@ -158,7 +158,7 @@ def calc_number(userid, monsterid, time):
     return number
 
 
-def get_kill(userid, monster, length=-1, number=-1):
+def get_kill(guildid, channelid, userid, monster, length=-1, number=-1):
     """Lets the user start killing monsters.."""
     out = f'{SLAYER_HEADER}'
     if not adv.is_on_adventure(userid):
@@ -202,7 +202,7 @@ def get_kill(userid, monster, length=-1, number=-1):
 
         chance = calc_chance(userid, monsterid, number)
 
-        grind = adv.format_line(1, userid, adv.get_finish_time(length * 60),
+        grind = adv.format_line(1, userid, adv.get_finish_time(length * 60), guildid, channelid,
                                 monsterid, monster_name, number, length, chance)
         adv.write(grind)
         out += f'You are now killing {mon.add_plural(number, monsterid, with_zero=True)} for {length} minutes. ' \
@@ -361,7 +361,7 @@ def get_task_info(userid):
     return taskid, userid, time_left, monsterid, monster_name, num_to_kill, chance
 
 
-def get_task(userid):
+def get_task(guildid, channelid, userid):
     """Assigns a user a slayer task provided they are not in the middle of another adventure."""
     out = SLAYER_HEADER
     if not adv.is_on_adventure(userid):
@@ -390,7 +390,7 @@ def get_task(userid):
             cb_perk = True
 
         monster_name = mon.get_attr(monsterid)
-        task = adv.format_line(0, userid, adv.get_finish_time(task_length), monsterid,
+        task = adv.format_line(0, userid, adv.get_finish_time(task_length), guildid, channelid, monsterid,
                                monster_name, num_to_kill, chance)
         adv.write(task)
         out += print_task(userid)
@@ -402,7 +402,7 @@ def get_task(userid):
     return out
 
 
-def get_reaper_task(userid):
+def get_reaper_task(guildid, channelid, userid):
     """Assigns a user a reaper task provided they are not in the middle of another adventure."""
     out = SLAYER_HEADER
     if users.get_level(userid, key=users.SLAYER_XP_KEY) < 50:
@@ -437,7 +437,7 @@ def get_reaper_task(userid):
             task_length *= 0.7
             cb_perk = True
 
-        task = adv.format_line(5, userid, adv.get_finish_time(task_length), monsterid,
+        task = adv.format_line(5, userid, adv.get_finish_time(task_length), guildid, channelid, monsterid,
                                monster_name, num_to_kill, chance)
         adv.write(task)
         users.update_user(userid, datetime.date.today(), key=users.LAST_REAPER_KEY)

@@ -2,8 +2,9 @@ import ujson
 
 from config import CHANNEL_PERMISSIONS_JSON
 
-WHITELIST_KEY = 'white'   # list containing all channels in a guild in which the bot can run commands.
-BLACKLIST_KEY = 'black'   # list containing all channels in a guild in which the bot cannot run commands.
+WHITELIST_KEY = 'white'            # list containing all channels in a guild in which the bot can run commands.
+BLACKLIST_KEY = 'black'            # list containing all channels in a guild in which the bot cannot run commands.
+ANNOUNCEMENT_KEY = 'annoucement'   # int representing the channelid of the channel where the announcements will go.
 
 
 def add_channel(guildid, channelid, key):
@@ -23,6 +24,19 @@ def add_channel(guildid, channelid, key):
         perms[guildid][key] = [channelid]
 
     write(perms)
+
+
+def get_channel(guildid, key):
+    """Gets the channelid associated with the key."""
+    guildid = str(guildid)
+    try:
+        channelid = get_file()[str(guildid)][key]
+        if type(channelid) is int:
+            return channelid
+        else:
+            raise ValueError
+    except KeyError:
+        raise KeyError
 
 
 def get_file():

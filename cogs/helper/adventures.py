@@ -6,7 +6,7 @@ from cogs.helper import quests, slayer, craft, clues
 from config import ADVENTURES_FILE
 
 # An adventure in the adventure file is stored as the following (with semicolon delimiters in between):
-# adventureid, userid, completion_time, *args
+# adventureid, userid, completion_time, guildid, channelid, *args
 # where *args represent adventure-specific arguments.
 
 ON_ADVENTURE_ERROR = 'You are currently in the middle of something. Please finish that before starting something else.'
@@ -127,7 +127,7 @@ def print_adventure(userid):
         time_string = 'soon'
     else:
         time_string = f'in {time_left} minutes'
-    out = adventures[adventureid](userid, time_string, adventure[3:])
+    out = adventures[adventureid](userid, time_string, adventure[5:])
     return out
 
 

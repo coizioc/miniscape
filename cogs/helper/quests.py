@@ -269,7 +269,7 @@ def print_status(userid, time_left, *args):
     return out
 
 
-def start_quest(userid, questid):
+def start_quest(guildid, channelid, userid, questid):
     """Assigns a user a slayer task provided they are not in the middle of another adventure."""
     out = QUEST_HEADER
     if not adv.is_on_adventure(userid):
@@ -287,7 +287,8 @@ def start_quest(userid, questid):
                     users.update_inventory(userid, loot, remove=True)
                     chance = calc_chance(userid, questid)
                     quest_length = calc_length(userid, questid)
-                    quest = adv.format_line(2, userid, adv.get_finish_time(quest_length), questid, chance)
+                    quest = adv.format_line(2, userid, adv.get_finish_time(quest_length), guildid,
+                                            channelid, questid, chance)
                     adv.write(quest)
                     out += print_quest(questid, quest_length, chance)
                 else:
