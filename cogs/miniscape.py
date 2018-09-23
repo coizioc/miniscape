@@ -18,6 +18,8 @@ from cogs.helper import quests
 from cogs.helper import slayer
 from cogs.helper import users
 
+MAX_PER_ACTION = 2500
+
 
 class AmbiguousInputError(Exception):
     """Error raised for input that refers to multiple users"""
@@ -209,6 +211,8 @@ class Miniscape():
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             if args[0].isdigit():
                 number = int(args[0])
+                if number >= MAX_PER_ACTION:
+                    number = MAX_PER_ACTION
                 item = ' '.join(args[1:])
             else:
                 number = 1
@@ -686,6 +690,8 @@ class Miniscape():
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             try:
                 number = int(args[0])
+                if number >= MAX_PER_ACTION:
+                    number = MAX_PER_ACTION
                 rune = ' '.join(args[1:])
             except ValueError:
                 number = 1
@@ -716,6 +722,8 @@ class Miniscape():
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             try:
                 number = int(args[0])
+                if number >= MAX_PER_ACTION:
+                    number = MAX_PER_ACTION
                 recipe = ' '.join(args[1:])
             except ValueError:
                 number = 1
@@ -729,6 +737,8 @@ class Miniscape():
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             try:
                 number = int(args[0])
+                if number >= MAX_PER_ACTION:
+                    number = MAX_PER_ACTION
                 food = ' '.join(args[1:])
             except ValueError:
                 number = 1
