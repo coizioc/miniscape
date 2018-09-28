@@ -39,6 +39,11 @@ def calc_chance(userid, monsterid, number, remove_food=False):
             monster_base = 100
     else:
         monster_base = 1
+    if monsterid == '87':
+        if equipment['5'] == '578':
+            monster_base = 1
+        else:
+            monster_base = 100
 
     player_potion = equipment['15']
     if player_potion == '429' or player_potion == '430':
@@ -97,6 +102,11 @@ def calc_length(userid, monsterid, number):
             monster_base = 100
     else:
         monster_base = 1
+    if monsterid == '87':
+        if equipment['5'] == '578':
+            monster_base = 1
+        else:
+            monster_base = 100
 
     player_potion = equipment['15']
     if player_potion == '427' or player_potion == '430':

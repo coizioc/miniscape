@@ -18,7 +18,7 @@ from cogs.helper import quests
 from cogs.helper import slayer
 from cogs.helper import users
 
-MAX_PER_ACTION = 2500
+MAX_PER_ACTION = 10000
 
 
 class AmbiguousInputError(Exception):
