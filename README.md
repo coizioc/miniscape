@@ -1,6 +1,32 @@
 # Miniscape
 
-__**COMMANDS OVERVIEW**__:
+## Tutorial
+If you are new to the game, welcome! Below is a list of the most important commands you need to know to start out:
+
+* `~starter` gives you a starter kit of items.
+* `~items [search]` shows your inventory. Adding an argument searches for items with a particular word.
+* `~items info [item]` shows more information about a particular item.
+* `~equip` equips an item.
+* `~me` shows your current stats and equipment.
+
+In addition, here are some of the main activities you can partake in:
+
+* `~kill [number] [monster] [length: minutes]` kills either a given number of monsters, or kills or a monster for a set period of time for combat experience.
+* `~bestiary [monster]` shows the list of monsters you can kill. Specifying a monster will show more info related to that monster.
+* `~slayer` starts a slayer task for slayer experience.
+* `~gather [number] [item] [length: minutes]` gathers either a given number of items, or gathers an item for a set period of time for gathering experience.
+* `~quest` shows the list of quests you can currently start.
+* `~shop` shows the items you can buy.
+* `~buy [number] [item]` buys a given number of an item.
+* `~sell [number] [item]` sells a given number of an item, or all if `[number]` is `all`.
+* `~trade [user] [number] [item] [offer]` sells a given number of an item to a user for a given offer.
+* `~cancel` cancels whatever action you are currently doing.
+
+You do not have to do all of these. You can focus on just killing goblins with your fists for all I care. Some more activities you can enjoy are listed in the **commands** section of this page.
+
+If you have any questions, feel free to ask around on the MiniScape disord channel, which can be found here: https://discord.gg/vj59hYB.
+
+## Commands
 These commands are organised by category.
 
 Adventure commands:
