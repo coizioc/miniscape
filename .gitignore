@@ -9,3 +9,5 @@ runalogcheck.sh
 !requirements.txt
 *.log
 *.db
+.idea/
+venv/

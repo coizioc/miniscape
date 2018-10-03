@@ -1,7 +1,9 @@
+#! /usr/bin/env python3
 """Runs bots for a Discord server."""
 import os
 import sys
 import traceback
+import cogs.managers.trade_manager as tm
 
 from discord.ext import commands
 
@@ -52,6 +54,7 @@ class MathBot(commands.Bot):
         self.default_nick = "Miniscape"
         self.add_command(self.load)
         self.remove_command('help')
+        self.initialize_managers()
 
         for extension in extensions_generator():
             try:
@@ -68,6 +71,9 @@ class MathBot(commands.Bot):
             except Exception:
                 print(f'Failed to load submodule {submodule}.', file=sys.stderr)
                 traceback.print_exc()
+
+    def initialize_managers(self):
+        self.trade_manager = tm.TradeManager()
 
     async def on_ready(self):
         """Prints bot initialization info"""

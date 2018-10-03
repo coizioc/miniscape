@@ -467,6 +467,11 @@ def print_inventory(person, search):
     return messages
 
 
+def read_user_multi(*args, **kwargs):
+    """Reads the value of the same key across multiple users"""
+    return [read_user(u, key=kwargs['key']) for u in args]
+
+
 def read_user(userid, key=ITEMS_KEY):
     """Reads the value of a key within a user's account."""
     try:
