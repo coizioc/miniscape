@@ -1,3 +1,4 @@
+#! /usr/bin/env python3
 """Provides a launcher that sets up logging for the bot."""
 import logging
 import contextlib
