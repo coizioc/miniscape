@@ -109,8 +109,9 @@ class TradeManager():
         self._active_traders.add(self.name_member.id)
 
     def reset_trade(self, trade, user1, user2):
-        self.__remove_active_traders(user1, user2)
-        self._active_trades.remove(trade)
+        with self.lock:
+            self.__remove_active_traders(user1, user2)
+            self._active_trades.remove(trade)
 
     def __remove_active_traders(self, user1, user2):
         self._active_traders.remove(user1)
