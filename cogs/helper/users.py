@@ -35,7 +35,9 @@ ARTISAN_XP_KEY = 'artisan'      # User's artisan xp, stored as an int.
 COOK_XP_KEY = 'cook'            # User's cooking xp, stored as an int.
 PRAY_XP_KEY = 'prayer'          # User's prayer xp, stored as an int.
 RC_XP_KEY = 'runecrafting'      # User's runecrafting xp, stored as an int.
-LAST_REAPER_KEY = 'reaper'      # Date of user's last reaper task, stored as a date object.
+REAPER_KEY = 'reaperdone'       # Boolean whether user has completed a reaper task today.
+VIS_KEY = 'vis'                 # Boolean whether user has recieved vis wax today.
+VIS_ATTEMPTS_KEY = 'visattempts'# User's number of daily vis wax attempts.
 FOOD_KEY = 'food'               # User's active food, stored as an int.
 PRAY_KEY = 'pray'               # User's current prayer, stored as an int.
 QUESTS_KEY = 'quests'           # User's completed quests. Stored as a hexadecimal number whose bits represent
@@ -55,7 +57,8 @@ DEFAULT_ACCOUNT = {IRONMAN_KEY: False,
                    RC_XP_KEY: 0,
                    FOOD_KEY: -1,
                    PRAY_KEY: -1,
-                   LAST_REAPER_KEY: datetime.date.today() - datetime.timedelta(days=1),
+                   REAPER_KEY: False,
+                   VIS_KEY: False,
                    QUESTS_KEY: "0x0"}   # What's this?
 
 SKILLS = [COMBAT_XP_KEY, SLAYER_XP_KEY, GATHER_XP_KEY, ARTISAN_XP_KEY, COOK_XP_KEY, PRAY_XP_KEY, RC_XP_KEY]
@@ -310,7 +313,7 @@ def item_in_inventory(userid, item, number=1):
         userjson = ujson.load(f)
 
     try:
-        count = userjson[ITEMS_KEY][item]
+        count = userjson[ITEMS_KEY][str(item)]
         if int(count) >= int(number):
             return True
         else:
@@ -497,6 +500,14 @@ def reset_account(userid):
     userjson = DEFAULT_ACCOUNT
     with open(f'{USER_DIRECTORY}{userid}.json', 'w+') as f:
         ujson.dump(userjson, f)
+
+
+def reset_dailies():
+    """Resets the completion of all users' dailies."""
+    for userid in os.listdir(USER_DIRECTORY):
+        update_user(userid, False, key=VIS_KEY)
+        update_user(userid, 0, key=VIS_ATTEMPTS_KEY)
+        update_user(userid, False, key=REAPER_KEY)
 
 
 def update_inventory(userid, loot, remove=False):

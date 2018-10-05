@@ -1,6 +1,6 @@
 import ujson
 
-from config import CHANNEL_PERMISSIONS_JSON
+from config import CHANNEL_PERMISSIONS_JSON, MOD_CONFIG_JSON
 
 WHITELIST_KEY = 'white'            # list containing all channels in a guild in which the bot can run commands.
 BLACKLIST_KEY = 'black'            # list containing all channels in a guild in which the bot cannot run commands.
@@ -74,6 +74,14 @@ def get_guild(guildid):
         return get_file()[str(guildid)]
     except KeyError:
         return {}
+
+
+def in_panic():
+    try:
+        with open(MOD_CONFIG_JSON, 'r') as f:
+            return ujson.load(f)['panic']
+    except KeyError:
+        return False
 
 
 def remove_channel(guildid, channelid, key):

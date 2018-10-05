@@ -81,7 +81,7 @@ class MathBot(commands.Bot):
         if message.author.bot:
             return
         if message.content.startswith('~help') or message.content.startswith('%help'):
-            await message.channel.send('A list of commands can be found at '
+            await message.channel.send('A tutorial and a list of commands can be found at '
                                        'https://github.com/coizioc/math-bot/blob/master/README.md')
         await self.process_commands(message)
 

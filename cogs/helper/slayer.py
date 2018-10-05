@@ -310,6 +310,7 @@ def get_reaper_result(person, *args):
         raise ValueError
     out = ''
     users.add_counter(person.id, monsterid, num_to_kill)
+    users.update_user(person.id, True, key=users.REAPER_KEY)
     if adv.is_success(calc_chance(person.id, monsterid, num_to_kill)):
         users.remove_potion(person.id)
         factor = 0.7 * items.get_luck_factor(person.id)
@@ -418,9 +419,7 @@ def get_reaper_task(guildid, channelid, userid):
     if users.get_level(userid, key=users.SLAYER_XP_KEY) < 50:
         out += "Your slayer level is too low to start a reaper task. You need at least 50 slayer."
         return out
-    print(users.read_user(userid, key=users.LAST_REAPER_KEY))
-    if datetime.datetime.fromtimestamp(users.read_user(userid, key=users.LAST_REAPER_KEY)).date() \
-            >= datetime.date.today():
+    if users.read_user(userid, key=users.REAPER_KEY):
         out += 'You have already done a reaper task today. Please come back tomorrow for another one.'
         return out
 
@@ -450,7 +449,6 @@ def get_reaper_task(guildid, channelid, userid):
         task = adv.format_line(5, userid, adv.get_finish_time(task_length), guildid, channelid, monsterid,
                                monster_name, num_to_kill, chance)
         adv.write(task)
-        users.update_user(userid, datetime.date.today(), key=users.LAST_REAPER_KEY)
         out += print_task(userid, reaper=True)
         if cb_perk is True:
             out += 'Your time has been reduced by 30% due to your combat perk!'

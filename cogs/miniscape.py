@@ -6,7 +6,7 @@ import random
 import discord
 from discord.ext import commands
 
-import config
+from config import TEST_CHANNEL, CREATOR_ID
 from cogs.helper import channel_permissions as cp
 from cogs.helper import adventures as adv
 from cogs.helper import clues
@@ -17,6 +17,7 @@ from cogs.helper import prayer
 from cogs.helper import quests
 from cogs.helper import slayer
 from cogs.helper import users
+from cogs.helper import vis
 
 MAX_PER_ACTION = 10000
 
@@ -78,6 +79,9 @@ def parse_name(guild, username):
 
 def has_post_permission(guildid, channelid):
     """Checks whether the bot can post in that channel."""
+    if cp.in_panic():
+        return channelid == TEST_CHANNEL
+
     guild_perms = cp.get_guild(guildid)
     try:
         for blacklist_channel in guild_perms[cp.BLACKLIST_KEY]:
@@ -684,7 +688,7 @@ class Miniscape():
                 for message in messages:
                     await ctx.send(message)
 
-    @commands.command(aliases=['rc'])
+    @commands.group(aliases=['rc'])
     async def runecraft(self, ctx, *args):
         """Starts a runecrafting session."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
@@ -698,6 +702,120 @@ class Miniscape():
                 rune = ' '.join(args)
             out = craft.start_runecraft(ctx.guild.id, ctx.channel.id, ctx.author.id, rune, number)
             await ctx.send(out)
+
+    @runecraft.command(aliases=['pure'])
+    async def _runecraft_pure(self, ctx, *args):
+        """Starts a runecrafting session with pure essence."""
+        if has_post_permission(ctx.guild.id, ctx.channel.id):
+            try:
+                number = int(args[0])
+                if number >= MAX_PER_ACTION:
+                    number = MAX_PER_ACTION
+                rune = ' '.join(args[1:])
+            except ValueError:
+                number = 1
+                rune = ' '.join(args)
+            out = craft.start_runecraft(ctx.guild.id, ctx.channel.id, ctx.author.id, rune, number, pure=1)
+            await ctx.send(out)
+
+    @commands.group()
+    async def vis(self, ctx, *args):
+        """Lets the user guess the current vis combination."""
+        if has_post_permission(ctx.guild.id, ctx.channel.id):
+            if users.read_user(ctx.author.id, key=users.VIS_KEY):
+                await ctx.send("You have already received vis wax today. Please wait until tomorrow to try again.")
+                return
+
+            if users.get_level(ctx.author.id, key=users.RC_XP_KEY) < 75:
+                await ctx.send("You do not have a high enough runecrafting level to know how to use this machine.")
+
+            runes = []
+            if len(args) == 3:
+                for rune in args:
+                    runes.append(rune + " rune")
+            elif len(args) == 6:
+                runes.append(' '.join(args[0:1]))
+                runes.append(' '.join(args[2:3]))
+                runes.append(' '.join(args[4:5]))
+            else:
+                await ctx.send("Invalid number of arguments. Please enter the name of three runes.")
+                return
+
+            num_vis = vis.calc(ctx.author.id, runes)
+            if type(num_vis) == str:
+                await ctx.send(num_vis)
+                return
+
+            num_attempts = users.read_user(ctx.author.id, key=users.VIS_ATTEMPTS_KEY)
+            users.update_user(ctx.author.id, num_attempts + 1, key=users.VIS_ATTEMPTS_KEY)
+            out = f"{craft.GATHER_HEADER}With the runes {runes}, you can receive {num_vis} vis wax per " \
+                  f"slot, respectively, for a total of {sum(num_vis)} vis wax. You have made {num_attempts + 1} " \
+                  f"attempts today, meaning that you require {vis.calc_num(num_attempts + 1)}"
+            await ctx.send(out)
+
+    @vis.command(name='use')
+    async def _vis_use(self, ctx, *args):
+        if has_post_permission(ctx.guild.id, ctx.channel.id):
+            if users.read_user(ctx.author.id, key=users.VIS_KEY):
+                await ctx.send("You have already received vis wax today. Please wait until tomorrow to try again.")
+                return
+
+            if users.get_level(ctx.author.id, key=users.RC_XP_KEY) < 75:
+                await ctx.send("You do not have a high enough runecrafting level to know how to use this machine.")
+
+            runes = []
+            if len(args) == 3:
+                for rune in args:
+                    runes.append(rune + " rune")
+            elif len(args) == 6:
+                runes.append(' '.join(args[0:1]))
+                runes.append(' '.join(args[2:3]))
+                runes.append(' '.join(args[4:5]))
+            else:
+                await ctx.send("Invalid number of arguments. Please enter the name of three runes.")
+                return
+
+            num_vis = vis.calc(ctx.author.id, runes)
+            if type(num_vis) == str:
+                await ctx.send(num_vis)
+                return
+
+            num_attempts = users.read_user(ctx.author.id, key=users.VIS_ATTEMPTS_KEY)
+            num_runes = vis.calc_num(num_attempts)
+            loot = []
+            for rune in runes:
+                if users.item_in_inventory(ctx.author.id, rune, num_runes):
+                    loot.extend(num_runes * [items.find_by_name(rune)])
+                else:
+                    await ctx.send(f"You do not have enough runes to use this vis wax combination "
+                                   f"({items.add_plural(num_runes, items.find_by_name(rune))})")
+
+            users.update_inventory(ctx.author.id, loot, remove=True)
+            users.update_inventory(ctx.author.id, num_vis*['579'])
+            users.update_user(ctx.author.id, True, key=users.VIS_KEY)
+            out = f"{craft.GATHER_HEADER}With the runes {runes}, you received {num_vis} vis wax per " \
+                  f"slot, respectively, for a total of {sum(num_vis)} vis wax. You have made {num_attempts} " \
+                  f"attempts today, meaning that you used {vis.calc_num(num_attempts)} " \
+                  f"of each rune to craft the vis wax."
+            await ctx.send(out)
+
+    @vis.commands(name='shop')
+    async def _vis_shop(self, ctx):
+        """Prints the vis wax shop."""
+        if has_post_permission(ctx.guild.id, ctx.channel.id):
+            await ctx.send(vis.shop_print())
+
+    @vis.commands(name='buy')
+    async def _vis_buy(self, ctx, *args):
+        """Buys an item from the vis wax shop."""
+        if has_post_permission(ctx.guild.id, ctx.channel.id):
+            try:
+                number = int(args[0])
+                item = ' '.join(args[1:])
+            except ValueError:
+                number = 1
+                item = ' '.join(args)
+            await ctx.send(vis.shop_buy(ctx.author.id, item, number))
 
     @commands.group(invoke_without_command=True, aliases=['recipe'])
     async def recipes(self, ctx, *args):
@@ -899,7 +1017,24 @@ class Miniscape():
                     except ValueError:
                         await ctx.send(f'Name {name} not found in leaderboard.')
                     await ctx.send(out)
-    
+
+    async def reset_dailies(self):
+        """Checks if the current time is a different day and resets everyone's daily progress."""
+        await self.bot.wait_until_ready()
+        while not self.bot.is_closed():
+            with open('./resources/last_check.txt', 'r+') as f:
+                last_check_string = f.read()
+
+            try:
+                last_check_time = datetime.datetime.strptime(last_check_string, '%Y-%m-%d %H:%M:%S.%f')
+                if last_check_time.date() < datetime.datetime.now().date():
+                    users.reset_dailies()
+                    vis.update_vis()
+            except ValueError:
+                with open('./resources/last_check.txt', 'w+') as f:
+                    f.write(datetime.datetime.now())
+            await asyncio.sleep(60)
+
     async def backup_users(self):
         """Backs up the userjson files into another directory."""
         await self.bot.wait_until_ready()

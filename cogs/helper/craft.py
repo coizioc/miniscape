@@ -280,7 +280,7 @@ def get_quest_recipes(questid):
 def get_runecraft(person, *args):
     """Gets the result of a runecrafting session."""
     try:
-        itemid, item_name, number, length = args[0]
+        itemid, item_name, number, length, pure = args[0]
         number = int(number)
     except ValueError as e:
         print(e)
@@ -291,8 +291,13 @@ def get_runecraft(person, *args):
     rc_req = items.get_attr(itemid, key=items.LEVEL_KEY)
     loot = int(number * (1 + (rc_level_before - rc_req) / 20)) * [itemid]
     xp = XP_FACTOR * number * items.get_attr(itemid, key=items.XP_KEY)
+    if pure:
+        xp *= 2
+
     users.update_inventory(person.id, loot)
-    users.update_inventory(person.id, number * ['130'], remove=True)
+
+    essenceid = '130' if not pure else '580'
+    users.update_inventory(person.id, number * [essenceid], remove=True)
     users.update_user(person.id, xp, key=users.RC_XP_KEY)
     rc_level_after = users.xp_to_level(users.read_user(person.id, users.RC_XP_KEY))
 
@@ -426,7 +431,7 @@ def start_gather(guildid, channelid, userid, item, length=-1, number=-1):
     return out
 
 
-def start_runecraft(guildid, channelid, userid, item, number=1):
+def start_runecraft(guildid, channelid, userid, item, number=1, pure=0):
     """Starts a runecrafting session."""
     out = ''
     if not adv.is_on_adventure(userid):
@@ -473,13 +478,12 @@ def start_runecraft(guildid, channelid, userid, item, number=1):
                 bonus += items.get_attr(n, key=items.POUCH_KEY)
 
         length = factor * math.ceil(number * 1.2 / (28.0 + bonus))
-
-        if not users.item_in_inventory(userid, '130', number):
-            return f'You do not have enough rune essence to craft this many runes.'
-        # users.update_inventory(userid, number * ['130'], remove=True)
+        essenceid = '130' if not pure else '580'
+        if not users.item_in_inventory(userid, essenceid, number):
+            return f'You do not have enough essence to craft this many runes.'
 
         rc_session = adv.format_line(6, userid, adv.get_finish_time(length * 60), guildid, channelid,
-                                     itemid, item_name, number, length)
+                                     itemid, item_name, number, length, pure)
         adv.write(rc_session)
         out += f'You are now crafting {items.add_plural(number, itemid)} for {length} minutes.'
     else:
