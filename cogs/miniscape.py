@@ -18,6 +18,7 @@ from cogs.helper import quests
 from cogs.helper import slayer
 from cogs.helper import users
 from cogs.helper import vis
+from cogs.errors.trade_error import TradeError
 
 MAX_PER_ACTION = 10000
 
@@ -519,12 +520,20 @@ class Miniscape():
     async def trade(self, ctx, *args):
         """Trades to a person a number of a given object for a given price."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            if users.read_user(ctx.author.id, key=users.IRONMAN_KEY):
-                await ctx.send('Ironmen cannot trade.')
-                return
-
             if len(args) < 4:
                 await ctx.send('Arguments missing. Syntax is `~trade [name] [number] [item] [offer]`.')
+                return
+
+            try:
+                trade = {'user1': ctx.author.id,
+                         'user2': args[0],
+                         'amount1': args[1],
+                         'amount2': args[-1],
+                         'item1': ' '.join(args[2:-1]),
+                         'item2': 'coins'}
+                ctx.bot.trade_manager.add_trade(ctx, trade)
+            except TradeError as e:
+                await ctx.send(e.msg)
                 return
 
             name = args[0]
@@ -532,41 +541,10 @@ class Miniscape():
                 if name.lower() in member.name.lower():
                     name_member = member
                     break
-            else:
-                await ctx.send(f'{name} not found in server.')
-                return
-            if users.read_user(name_member.id, key=users.IRONMAN_KEY):
-                await ctx.send('You cannot trade with an ironman.')
-                return
 
-            try:
-                number = int(args[1])
-            except ValueError:
-                await ctx.send(f'{args[1]} is not a valid number.')
-                return
-
-            try:
-                offer = users.parse_int(args[-1])
-                itemid = items.find_by_name(' '.join(args[2:-1]))
-            except ValueError:
-                await ctx.send(f'{args[-1]} is not a valid offer.')
-                return
-            except KeyError:
-                await ctx.send(f"{' '.join(args[2:-1])} is not a valid item.")
-                return
-
-            if not users.item_in_inventory(ctx.author.id, itemid, number):
-                await ctx.send(f'You do not have {items.add_plural(number, itemid)} in your inventory.')
-                return
-
-            if not items.is_tradable(itemid):
-                await ctx.send(f'You can not trade this item. ({items.get_attr(itemid)})')
-                return
-
-            if not users.item_in_inventory(name_member.id, "0", offer):
-                await ctx.send(f'{get_display_name(name_member)} does not have enough gold to buy this many items.')
-                return
-
+            offer = users.parse_int(args[-1])
+            number = int(args[1])
+            itemid = items.find_by_name(' '.join(args[2:-1]))
             name = get_display_name(ctx.author)
             offer_formatted = '{:,}'.format(offer)
             out = f'{items.SHOP_HEADER}{name.title()} wants to sell {name_member.mention} ' \
@@ -575,7 +553,8 @@ class Miniscape():
             msg = await ctx.send(out)
             await msg.add_reaction('\N{THUMBS UP SIGN}')
 
-            while True:
+            x = True
+            while x:
                 try:
                     reaction, user = await self.bot.wait_for('reaction_add', timeout=60)
                     if str(reaction.emoji) == '👍' and user == name_member and reaction.message.id == msg.id:
@@ -590,10 +569,12 @@ class Miniscape():
                         await ctx.send(f'{items.SHOP_HEADER}{name.title()} successfully sold '
                                        f'{items.add_plural(number, itemid)} to {buyer_name} for '
                                        f'{offer_formatted} coins!')
-                        return
+                        x = False
                 except asyncio.TimeoutError:
                     await msg.edit(content=f'One minute has passed and your offer has been cancelled.')
-                    return
+                    x = False
+            else:
+                ctx.bot.trade_manager.reset_trade(trade, ctx.author.id, name_member.id)
 
     @commands.command()
     async def ironman(self, ctx):
