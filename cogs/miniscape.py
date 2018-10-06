@@ -80,8 +80,8 @@ def parse_name(guild, username):
 
 def has_post_permission(guildid, channelid):
     """Checks whether the bot can post in that channel."""
-    if cp.in_panic():
-        return channelid == TEST_CHANNEL
+    # if cp.in_panic():
+    #     return channelid == TEST_CHANNEL
 
     guild_perms = cp.get_guild(guildid)
     try:
@@ -111,7 +111,8 @@ class Miniscape():
         self.bot = bot
         self.bot.loop.create_task(self.check_adventures())
         self.bot.loop.create_task(self.backup_users())
-
+        self.bot.loop.create_task(self.reset_dailies())
+ 
     # @commands.command()
     # async def commands(self, ctx):
     #     """Sends the user a message listing the bot's commands."""
@@ -286,7 +287,7 @@ class Miniscape():
             out = slayer.get_reaper_task(ctx.guild.id, ctx.channel.id, ctx.author.id)
             await ctx.send(out)
 
-    @commands.group(invoke_without_command=True, aliases=['grind', 'fring'])
+    @commands.group(invoke_without_command=True, aliases=['grind', 'fring', 'yeet'])
     async def kill(self, ctx, *args):
         """Lets the user kill monsters for a certain number or a certain amount of time."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
@@ -414,7 +415,7 @@ class Miniscape():
             out = items.compare(item1.lower(), item2.lower())
             await ctx.send(out)
 
-    @commands.command()
+    @commands.command(aliases=['stuatus'])
     async def status(self, ctx):
         """Says what you are currently doing."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
@@ -516,7 +517,7 @@ class Miniscape():
                       f"sold for {value_formatted} coins!"
             await ctx.send(out)
 
-    @commands.command()
+    #@commands.command()
     async def trade(self, ctx, *args):
         """Trades to a person a number of a given object for a given price."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
@@ -699,7 +700,7 @@ class Miniscape():
             out = craft.start_runecraft(ctx.guild.id, ctx.channel.id, ctx.author.id, rune, number, pure=1)
             await ctx.send(out)
 
-    @commands.group()
+    @commands.group(invoke_without_command=True)
     async def vis(self, ctx, *args):
         """Lets the user guess the current vis combination."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
@@ -731,8 +732,17 @@ class Miniscape():
             users.update_user(ctx.author.id, num_attempts + 1, key=users.VIS_ATTEMPTS_KEY)
             out = f"{craft.GATHER_HEADER}With the runes {runes}, you can receive {num_vis} vis wax per " \
                   f"slot, respectively, for a total of {sum(num_vis)} vis wax. You have made {num_attempts + 1} " \
-                  f"attempts today, meaning that you require {vis.calc_num(num_attempts + 1)}"
+                  f"attempts today, meaning that you require {vis.calc_num(num_attempts + 1)} of each rune to make this many vis wax."
             await ctx.send(out)
+
+    @vis.command(name='third')
+    async def _vis_third(self, ctx):
+        if has_post_permission(ctx.guild.id, ctx.channel.id):
+            if users.get_level(ctx.author.id, key=users.RC_XP_KEY) < 99:
+                await ctx.send("You do not have a high enough runecrafting level to use this command")
+                return
+            
+            await ctx.send(f"Your third vis wax slot rune for today is {items.get_attr(vis.calc_third_rune(ctx.author.id))}.")
 
     @vis.command(name='use')
     async def _vis_use(self, ctx, *args):
@@ -760,19 +770,21 @@ class Miniscape():
             if type(num_vis) == str:
                 await ctx.send(num_vis)
                 return
-
+            
             num_attempts = users.read_user(ctx.author.id, key=users.VIS_ATTEMPTS_KEY)
             num_runes = vis.calc_num(num_attempts)
             loot = []
             for rune in runes:
-                if users.item_in_inventory(ctx.author.id, rune, num_runes):
-                    loot.extend(num_runes * [items.find_by_name(rune)])
+                itemid = items.find_by_name(rune)
+                if users.item_in_inventory(ctx.author.id, itemid, num_runes):
+                    loot.extend(num_runes*[itemid])
                 else:
                     await ctx.send(f"You do not have enough runes to use this vis wax combination "
                                    f"({items.add_plural(num_runes, items.find_by_name(rune))})")
-
+                    return
+            
             users.update_inventory(ctx.author.id, loot, remove=True)
-            users.update_inventory(ctx.author.id, num_vis*['579'])
+            users.update_inventory(ctx.author.id, round(sum(num_vis))*['579'])
             users.update_user(ctx.author.id, True, key=users.VIS_KEY)
             out = f"{craft.GATHER_HEADER}With the runes {runes}, you received {num_vis} vis wax per " \
                   f"slot, respectively, for a total of {sum(num_vis)} vis wax. You have made {num_attempts} " \
@@ -780,13 +792,13 @@ class Miniscape():
                   f"of each rune to craft the vis wax."
             await ctx.send(out)
 
-    @vis.commands(name='shop')
+    @vis.command(name='shop')
     async def _vis_shop(self, ctx):
         """Prints the vis wax shop."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             await ctx.send(vis.shop_print())
 
-    @vis.commands(name='buy')
+    @vis.command(name='buy')
     async def _vis_buy(self, ctx, *args):
         """Buys an item from the vis wax shop."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
@@ -1002,18 +1014,28 @@ class Miniscape():
     async def reset_dailies(self):
         """Checks if the current time is a different day and resets everyone's daily progress."""
         await self.bot.wait_until_ready()
-        while not self.bot.is_closed():
-            with open('./resources/last_check.txt', 'r+') as f:
-                last_check_string = f.read()
-
+        while not self.bot.is_closed(): 
             try:
-                last_check_time = datetime.datetime.strptime(last_check_string, '%Y-%m-%d %H:%M:%S.%f')
-                if last_check_time.date() < datetime.datetime.now().date():
+                with open('./resources/last_check.txt', 'r') as f:
+                    last_check_string = f.read().splitlines()
+                last_check_time = datetime.datetime.strptime(last_check_string[0], '%Y-%m-%d %H:%M:%S.%f')
+            except FileNotFoundError as e:
+                print(e)
+                with open('./resources/last_check.txt', 'w+') as f:
+                    f.write(f"{datetime.datetime.now()}\n")
+                last_check_time = datetime.datetime.now()
+            except Exception as e:
+                 print(e)
+            
+            print(f"{last_check_time.date()} {datetime.datetime.now().date()}")
+            if last_check_time.date() < datetime.datetime.now().date():
+                try:
                     users.reset_dailies()
                     vis.update_vis()
-            except ValueError:
-                with open('./resources/last_check.txt', 'w+') as f:
-                    f.write(datetime.datetime.now())
+                    with open('./resources/last_check.txt', 'w+') as f:
+                        f.write(f"{datetime.datetime.now()}\n")
+                except Exception as e:
+                    print(e)
             await asyncio.sleep(60)
 
     async def backup_users(self):
