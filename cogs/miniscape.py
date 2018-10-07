@@ -80,8 +80,8 @@ def parse_name(guild, username):
 
 def has_post_permission(guildid, channelid):
     """Checks whether the bot can post in that channel."""
-    if cp.in_panic():
-        return channelid == TEST_CHANNEL
+    # if cp.in_panic():
+    #     return channelid == TEST_CHANNEL
 
     guild_perms = cp.get_guild(guildid)
     try:
@@ -127,20 +127,20 @@ class Miniscape():
             await ctx.send(users.print_account(ctx.author.id, name))
 
     @me.group(name='stats', aliases=['levels'])
-    async def _stats(self, ctx):
+    async def _me_stats(self, ctx):
         """Shows the levels and stats of a user."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             name = get_display_name(ctx.author)
             await ctx.send(users.print_account(ctx.author.id, name, printequipment=False))
 
     @me.group(name='equipment', aliases=['armour', 'armor'])
-    async def _equipment(self, ctx):
+    async def _me_equipment(self, ctx):
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             name = get_display_name(ctx.author)
             await ctx.send(users.print_equipment(ctx.author.id, name=name, with_header=True))
 
     @me.group(name='monsters')
-    async def _monsters(self, ctx):
+    async def _me_monsters(self, ctx):
         """Shows how many monsters a user has killed."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             name = get_display_name(ctx.author)
@@ -148,11 +148,19 @@ class Miniscape():
             await ctx.send(out)
 
     @me.command(name='clues')
-    async def _clues(self, ctx):
+    async def _me_clues(self, ctx):
         """Shows how many clue scrolls a user has completed."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             out = clues.print_clue_scrolls(ctx.author.id)
             await ctx.send(out)
+
+    @me.command(name='pets')
+    async def _me_pets(self, ctx):
+        """Shows which pets a user has collected."""
+        if has_post_permission(ctx.guild.id, ctx.channel.id):
+            messages = users.print_pets(ctx.author.id)
+            for message in messages:
+                await ctx.send(message)
 
     @commands.command(aliases=['lookup', 'finger', 'find'])
     async def examine(self, ctx, *args):
@@ -780,13 +788,13 @@ class Miniscape():
                   f"of each rune to craft the vis wax."
             await ctx.send(out)
 
-    @vis.commands(name='shop')
+    @vis.command(name='shop')
     async def _vis_shop(self, ctx):
         """Prints the vis wax shop."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             await ctx.send(vis.shop_print())
 
-    @vis.commands(name='buy')
+    @vis.command(name='buy')
     async def _vis_buy(self, ctx, *args):
         """Buys an item from the vis wax shop."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):

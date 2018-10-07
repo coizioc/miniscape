@@ -36,6 +36,7 @@ RUNE_KEY = 'rune'           # Boolean whether item is a rune.
 COOK_KEY = 'cook'           # Boolean whether item can be cooked.
 BURY_KEY = 'bury'           # Boolean whether item can be buried.
 MAX_KEY = 'max'		        # Boolean whether max skill total is a req to wear item.
+PET_KEY = 'pet'             # Boolean whether item is a pet.
 EAT_KEY = 'eat'             # Int representing chance improvement by item when set as food.
 LUCK_KEY = 'luck'           # float representing factor of luck enhancement
 DEFAULT_ITEM = {NAME_KEY: 'unknown item',
@@ -62,6 +63,7 @@ DEFAULT_ITEM = {NAME_KEY: 'unknown item',
                 BURY_KEY: False,
                 RUNE_KEY: False,
                 MAX_KEY: False,
+                PET_KEY: False,
                 EAT_KEY: 0,
                 LUCK_KEY: 1
                 }

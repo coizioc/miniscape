@@ -39,11 +39,11 @@ BASE_COST = 2500
 VIS_DELTA = 150
 
 
-def calc(userid, items):
+def calc(userid, runes_input):
     """Calculates the number of vis wax given the userid and a list of items.
     Returns a list of length 3 representing how many vis wax they have received in each slot."""
     runes = []
-    for item in items:
+    for item in runes_input:
         try:
             itemid = items.find_by_name(item)
         except KeyError:
@@ -86,7 +86,9 @@ def calc_num(attempts):
     return (VIS_DELTA / 2) * ((attempts - 1) ** 2) + BASE_COST
 
 
-def calc_third_rune(userid, timestamp, best=True):
+def calc_third_rune(userid, timestamp=None, best=True):
+    if timestamp is None:
+        timestamp = open_vis()[8]
     return RUNEIDS[(userid / timestamp) % len(RUNEIDS.keys())] if best else\
            RUNEIDS[(userid % timestamp) % len(RUNEIDS.keys())]
 
