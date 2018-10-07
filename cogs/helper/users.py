@@ -59,6 +59,7 @@ DEFAULT_ACCOUNT = {IRONMAN_KEY: False,
                    PRAY_KEY: -1,
                    REAPER_KEY: False,
                    VIS_KEY: False,
+                   VIS_ATTEMPTS_KEY: 0,
                    QUESTS_KEY: "0x0"}   # What's this?
 
 SKILLS = [COMBAT_XP_KEY, SLAYER_XP_KEY, GATHER_XP_KEY, ARTISAN_XP_KEY, COOK_XP_KEY, PRAY_XP_KEY, RC_XP_KEY]
@@ -529,9 +530,11 @@ def reset_account(userid):
 def reset_dailies():
     """Resets the completion of all users' dailies."""
     for userid in os.listdir(USER_DIRECTORY):
-        update_user(userid, False, key=VIS_KEY)
-        update_user(userid, 0, key=VIS_ATTEMPTS_KEY)
-        update_user(userid, False, key=REAPER_KEY)
+        if userid[:-4] == 'json':
+            userid = userid[:-5] 
+            update_user(userid, False, key=VIS_KEY)
+            update_user(userid, 0, key=VIS_ATTEMPTS_KEY)
+            update_user(userid, False, key=REAPER_KEY)
 
 
 def update_inventory(userid, loot, remove=False):

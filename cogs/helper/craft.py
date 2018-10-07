@@ -365,7 +365,7 @@ def print_status(userid, time_left, *args):
 
 def print_rc_status(userid, time_left, *args):
     """Prints a gathering and how long until it is finished."""
-    itemid, item_name, number, length = args[0]
+    itemid, item_name, number, length, pure = args[0]
     out = f'{GATHER_HEADER}' \
           f'You are currently crafting {items.add_plural(number, itemid)} for {length} minutes. ' \
           f'You will finish {time_left}. '

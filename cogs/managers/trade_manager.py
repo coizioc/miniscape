@@ -39,9 +39,18 @@ class TradeManager():
             self.offer = None
 
     def __is_trade_valid(self):
+        # Make sure our second user (the recipient of the items) is a real user here
+        name = self.curr_trade['user2']
+        for member in self.ctx.guild.members:
+            if name.lower() in member.name.lower():
+                self.name_member = member
+                break
+        else:
+            raise TradeError(f'{name} not found in server.')
+
         # Check if either user is an Ironman
         if True in users.read_user_multi(self.curr_trade['user1'],
-                                         self.curr_trade['user2'],
+                                         self.name_member.id,
                                          key=users.IRONMAN_KEY):
             raise TradeError('Ironmen Cannot trade')
 
@@ -99,7 +108,7 @@ class TradeManager():
 
         # Check that the user isn't him/herself
         if self.curr_trade['user1'] == self.name_member.id:
-            raise TradeError("Can't trade with yourself, dumbass")
+            raise TradeError("You cannot trade with yourself.")
 
 
         return True

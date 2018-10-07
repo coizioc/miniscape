@@ -36,25 +36,28 @@ with open(VIS_SHOP_FILE, 'r') as f:
         VIS_SHOP[line_split[0]]['cost'] = int(line_split[2])
 
 BASE_COST = 2500
-VIS_DELTA = 150
+VIS_DELTA = 250
 
 
-def calc(userid, runes_input):
+def calc(userid, items_input):
     """Calculates the number of vis wax given the userid and a list of items.
     Returns a list of length 3 representing how many vis wax they have received in each slot."""
     runes = []
-    for item in runes_input:
+    for item in items_input:
         try:
             itemid = items.find_by_name(item)
         except KeyError:
             return f"Cannot find item {item}."
         try:
-            runes.append(RUNEIDS[itemid])
+            for runeid in RUNEIDS.keys():
+                if RUNEIDS[runeid] == itemid:
+                    runes.append(runeid)
         except KeyError:
             return f"{items.get_attr(itemid)} is not a rune."
 
     vis = open_vis()
     num_vis = [0, 0, 0]
+    print(f"{runes[0]} {vis[0]}")
     if runes[0] == vis[0]:
         num_vis[0] += 40
     elif runes[0] == vis[1]:
@@ -83,14 +86,14 @@ def calc_num(attempts):
     """Calculates the number of runes required to produce vis wax given a number of attempts."""
     # A given attempt will increase the change in the number of runes needed by VIS_DELTA. That is to say:
     # dy/dx = VIS_DELTA * x. Thus integrating, we get y = (VIS_DELTA / 2) * x^2 + BASE_COST.
-    return (VIS_DELTA / 2) * ((attempts - 1) ** 2) + BASE_COST
+    return round((VIS_DELTA / 2) * ((attempts - 1) ** 2) + BASE_COST)
 
 
 def calc_third_rune(userid, timestamp=None, best=True):
     if timestamp is None:
         timestamp = open_vis()[8]
-    return RUNEIDS[(userid / timestamp) % len(RUNEIDS.keys())] if best else\
-           RUNEIDS[(userid % timestamp) % len(RUNEIDS.keys())]
+    return RUNEIDS[str(round((userid / int(timestamp)) % len(RUNEIDS.keys())))] if best else\
+           RUNEIDS[str(round((userid % int(timestamp)) % len(RUNEIDS.keys())))]
 
 
 def open_vis():
@@ -137,7 +140,7 @@ def update_vis():
     """Changes the daily runes for vis wax."""
     vis = []
     for _ in range(8):
-        vis.append(random.sample(RUNEIDS, k=1)[0])
-    vis.append(int(time.time()))
+        vis.append(random.sample(RUNEIDS.keys(), k=1)[0])
+    vis.append(str(int(time.time())))
     with open(VIS_FILE, 'w') as f:
         f.write('\n'.join(vis))
