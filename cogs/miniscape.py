@@ -368,7 +368,7 @@ class Miniscape():
             out = items.claim(ctx.author.id, item, number)
             await ctx.send(out)
 
-    @commands.command()
+    @commands.command(aliases=['cancle'])
     async def cancel(self, ctx):
         """Cancels your current action."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
@@ -517,7 +517,7 @@ class Miniscape():
                       f"sold for {value_formatted} coins!"
             await ctx.send(out)
 
-    #@commands.command()
+    @commands.command()
     async def trade(self, ctx, *args):
         """Trades to a person a number of a given object for a given price."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
