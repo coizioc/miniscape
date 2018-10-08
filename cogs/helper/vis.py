@@ -57,7 +57,7 @@ def calc(userid, items_input):
 
     vis = open_vis()
     num_vis = [0, 0, 0]
-    print(f"{runes[0]} {vis[0]}")
+    # print(f"{runes[0]} {vis[0]}")
     if runes[0] == vis[0]:
         num_vis[0] += 40
     elif runes[0] == vis[1]:
@@ -72,9 +72,9 @@ def calc(userid, items_input):
     else:
         num_vis[1] += 7
 
-    if runes[2] == calc_third_rune(userid, vis[8]):
+    if runes[2] == calc_third_rune(userid, timestamp=vis[8]):
         num_vis[2] += 30
-    elif runes[2] == calc_third_rune(userid, vis[8], best=False):
+    elif runes[2] == calc_third_rune(userid, timestamp=vis[8], best=False):
         num_vis[2] += 15
     else:
         num_vis[2] += 7
@@ -92,8 +92,9 @@ def calc_num(attempts):
 def calc_third_rune(userid, timestamp=None, best=True):
     if timestamp is None:
         timestamp = open_vis()[8]
-    return RUNEIDS[str(round((userid / int(timestamp)) % len(RUNEIDS.keys())))] if best else\
-           RUNEIDS[str(round((userid % int(timestamp)) % len(RUNEIDS.keys())))]
+    print(timestamp)
+    return RUNEIDS[str(round((userid / int(timestamp)) % (len(RUNEIDS.keys()) - 1)))] if best else\
+           RUNEIDS[str(round((userid % int(timestamp)) % (len(RUNEIDS.keys()) - 1)))]
 
 
 def open_vis():

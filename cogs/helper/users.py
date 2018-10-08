@@ -537,7 +537,9 @@ def reset_account(userid):
 def reset_dailies():
     """Resets the completion of all users' dailies."""
     for userid in os.listdir(USER_DIRECTORY):
-        if userid[:-4] == 'json':
+        print(userid[-4:])
+        if userid[-4:] == 'json':
+            print(userid[:-5])
             userid = userid[:-5] 
             update_user(userid, False, key=VIS_KEY)
             update_user(userid, 0, key=VIS_ATTEMPTS_KEY)

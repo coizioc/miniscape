@@ -313,7 +313,7 @@ def get_reaper_result(person, *args):
     users.update_user(person.id, True, key=users.REAPER_KEY)
     if adv.is_success(calc_chance(person.id, monsterid, num_to_kill)):
         users.remove_potion(person.id)
-        factor = 0.7 * items.get_luck_factor(person.id)
+        factor = 2 * items.get_luck_factor(person.id)
         loot = mon.get_loot(monsterid, int(num_to_kill), factor=factor)
         loot['291'] = 1
         users.update_inventory(person.id, loot)
@@ -431,7 +431,7 @@ def get_reaper_task(guildid, channelid, userid):
             base_time, task_length = calc_length(userid, monsterid, num_to_kill)
             chance = calc_chance(userid, monsterid, num_to_kill)
             # print(f'{monsterid} {task_length/base_time} {chance}')
-            if 0.25 <= task_length / base_time <= 2 and chance >= 20 \
+            if 0.25 <= task_length / base_time <= 2 and chance >= 80 \
                     and mon.get_attr(monsterid, key=mon.BOSS_KEY) is True \
                     and ({mon.get_attr(monsterid, key=mon.QUEST_REQ_KEY)}.issubset(completed_quests)
                          or mon.get_attr(monsterid, key=mon.QUEST_REQ_KEY) == 0):
