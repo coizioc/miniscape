@@ -475,17 +475,20 @@ def print_inventory(person, search):
 def print_pets(userid):
     """Prints a formatted list of pets a user has."""
     pet_ids = [x for x in items.ITEMS.keys() if items.get_attr(x, key=items.PET_KEY)]
-    pet_names = [items.get_attr(x) for x in pet_ids]
+    pet_names = {} # [items.get_attr(x) for x in pet_ids]
+    for petid in pet_ids:
+        pet_names[items.get_attr(petid)] = petid
     messages = []
     pets_header = f':cat: __**PETS**__ :dog:\n'
     out = pets_header
     pet_count = 0
-    for pet_name, petid in sorted(pet_names), pet_ids:
+    for pet_name in sorted(pet_names):
+        petid = pet_names[pet_name]
         if item_in_inventory(userid, petid, 1):
-            out += f"**{pet_name}**\n"
+            out += f"**{pet_name.title()}**\n"
             pet_count += 1
         else:
-            out += f'{items.get_attr(petid)}\n'
+            out += f'{pet_name.title()}\n'
         if len(out) > 1900:
             messages.append(out)
             out = pets_header
