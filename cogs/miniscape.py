@@ -221,14 +221,14 @@ class Miniscape():
 
     @commands.command()
     async def bury(self, ctx, *args):
-        """Burys items for prayer experience."""
+        """Buries items for prayer experience."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            if args[0].isdigit():
-                number = int(args[0])
+            try:
+                number = users.parse_int(args[0])
                 if number >= MAX_PER_ACTION:
                     number = MAX_PER_ACTION
                 item = ' '.join(args[1:])
-            else:
+            except ValueError:
                 number = 1
                 item = ' '.join(args)
             out = prayer.bury(ctx.author.id, item, number)
@@ -301,24 +301,25 @@ class Miniscape():
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             if len(args) > 0:
                 monster = ''
-                if args[0].isdigit():
-                    number = args[0]
+                try:
+                    number = users.parse_int(args[0])
                     monster = ' '.join(args[1:])
                     out = slayer.get_kill(ctx.guild.id, ctx.channel.id, ctx.author.id, monster, number=number)
-                elif args[-1].isdigit():
-                    length = args[-1]
-                    monster = ' '.join(args[:-1])
-                    out = slayer.get_kill(ctx.guild.id, ctx.channel.id, ctx.author.id, monster, length=length)
-                else:
-                    monster = ' '.join(args)
-                    if monster == 'myself':
-                        with open('./resources/hotlines.txt', 'r') as f:
-                            lines = f.read().splitlines()
-                        out = '**If you need help, please call one of the following numbers**:\n'
-                        for line in lines:
-                            out += f'{line}\n'
-                    else:
-                        out = 'Error: there must be a number or length of kill in args.'
+                except ValueError:
+                    try:
+                        length = users.parse_int(args[-1])
+                        monster = ' '.join(args[:-1])
+                        out = slayer.get_kill(ctx.guild.id, ctx.channel.id, ctx.author.id, monster, length=length)
+                    except ValueError:
+                        monster = ' '.join(args)
+                        if monster == 'myself':
+                            with open('./resources/hotlines.txt', 'r') as f:
+                                lines = f.read().splitlines()
+                            out = '**If you need help, please call one of the following numbers**:\n'
+                            for line in lines:
+                                out += f'{line}\n'
+                        else:
+                            out = 'Error: there must be a number or length of kill in args.'
             else:
                 if adv.is_on_adventure(ctx.author.id):
                     out = slayer.get_kill(ctx.guild.id, ctx.channel.id, ctx.author.id, 'GET_UPDATE')
@@ -355,10 +356,6 @@ class Miniscape():
     @commands.command()
     async def chance(self, ctx, monsterid, dam=-1, acc=-1, arm=-1, cb=-1, xp=-1, num=100, dfire=False):
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            # if len(args) == 1:
-            #     monsterid = int(args[0])
-            # elif len(args == 4):
-
             out = slayer.print_chance(ctx.author.id, monsterid, monster_dam=int(dam), monster_acc=int(acc),
                                       monster_arm=int(arm), monster_combat=int(cb), xp=int(xp), number=int(num),
                                       dragonfire=bool(dfire))
@@ -367,10 +364,10 @@ class Miniscape():
     @commands.command()
     async def claim(self, ctx, *args):
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            if args[0].isdigit():
+            try:
                 number = int(args[0])
                 item = ' '.join(args[1:])
-            else:
+            except ValueError:
                 number = 1
                 item = ' '.join(args)
             out = items.claim(ctx.author.id, item, number)
@@ -480,10 +477,10 @@ class Miniscape():
         """Buys something from the shop."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             if len(args) > 0:
-                if args[0].isdigit():
+                try:
                     number = int(args[0])
                     item = ' '.join(args[1:])
-                else:
+                except ValueError:
                     number = 1
                     item = ' '.join(args)
                 out = items.buy(ctx.author.id, item, number=number)
@@ -494,7 +491,7 @@ class Miniscape():
         """Sells the player's inventory for GasterCoin."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             try:
-                number = int(args[0])
+                number = users.parse_int(args[0])
                 item = ' '.join(args[1:])
             except ValueError:
                 number = 1
@@ -512,7 +509,7 @@ class Miniscape():
                 users.update_inventory(ctx.author.id, value*["0"])
                 users.clear_inventory(ctx.author.id, under=maxvalue)
                 value_formatted = '{:,}'.format(value)
-                maxvalue_formatted = '{:,}'.format(int(maxvalue))
+                maxvalue_formatted = '{:,}'.format(users.parse_int(maxvalue))
                 name = get_display_name(ctx.author)
                 out = f"All items in {name}'s inventory worth under {maxvalue_formatted} coins "\
                       f"sold for {value_formatted} coins!"
@@ -552,7 +549,7 @@ class Miniscape():
                     break
 
             offer = users.parse_int(args[-1])
-            number = int(args[1])
+            number = users.parse_int(args[1])
             itemid = items.find_by_name(' '.join(args[2:-1]))
             name = get_display_name(ctx.author)
             offer_formatted = '{:,}'.format(offer)
@@ -567,10 +564,10 @@ class Miniscape():
                 try:
                     reaction, user = await self.bot.wait_for('reaction_add', timeout=60)
                     if str(reaction.emoji) == '👍' and user == name_member and reaction.message.id == msg.id:
-                        price = offer*["0"]
+                        price = {"0": offer}
                         users.update_inventory(name_member.id, price, remove=True)
                         users.update_inventory(ctx.author.id, price)
-                        loot = number * [itemid]
+                        loot = {itemid: number}
                         users.update_inventory(ctx.author.id, loot, remove=True)
                         users.update_inventory(name_member.id, loot)
 
@@ -662,16 +659,17 @@ class Miniscape():
         """Gathers items."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             if len(args) > 0:
-                if args[0].isdigit():
-                    number = args[0]
+                try:
+                    number = users.parse_int(args[0])
                     item = ' '.join(args[1:])
                     out = craft.start_gather(ctx.guild.id, ctx.channel.id, ctx.author.id, item, number=number)
-                elif args[-1].isdigit():
-                    length = args[-1]
-                    item = ' '.join(args[:-1])
-                    out = craft.start_gather(ctx.guild.id, ctx.channel.id, ctx.author.id, item, length=length)
-                else:
-                    out = 'Error: there must be a number or length of gathering in args.'
+                except ValueError:
+                    try:
+                        length = users.parse_int(args[-1])
+                        item = ' '.join(args[:-1])
+                        out = craft.start_gather(ctx.guild.id, ctx.channel.id, ctx.author.id, item, length=length)
+                    except ValueError:
+                        out = 'Error: there must be a number or length of gathering in args.'
                 await ctx.send(out)
             else:
                 messages = craft.get_gather_list()
@@ -683,7 +681,7 @@ class Miniscape():
         """Starts a runecrafting session."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             try:
-                number = int(args[0])
+                number = users.parse_int(args[0])
                 if number >= MAX_PER_ACTION:
                     number = MAX_PER_ACTION
                 rune = ' '.join(args[1:])
@@ -698,7 +696,7 @@ class Miniscape():
         """Starts a runecrafting session with pure essence."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             try:
-                number = int(args[0])
+                number = parse_name(args[0])
                 if number >= MAX_PER_ACTION:
                     number = MAX_PER_ACTION
                 rune = ' '.join(args[1:])
@@ -811,7 +809,7 @@ class Miniscape():
         """Buys an item from the vis wax shop."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             try:
-                number = int(args[0])
+                number = users.parse_int(args[0])
                 item = ' '.join(args[1:])
             except ValueError:
                 number = 1
@@ -840,7 +838,7 @@ class Miniscape():
         """Crafts (a given number of) an item."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             try:
-                number = int(args[0])
+                number = users.parse_int(args[0])
                 if number >= MAX_PER_ACTION:
                     number = MAX_PER_ACTION
                 recipe = ' '.join(args[1:])
@@ -855,7 +853,7 @@ class Miniscape():
         """Cooks (a given amount of) an item."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             try:
-                number = int(args[0])
+                number = users.parse_int(args[0])
                 if number >= MAX_PER_ACTION:
                     number = MAX_PER_ACTION
                 food = ' '.join(args[1:])
