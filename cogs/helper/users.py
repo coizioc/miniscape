@@ -459,9 +459,10 @@ def print_inventory(person, search):
         item_total_value_formatted = '{:,}'.format(item_total_value)
         if inventory[itemid] > 0:
             out += f'**{items.get_attr(itemid).title()} '
+            num_formatted = '{:,}'.format(inventory[itemid])
             if itemid in locked_items:
                 out += f'(:lock:)'
-            out += f'**: {inventory[itemid]}. *(value: {item_total_value_formatted}, {value_formatted} ea.)*\n'
+            out += f'**: {num_formatted}. *(value: {item_total_value_formatted}, {value_formatted} ea.)*\n'
         if len(out) > 1800:
             messages.append(out)
             out = header
