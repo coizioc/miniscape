@@ -282,6 +282,7 @@ def get_runecraft(person, *args):
     try:
         itemid, item_name, number, length, pure = args[0]
         number = int(number)
+        pure = int(pure)
     except ValueError as e:
         print(e)
         raise ValueError
