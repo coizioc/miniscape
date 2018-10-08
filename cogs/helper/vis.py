@@ -92,9 +92,9 @@ def calc_num(attempts):
 def calc_third_rune(userid, timestamp=None, best=True):
     if timestamp is None:
         timestamp = open_vis()[8]
-    print(timestamp)
-    return RUNEIDS[str(round((userid / int(timestamp)) % (len(RUNEIDS.keys()) - 1)))] if best else\
-           RUNEIDS[str(round((userid % int(timestamp)) % (len(RUNEIDS.keys()) - 1)))]
+    timestamp = int(timestamp)
+    return RUNEIDS[str(round((userid % timestamp) % len(RUNEIDS.keys())))] if best else\
+           RUNEIDS[str(round((userid % timestamp + round(timestamp / 50)) % len(RUNEIDS.keys())))]
 
 
 def open_vis():
@@ -145,3 +145,9 @@ def update_vis():
     vis.append(str(int(time.time())))
     with open(VIS_FILE, 'w') as f:
         f.write('\n'.join(vis))
+
+
+if __name__ == '__main__':
+    userid = 12345678
+    print(calc_third_rune(userid))
+    print(calc_third_rune(userid, timestamp=open_vis()[8]))
