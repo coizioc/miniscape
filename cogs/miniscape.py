@@ -748,7 +748,7 @@ class Miniscape():
                 await ctx.send("You do not have a high enough runecrafting level to use this command")
                 return
             
-            await ctx.send(f"Your third vis wax slot rune for today is {items.get_attr(vis.calc_third_rune(ctx.author.id))}.")
+            await ctx.send(f"Your third vis wax slot rune for today is {items.get_attr(vis.RUNEIDS[vis.calc_third_rune(ctx.author.id)])}.")
 
     @vis.command(name='use')
     async def _vis_use(self, ctx, *args):

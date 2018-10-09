@@ -71,7 +71,7 @@ def calc(userid, items_input):
         num_vis[1] += 15
     else:
         num_vis[1] += 7
-
+    
     if runes[2] == calc_third_rune(userid, timestamp=vis[8]):
         num_vis[2] += 30
     elif runes[2] == calc_third_rune(userid, timestamp=vis[8], best=False):
@@ -93,8 +93,8 @@ def calc_third_rune(userid, timestamp=None, best=True):
     if timestamp is None:
         timestamp = open_vis()[8]
     timestamp = int(timestamp)
-    return RUNEIDS[str(round((userid % timestamp) % len(RUNEIDS.keys())))] if best else\
-           RUNEIDS[str(round((userid % timestamp + round(timestamp / 50)) % len(RUNEIDS.keys())))]
+    return str(round((userid % timestamp) % len(RUNEIDS.keys()))) if best else\
+           str(round((userid % timestamp + round(timestamp / 50)) % len(RUNEIDS.keys())))
 
 
 def open_vis():
