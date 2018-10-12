@@ -160,8 +160,7 @@ class Miniscape():
         """Shows which pets a user has collected."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             messages = users.print_pets(ctx.author.id)
-            for message in messages:
-                await ctx.send(message)
+            self.paginate(ctx, messages)
 
     @commands.command(aliases=['lookup', 'finger', 'find'])
     async def examine(self, ctx, *args):
@@ -239,8 +238,7 @@ class Miniscape():
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             if len(args) == 0:
                 messages = prayer.print_list(ctx.author.id)
-                for message in messages:
-                    await ctx.send(message)
+                self.paginate(ctx, messages)
             else:
                 if args[0] == 'info':
                     current_prayer = ' '.join(args[1:])
@@ -254,11 +252,7 @@ class Miniscape():
         """Show's the player's inventory."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             inventory = users.print_inventory(ctx.author, search.lower())
-            count = 1
-            for message in inventory:
-                message += f' *{count}/{len(inventory)}*'
-                await ctx.send(message)
-                count += 1
+            self.paginate(ctx, inventory)
 
     @items.command(name='info')
     async def _item_info(self, ctx, *args):
@@ -350,8 +344,7 @@ class Miniscape():
                 messages = mon.print_list()
             else:
                 messages = mon.print_monster(monster)
-            for message in messages:
-                await ctx.send(message)
+            self.paginate(ctx, messages)
 
     @commands.command()
     async def chance(self, ctx, monsterid, dam=-1, acc=-1, arm=-1, cb=-1, xp=-1, num=100, dfire=False):
@@ -469,8 +462,7 @@ class Miniscape():
         """Shows the items available at the shop."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             messages = items.print_shop(ctx.author.id)
-            for message in messages:
-                await ctx.send(message)
+            self.paginate(messages)
 
     @commands.command()
     async def buy(self, ctx, *args):
@@ -644,8 +636,7 @@ class Miniscape():
                 await ctx.send(out)
             else:
                 messages = quests.print_list(ctx.author.id)
-                for message in messages:
-                    await ctx.send(message)
+                self.paginate(ctx, messages)
 
     @quests.command(name='start')
     async def _start(self, ctx, questid):
@@ -673,8 +664,7 @@ class Miniscape():
                 await ctx.send(out)
             else:
                 messages = craft.get_gather_list()
-                for message in messages:
-                    await ctx.send(message)
+                self.paginate(ctx, messages)
 
     @commands.group(aliases=['rc'])
     async def runecraft(self, ctx, *args):
@@ -822,8 +812,7 @@ class Miniscape():
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             search = ' '.join(args)
             messages = craft.print_list(ctx.author.id, search)
-            for message in messages:
-                await ctx.send(message)
+            self.paginate(ctx, messages)
 
     @recipes.command(name='info')
     async def _recipe_info(self, ctx, *args):
@@ -1016,6 +1005,30 @@ class Miniscape():
                     except ValueError:
                         await ctx.send(f'Name {name} not found in leaderboard.')
                     await ctx.send(out)
+
+    async def paginate(self, ctx, messages):
+        """Provides an interface for printing a paginated set of messages."""
+        if len(messages) == 1:
+            await ctx.send(messages[0])
+            return
+
+        current_page = 0
+        out = messages[current_page]
+        msg = await ctx.send(out)
+        await msg.add_reaction('⬅')
+        await msg.add_reaction('➡')
+
+        while True:
+            reaction, user = await self.bot.wait_for('reaction_add')
+            if user == ctx.author and reaction.message.id == msg.id:
+                if str(reaction.emoji) == '⬅':
+                    if current_page > 0:
+                        current_page -= 1
+                        await msg.edit(content=messages[current_page])
+                elif str(reaction.emoji) == '➡':
+                    if current_page < len(messages) - 1:
+                        current_page += 1
+                        await msg.edit(content=messages[current_page])
 
     async def reset_dailies(self):
         """Checks if the current time is a different day and resets everyone's daily progress."""
