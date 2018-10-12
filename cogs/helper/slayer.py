@@ -425,9 +425,10 @@ def get_reaper_task(guildid, channelid, userid):
 
     if not adv.is_on_adventure(userid):
         completed_quests = set(users.get_completed_quests(userid))
+        slayer_level = users.get_level(userid, users.SLAYER_XP_KEY);
         for _ in range(1000):
-            monsterid = mon.get_random(slayer_level=users.xp_to_level(users.read_user(userid, key=users.SLAYER_XP_KEY)))
-            num_to_kill = mon.get_task_length(monsterid)
+            monsterid = mon.get_random(slayer_level=slayer_level)
+            num_to_kill = random.randint(LOWEST_NUM_TO_KILL, LOWEST_NUM_TO_KILL + 15 + 3 * slayer_level)
             base_time, task_length = calc_length(userid, monsterid, num_to_kill)
             chance = calc_chance(userid, monsterid, num_to_kill)
             # print(f'{monsterid} {task_length/base_time} {chance}')
