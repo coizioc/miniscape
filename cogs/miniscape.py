@@ -877,134 +877,80 @@ class Miniscape():
     async def leaderboard(self, ctx, *args):
         """Allows users to easily compare each others' stats."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            if len(args) == 0:
-                name = None
-                key = 'total'
-            elif len(args) == 1:
-                if 'key=' in args[0]:
-                    name = None
-                    for userkey in users.DEFAULT_ACCOUNT.keys():
-                        if args[0][4:] in userkey:
-                            key = userkey
-                            break
+            name = " ".join(args)
+            self.print_leaderboard(ctx, name)
+
+    async def print_leaderboard(self, ctx, name):
+        """Prints the leaderboard and provides an interface for showing various leaderboards."""
+        leaderboards = {}
+        for key in users.LEADERBOARD_TITLES.keys():
+            leaderboards[key] = users.get_values_by_account(key)
+
+        msg = await ctx.send("test")
+
+        leaderboard_messages = {}
+        for key in users.LEADERBOARD_TITLES.keys():
+            leaderboard = leaderboards[key]
+
+            try:
+                lower, upper = self.get_leaderboard_range(ctx, name, leaderboard)
+            except ValueError:
+                continue
+
+            out = users.LEADERBOARD_HEADER.replace("$KEY", users.LEADERBOARD_TITLES[key])
+
+            try:
+                for i in range(lower, upper):
+                    user_id, amount = leaderboards[key]
+                    amount_formatted = '{:,}'.format(amount)
+                    member = ctx.message.guild.get_member(user_id)
+                    if member is not None:
+                        name = get_display_name(member)
                     else:
-                        if args[0][4:] == 'total':
-                            key = 'total'
-                        else:
-                            await ctx.send(f'Key {args[0]} not found.')
-                            return
+                        name = f'User {user_id}'
+                    out_user = f'**({1 + i}) {name}**: {amount_formatted} {users.LEADERBOARD_QUANTIFIERS[key]}\n'
+                    if key == 'total':
+                        out_user.replace("$LEVEL", users.xp_to_level(amount))
+                    out += out_user
+            except IndexError:
+                pass
 
+            leaderboard_messages[key] = out
+            msg.add_reaction(users.LEADERBOARD_EMOJI[key])
+
+        while True:
+            reaction, user = await self.bot.wait_for('reaction_add')
+            if user == ctx.author and reaction.message.id == msg.id:
+                for key in users.LEADERBOARD_EMOJI.keys():
+                    if str(reaction.emoji) == users.LEADERBOARD_EMOJI[key]:
+                        await msg.edit(content=None)
+                        await msg.edit(content=leaderboard_messages[key])
+
+
+    async def get_leaderboard_range(self, ctx, name, leaderboard):
+        """Gets the lower and upper bounds of a leaderboard and returns them as a tuple."""
+        if name is None:
+            leaderboard_range = (0, users.LEADERBOARD_LENGTH)
+        elif name == 'bottom':
+            leaderboard_range = (len(leaderboard) - users.LEADERBOARD_LENGTH, len(leaderboard))
+        else:
+            try:
+                name_list = [x[0] for x in leaderboard]
+                name_member = parse_name(ctx.message.guild, name)
+                name_index = name_list.index(name_member.id)
+                if name_index < 5:
+                    lower = 0
+                    upper = 10
                 else:
-                    name = args[0]
-                    key = 'total'
-            else:
-                key = args[0]
-                if key not in users.DEFAULT_ACCOUNT.keys():
-                    if key != 'total':
-                        await ctx.send(f'Key {key} not found.')
-                        return
-                name = ' '.join(args[1:])
-
-            key_name = {
-                users.ITEMS_KEY: 'gold',
-                users.SLAYER_XP_KEY: 'slayer',
-                users.COMBAT_XP_KEY: 'combat',
-                users.GATHER_XP_KEY: 'gather',
-                users.ARTISAN_XP_KEY: 'artisan',
-                users.COOK_XP_KEY: 'cooking',
-                users.PRAY_XP_KEY: 'prayer',
-                users.RC_XP_KEY: 'rc',
-                users.QUESTS_KEY: 'quest points',
-                'total': 'total level'
-            }
-            if key not in key_name.keys():
-                await ctx.send(f"Can't make leaderboard with key {key}.")
-                return
-
-            leaderboard = users.get_values_by_account(key=key)
-
-            out = f':hammer_pick: __**{key.upper()} LEADERBOARD**__ :crossed_swords:\n'
-            if name is None:
-                try:
-                    for i in range(10):
-                        user_id, amount = leaderboard[i]
-                        amount_formatted = '{:,}'.format(amount)
-                        member = ctx.message.guild.get_member(user_id)
-                        if member is not None:
-                            name = get_display_name(member)
-                        else:
-                            name = f'User {user_id}'
-                        out += f'**({1 + i}) {name}**: '
-                        if key == users.ITEMS_KEY:
-                            out += f'{amount_formatted} coins\n'
-                        elif key == users.QUESTS_KEY:
-                            out += f'{amount_formatted} quests\n'
-                        elif key == 'total':
-                            out += f'{amount_formatted} levels\n'
-                        else:
-                            out += f'{users.xp_to_level(amount)} *({amount_formatted}xp)*\n'
-                except IndexError:
-                    pass
-                await ctx.send(out)
-            else:
-                if name == 'bottom':
-                    try:
-                        for i in range(len(leaderboard) - 10, len(leaderboard)):
-                            user_id, amount = leaderboard[i]
-                            amount_formatted = '{:,}'.format(amount)
-                            member = ctx.message.guild.get_member(user_id)
-                            if member is not None:
-                                name = get_display_name(member)
-                            else:
-                                name = f'User {user_id}'
-                            out += f'**({1 + i}) {name}**: '
-                            if key == users.ITEMS_KEY:
-                                out += f'{amount_formatted} coins\n'
-                            elif key == users.QUESTS_KEY:
-                                out += f'{amount_formatted} quests\n'
-                            elif key == 'total':
-                                out += f'{amount_formatted} levels\n'
-                            else:
-                                out += f'{users.xp_to_level(amount)} *({amount_formatted}xp)*\n'
-                    except IndexError:
-                        pass
-                    await ctx.send(out)
-                else:
-                    try:
-                        name_list = [x[0] for x in leaderboard]
-                        name_member = parse_name(ctx.message.guild, name)
-                        name_index = name_list.index(name_member.id)
-                        if name_index < 5:
-                            lower = 0
-                            upper = 10
-                        else:
-                            lower = name_index - 5
-                            upper = name_index + 5
-                        if name_index + 5 > len(leaderboard):
-                            upper = len(leaderboard)
-                            lower = len(leaderboard) - 10
-                        for i in range(lower, upper):
-                            user_id, amount = leaderboard[i]
-                            amount_formatted = '{:,}'.format(amount)
-                            member = ctx.message.guild.get_member(user_id)
-                            if member is not None:
-                                name = get_display_name(member)
-                            else:
-                                name = f'User {user_id}'
-                            out += f'**({1 + i}) {name}**: '
-                            if key == users.ITEMS_KEY:
-                                out += f'{amount_formatted} coins\n'
-                            elif key == users.QUESTS_KEY:
-                                out += f'{amount_formatted} quests\n'
-                            elif key == 'total':
-                                out += f'{amount_formatted} levels\n'
-                            else:
-                                out += f'{users.xp_to_level(amount)} *({amount_formatted}xp)*\n'
-                    except IndexError:
-                        pass
-                    except ValueError:
-                        await ctx.send(f'Name {name} not found in leaderboard.')
-                    await ctx.send(out)
+                    lower = name_index - 5
+                    upper = name_index + 5
+                if name_index + 5 > len(leaderboard):
+                    upper = len(leaderboard)
+                    lower = len(leaderboard) - 10
+                leaderboard_range = (lower, upper)
+            except ValueError:
+                raise ValueError
+        return leaderboard_range
 
     async def paginate(self, ctx, messages):
         """Provides an interface for printing a paginated set of messages."""

@@ -64,7 +64,49 @@ DEFAULT_ACCOUNT = {IRONMAN_KEY: False,
 
 SKILLS = [COMBAT_XP_KEY, SLAYER_XP_KEY, GATHER_XP_KEY, ARTISAN_XP_KEY, COOK_XP_KEY, PRAY_XP_KEY, RC_XP_KEY]
 
-CHARACTER_HEADER = f'__**:crossed_swords: $NAME :crossed_swords:**__\n'
+LEADERBOARD_TITLES = {
+        ITEMS_KEY: 'gold',
+        SLAYER_XP_KEY: 'slayer',
+        COMBAT_XP_KEY: 'combat',
+        GATHER_XP_KEY: 'gather',
+        ARTISAN_XP_KEY: 'artisan',
+        COOK_XP_KEY: 'cooking',
+        PRAY_XP_KEY: 'prayer',
+        RC_XP_KEY: 'rc',
+        QUESTS_KEY: 'quest points',
+        'total': 'total level'
+    }
+
+LEADERBOARD_EMOJI = {
+        ITEMS_KEY: '💰',
+        SLAYER_XP_KEY: '🗡',
+        COMBAT_XP_KEY: '⚔',
+        GATHER_XP_KEY: '⚒',
+        ARTISAN_XP_KEY: '✂',
+        COOK_XP_KEY: '🍳',
+        PRAY_XP_KEY: '🙏',
+        RC_XP_KEY: '⚪',
+        QUESTS_KEY: '🔹',
+        'total': '➕'
+    }
+
+LEADERBOARD_QUANTIFIERS = {
+        ITEMS_KEY: 'gp',
+        SLAYER_XP_KEY: 'xp',
+        COMBAT_XP_KEY: 'xp',
+        GATHER_XP_KEY: 'xp',
+        ARTISAN_XP_KEY: 'xp',
+        COOK_XP_KEY: 'xp',
+        PRAY_XP_KEY: 'xp',
+        RC_XP_KEY: 'xp',
+        QUESTS_KEY: 'quest points',
+        'total': 'xp *($LEVEL levels)*'
+    }
+
+LEADERBOARD_LENGTH = 10
+
+CHARACTER_HEADER = f':crossed_swords: __**$NAME**__ :crossed_swords:\n'
+LEADERBOARD_HEADER = f'$EMOJI __**$KEY Leaderboard**__ $EMOJI\n'
 
 
 def add_counter(userid, value, number, key=MONSTERS_KEY):
