@@ -131,9 +131,9 @@ def shop_buy(userid, item, number=1):
 
     if not users.item_in_inventory(userid, '579', number * vis_cost):
         return f'You do not have enough vis wax to purchase this many {item_name}'
-
+    vis_num = VIS_SHOP[itemid]['number']
     users.update_inventory(userid, number * vis_cost * ['579'], remove=True)
-    users.update_inventory(userid, number * [itemid])
+    users.update_inventory(userid, number * vis_num * [itemid])
     return f'You have purchased {items.add_plural(number, itemid)} for {number * vis_cost} vis wax!'
 
 
