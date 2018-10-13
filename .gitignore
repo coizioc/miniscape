@@ -11,3 +11,4 @@ runalogcheck.sh
 *.db
 .idea/
 venv/
+db.sqlite3
