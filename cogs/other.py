@@ -8,6 +8,7 @@ from discord.ext import commands
 
 from cogs.helper import deathmatch as dm
 from cogs.helper import users
+from miniscape.models import User
 
 RESOURCES_DIRECTORY = f'./resources/'
 
@@ -60,7 +61,7 @@ def get_display_name(member):
         name = member.name
     else:
         name = member.nick
-    if users.read_user(member.id, key=users.IRONMAN_KEY):
+    if User.objects.get(id=member.id).is_ironman:
         name += ' (IM)'
     return name
 
@@ -180,7 +181,7 @@ class Other():
         if ctx.channel.id == DUEL_CHANNEL or ctx.channel.id in GENERAL_CHANNELS:
             author_name = get_display_name(ctx.author)
             if bet is not None:
-                if users.read_user(ctx.author.id, key=users.IRONMAN_KEY):
+                if User.objects.get(id=ctx.author.id).is_ironman:
                     await ctx.send('Ironmen cannot start staked deathmatches.')
                     return
                 try:
@@ -202,7 +203,7 @@ class Other():
                 if opponent_member.id == ctx.author.id:
                     await ctx.send('You cannot fight yourself.')
                     return
-                if users.read_user(opponent_member.id, key=users.IRONMAN_KEY):
+                if User.objects.get(id=opponent_member.id).is_ironman:
                     await ctx.send('You cannot start a staked deathmatch with an ironman.')
                     return
                 bet_formatted = '{:,}'.format(bet)

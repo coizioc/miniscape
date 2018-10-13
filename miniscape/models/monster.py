@@ -32,8 +32,8 @@ class Monster(models.Model):
     max_assignable = models.PositiveIntegerField(default=0)
 
     MELEE = 0
-    RANGE = 0
-    MAGIC = 0
+    RANGE = 1
+    MAGIC = 2
     affinity_choices = (
         (MELEE, 'Melee'),
         (RANGE, 'Range'),

@@ -19,6 +19,8 @@ from cogs.helper import slayer
 from cogs.helper import users
 from cogs.helper import vis
 from cogs.errors.trade_error import TradeError
+from miniscape.models import User
+import miniscape.command_helpers as ch
 
 MAX_PER_ACTION = 10000
 
@@ -62,7 +64,7 @@ def get_display_name(member):
         name = member.name
     else:
         name = member.nick
-    if users.read_user(member.id, key=users.IRONMAN_KEY):
+    if User.objects.get(id=member.id).is_ironman:
         name += ' (IM)'
     return name
 
@@ -124,21 +126,18 @@ class Miniscape():
     async def me(self, ctx):
         """Shows information related to the user."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            name = get_display_name(ctx.author)
-            await ctx.send(users.print_account(ctx.author.id, name))
+            await ctx.send(users.print_account(ctx.user_object))
 
     @me.group(name='stats', aliases=['levels'])
     async def _me_stats(self, ctx):
         """Shows the levels and stats of a user."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            name = get_display_name(ctx.author)
-            await ctx.send(users.print_account(ctx.author.id, name, printequipment=False))
+            await ctx.send(users.print_account(ctx.user_object, printequipment=False))
 
     @me.group(name='equipment', aliases=['armour', 'armor'])
     async def _me_equipment(self, ctx):
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            name = get_display_name(ctx.author)
-            await ctx.send(users.print_equipment(ctx.author.id, name=name, with_header=True))
+            await ctx.send(users.print_equipment(ctx.user_object, with_header=True))
 
     @me.group(name='monsters')
     async def _me_monsters(self, ctx):
@@ -159,7 +158,7 @@ class Miniscape():
     async def _me_pets(self, ctx):
         """Shows which pets a user has collected."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            messages = users.print_pets(ctx.author.id)
+            messages = ch.print_pets(ctx.user_object)
             await self.paginate(ctx, messages)
 
     @commands.command(aliases=['lookup', 'finger', 'find'])
@@ -251,7 +250,7 @@ class Miniscape():
     async def items(self, ctx, search=''):
         """Show's the player's inventory."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            inventory = users.print_inventory(ctx.author, search.lower())
+            inventory = ch.print_inventory(ctx.user_object, search.lower())
             await self.paginate(ctx, inventory)
 
     @items.command(name='info')
@@ -326,7 +325,7 @@ class Miniscape():
         """Gives the user a set of bronze armour."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             name = get_display_name(ctx.author)
-            if users.read_user(ctx.author.id, key=users.COMBAT_XP_KEY) == 0:
+            if User.objects.get(id=ctx.author.id).combat_xp == 0:
                 users.update_inventory(ctx.author.id, [63, 66, 69, 70, 64, 72])
 
                 await ctx.send(f'Bronze set given to {name}! You can see your items by typing `~inventory` in #bank '
@@ -699,12 +698,13 @@ class Miniscape():
     @commands.group(invoke_without_command=True)
     async def vis(self, ctx, *args):
         """Lets the user guess the current vis combination."""
+        author = ctx.user_object
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            if users.read_user(ctx.author.id, key=users.VIS_KEY):
+            if author.is_vis_complete:
                 await ctx.send("You have already received vis wax today. Please wait until tomorrow to try again.")
                 return
 
-            if users.get_level(ctx.author.id, key=users.RC_XP_KEY) < 75:
+            if author.rc_level < 75:
                 await ctx.send("You do not have a high enough runecrafting level to know how to use this machine.")
 
             runes = []
@@ -724,7 +724,9 @@ class Miniscape():
                 await ctx.send(num_vis)
                 return
 
-            num_attempts = users.read_user(ctx.author.id, key=users.VIS_ATTEMPTS_KEY)
+            num_attempts = author.vis_attempts
+            author.vis_attempts += 1
+            author.save()
             users.update_user(ctx.author.id, num_attempts + 1, key=users.VIS_ATTEMPTS_KEY)
             out = f"{craft.GATHER_HEADER}With the runes {runes}, you can receive {num_vis} vis wax per " \
                   f"slot, respectively, for a total of {sum(num_vis)} vis wax. You have made {num_attempts + 1} " \
@@ -734,20 +736,20 @@ class Miniscape():
     @vis.command(name='third')
     async def _vis_third(self, ctx):
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            if users.get_level(ctx.author.id, key=users.RC_XP_KEY) < 99:
+            if users.rc_level < 99:
                 await ctx.send("You do not have a high enough runecrafting level to use this command")
-                return
-            
-            await ctx.send(f"Your third vis wax slot rune for today is {items.get_attr(vis.RUNEIDS[vis.calc_third_rune(ctx.author.id)])}.")
+            else:
+                await ctx.send(f"Your third vis wax slot rune for today is {items.get_attr(vis.RUNEIDS[vis.calc_third_rune(ctx.author.id)])}.")
 
     @vis.command(name='use')
     async def _vis_use(self, ctx, *args):
+        author = ctx.user_object
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            if users.read_user(ctx.author.id, key=users.VIS_KEY):
+            if author.is_vis_complete:
                 await ctx.send("You have already received vis wax today. Please wait until tomorrow to try again.")
                 return
 
-            if users.get_level(ctx.author.id, key=users.RC_XP_KEY) < 75:
+            if author.rc_level < 75:
                 await ctx.send("You do not have a high enough runecrafting level to know how to use this machine.")
 
             runes = []
@@ -767,24 +769,25 @@ class Miniscape():
                 await ctx.send(num_vis)
                 return
             
-            num_attempts = users.read_user(ctx.author.id, key=users.VIS_ATTEMPTS_KEY)
-            num_runes = vis.calc_num(num_attempts)
-            loot = []
+            num_runes = vis.calc_num(author.vis_attempts)
+            loot = {}
             for rune in runes:
                 itemid = items.find_by_name(rune)
                 if users.item_in_inventory(ctx.author.id, itemid, num_runes):
-                    loot.extend(num_runes*[itemid])
+                    loot[itemid] = num_runes
                 else:
                     await ctx.send(f"You do not have enough runes to use this vis wax combination "
                                    f"({items.add_plural(num_runes, items.find_by_name(rune))})")
                     return
-            
-            users.update_inventory(ctx.author.id, loot, remove=True)
-            users.update_inventory(ctx.author.id, round(sum(num_vis))*['579'])
-            users.update_user(ctx.author.id, True, key=users.VIS_KEY)
+
+            author.update_inventory(loot, remove=True)
+            author.update_inventory({'579' : round(sum(num_vis))})
+            author.is_vis_complete = True
+            author.save()
+
             out = f"{craft.GATHER_HEADER}With the runes {runes}, you received {num_vis} vis wax per " \
-                  f"slot, respectively, for a total of {sum(num_vis)} vis wax. You have made {num_attempts} " \
-                  f"attempts today, meaning that you used {vis.calc_num(num_attempts)} " \
+                  f"slot, respectively, for a total of {sum(num_vis)} vis wax. You have made {author.vis_attempts} " \
+                  f"attempts today, meaning that you used {vis.calc_num(author.vis_attempts)} " \
                   f"of each rune to craft the vis wax."
             await ctx.send(out)
 

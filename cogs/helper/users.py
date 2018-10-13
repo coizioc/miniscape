@@ -4,6 +4,7 @@ import shutil
 import time
 import ujson
 from collections import Counter
+import operator
 
 from cogs.helper import items
 from cogs.helper import prayer
@@ -426,9 +427,15 @@ def parse_int(number_as_string):
         raise ValueError
 
 
-def print_account(userid, nickname, printequipment=True):
+def print_account(author, printequipment=True):
     """Writes a string showing basic user information."""
+    nickname = author.nick if author.nick else author.name
     out = f"{CHARACTER_HEADER.replace('$NAME', nickname.upper())}"
+
+    for skill in author.level_fields:
+        xp = getattr(author, skill, 0)
+        xp_formatted = '{:,}'.format(author.skill)
+        pass
 
     for skill in SKILLS:
         xp_formatted = '{:,}'.format(read_user(userid, key=skill))
@@ -475,68 +482,7 @@ def print_equipment(userid, name=None, with_header=False):
     return out
 
 
-def print_inventory(person, search):
-    """Prints a list of a user's inventory into discord message-sized chunks."""
-    inventory = read_user(person.id)
-    if person.nick is None:
-        name = person.name
-    else:
-        name = person.nick
-    header = f":moneybag: __**{name.upper()}'S INVENTORY**__ :moneybag:\n"
-    messages = []
-    out = header
 
-    locked_items = read_user(person.id, key=LOCKED_ITEMS_KEY)
-    sorted_items = []
-    for itemid in inventory.keys():
-        sorted_items.append((items.get_attr(itemid), itemid))
-    for name, itemid in sorted(sorted_items, key=lambda tup: tup[0]):
-        # name = items.get_attr(itemid)
-        if search != '':
-            if search not in name.lower():
-                continue
-        value = items.get_attr(itemid, key=items.VALUE_KEY)
-        value_formatted = '{:,}'.format(value)
-        item_total_value = int(inventory[itemid]) * value
-        item_total_value_formatted = '{:,}'.format(item_total_value)
-        if inventory[itemid] > 0:
-            out += f'**{items.get_attr(itemid).title()} '
-            num_formatted = '{:,}'.format(inventory[itemid])
-            if itemid in locked_items:
-                out += f'(:lock:)'
-            out += f'**: {num_formatted}. *(value: {item_total_value_formatted}, {value_formatted} ea.)*\n'
-        if len(out) > 1800:
-            messages.append(out)
-            out = header
-    total_value = '{:,}'.format(get_value_of_inventory(person.id, add_locked=True))
-    out += f'*Total value: {total_value}*\n'
-    messages.append(out)
-    return messages
-
-
-def print_pets(userid):
-    """Prints a formatted list of pets a user has."""
-    pet_ids = [x for x in items.ITEMS.keys() if items.get_attr(x, key=items.PET_KEY)]
-    pet_names = {} # [items.get_attr(x) for x in pet_ids]
-    for petid in pet_ids:
-        pet_names[items.get_attr(petid)] = petid
-    messages = []
-    pets_header = f':cat: __**PETS**__ :dog:\n'
-    out = pets_header
-    pet_count = 0
-    for pet_name in sorted(pet_names):
-        petid = pet_names[pet_name]
-        if item_in_inventory(userid, petid, 1):
-            out += f"**{pet_name.title()}**\n"
-            pet_count += 1
-        else:
-            out += f'{pet_name.title()}\n'
-        if len(out) > 1900:
-            messages.append(out)
-            out = pets_header
-    out += f'{pet_count}/{len(pet_ids)}'
-    messages.append(out)
-    return messages
 
 
 def read_user_multi(*args, **kwargs):
@@ -546,6 +492,13 @@ def read_user_multi(*args, **kwargs):
 
 def read_user(userid, key=ITEMS_KEY):
     """Reads the value of a key within a user's account."""
+
+    if key == ITEMS_KEY:
+        ret =  User.objects.get(id=userid).get_inventory()
+        return ret
+        pass
+
+
     try:
         with open(f'{USER_DIRECTORY}{userid}.json', 'r') as f:
             userjson = ujson.load(f)

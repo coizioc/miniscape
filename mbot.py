@@ -1,9 +1,18 @@
 #! /usr/bin/env python3
 """Runs bots for a Discord server."""
+# These lines allow us to use Django models
 import os
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "mathbot.settings")
+import django
+django.setup()
+
+from django.core.exceptions import ObjectDoesNotExist
+
 import sys
+import asyncio
 import traceback
 import cogs.managers.trade_manager as tm
+from miniscape.models import User
 
 from discord.ext import commands
 
@@ -50,6 +59,9 @@ class MathBot(commands.Bot):
     """Defines the mathbot class and functions."""
 
     def __init__(self):
+
+
+
         super().__init__(command_prefix=["~", "%"], description=DESCRIPTION)
         self.default_nick = "Miniscape"
         self.add_command(self.load)
@@ -91,6 +103,11 @@ class MathBot(commands.Bot):
                                        'https://github.com/coizioc/math-bot/blob/master/README.md')
         await self.process_commands(message)
 
+    @asyncio.coroutine
+    def process_commands(self, message):
+        ctx = yield from self.get_context(message, cls=MathBotContext)
+        yield from self.invoke(ctx)
+
     def run(self):
         """Runs the bot with the token from the config file."""
         super().run(config.token, reconnect=True)
@@ -109,4 +126,32 @@ class MathBot(commands.Bot):
         except Exception:
             await ctx.send(f'Failed to load extension {extension}.', file=sys.stderr)
             traceback.print_exc()
+
+
+class MathBotContext(commands.Context):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        try:
+            self.user_object = User.objects.get(id=self.author.id)
+        except ObjectDoesNotExist:
+            self.user_object = User(id=self.author.id,
+                                    name=self.author.name + '#' + self.author.discriminator,
+                                    nick=self.author.nick if self.author.nick is not None else '')
+            self.user_object.save()
+            return
+
+        # Update our user's name/nick if they differ or don't exist
+        # (if they don't exist they == '')
+
+        # TODO: Fix this, it always triggers reeeeee
+        name_match = self.user_object.name == (self.author.name + '#' + self.author.discriminator)
+        nick_match = self.user_object.nick == self.author.nick and self.author.nick
+        if not name_match or not nick_match:
+            self.user_object.nick = self.author.nick if self.author.nick is not None else ''
+            self.user_object.name = self.author.name + '#' + self.author.discriminator
+            self.user_object.save()
+
+
 
