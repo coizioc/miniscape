@@ -7,11 +7,12 @@ from cogs.helper import items
 from cogs.helper import monsters as mon
 from cogs.helper import prayer
 from cogs.helper import users
-from config import XP_FACTOR
+from config import XP_FACTOR, SLAYER_EMOJI, COMBAT_EMOJI
 
 LOWEST_NUM_TO_KILL = 35
-SLAYER_HEADER = ':skull_crossbones: __**SLAYER**__ :skull_crossbones:\n'
 
+SLAYER_HEADER = f'{SLAYER_EMOJI} __**SLAYER**__ {SLAYER_EMOJI}\n'
+KILLING_HEADER = f'{COMBAT_EMOJI} __**COMBAT**__ {COMBAT_EMOJI}\n'
 
 def calc_chance(userid, monsterid, number, remove_food=False):
     """Calculates the chance of success of a task."""
@@ -170,7 +171,7 @@ def calc_number(userid, monsterid, time):
 
 def get_kill(guildid, channelid, userid, monster, length=-1, number=-1):
     """Lets the user start killing monsters.."""
-    out = f'{SLAYER_HEADER}'
+    out = KILLING_HEADER
     if not adv.is_on_adventure(userid):
         try:
             monsterid = mon.find_by_name(monster)

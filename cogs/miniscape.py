@@ -6,7 +6,7 @@ import random
 import discord
 from discord.ext import commands
 
-from config import TEST_CHANNEL, CREATOR_ID
+from config import ARROW_LEFT_EMOJI, ARROW_RIGHT_EMOJI, THUMBS_UP_EMOJI
 from cogs.helper import channel_permissions as cp
 from cogs.helper import adventures as adv
 from cogs.helper import clues
@@ -549,13 +549,13 @@ class Miniscape():
                   f'{items.add_plural(number, itemid)} for {offer_formatted} coins. To accept this offer, reply ' \
                   f'to this post with a :thumbsup:. Otherwise, this offer will expire in one minute.'
             msg = await ctx.send(out)
-            await msg.add_reaction('\N{THUMBS UP SIGN}')
+            await msg.add_reaction(THUMBS_UP_EMOJI)
 
             x = True
             while x:
                 try:
                     reaction, user = await self.bot.wait_for('reaction_add', timeout=60)
-                    if str(reaction.emoji) == '👍' and user == name_member and reaction.message.id == msg.id:
+                    if str(reaction.emoji) == THUMBS_UP_EMOJI and user == name_member and reaction.message.id == msg.id:
                         price = {"0": offer}
                         users.update_inventory(name_member.id, price, remove=True)
                         users.update_inventory(ctx.author.id, price)
@@ -589,7 +589,7 @@ class Miniscape():
             while True:
                 try:
                     reaction, user = await self.bot.wait_for('reaction_add', timeout=60)
-                    if str(reaction.emoji) == '👍' and user == ctx.author and reaction.message.id == msg.id:
+                    if str(reaction.emoji) == THUMBS_UP_EMOJI and user == ctx.author and reaction.message.id == msg.id:
                         users.reset_account(ctx.author.id)
                         users.update_user(ctx.author.id, True, key=users.IRONMAN_KEY)
                         ironman_role = discord.utils.get(ctx.guild.roles, name="Ironman")
@@ -616,7 +616,7 @@ class Miniscape():
             while True:
                 try:
                     reaction, user = await self.bot.wait_for('reaction_add', timeout=60)
-                    if str(reaction.emoji) == '👍' and user == ctx.author and reaction.message.id == msg.id:
+                    if str(reaction.emoji) == THUMBS_UP_EMOJI and user == ctx.author and reaction.message.id == msg.id:
                         users.update_user(ctx.author.id, False, key=users.IRONMAN_KEY)
                         ironman_role = discord.utils.get(ctx.guild.roles, name="Ironman")
                         await ctx.author.remove_roles(ironman_role, reason="Bot mute ended.")
@@ -926,7 +926,6 @@ class Miniscape():
                         await msg.edit(content=None)
                         await msg.edit(content=leaderboard_messages[key])
 
-
     async def get_leaderboard_range(self, ctx, name, leaderboard):
         """Gets the lower and upper bounds of a leaderboard and returns them as a tuple."""
         if name is None:
@@ -961,24 +960,21 @@ class Miniscape():
         current_page = 0
         out = messages[current_page]
         msg = await ctx.send(out)
-        await msg.add_reaction('⬅')
-        await msg.add_reaction('➡')
+        await msg.add_reaction(ARROW_LEFT_EMOJI)
+        await msg.add_reaction(ARROW_RIGHT_EMOJI)
 
         while True:
             reaction, user = await self.bot.wait_for('reaction_add')
             if user == ctx.author and reaction.message.id == msg.id:
-                # await msg.clear_reactions()
-                # await msg.add_reaction('⬅')
-                # await msg.add_reaction('➡')
 
-                if str(reaction.emoji) == '⬅':
+                if str(reaction.emoji) == ARROW_LEFT_EMOJI:
                     if current_page > 0:
                         current_page -= 1
                         out = messages[current_page]
                         out += f"\n{current_page + 1}/{len(messages)}"
                         await msg.edit(content=None)
                         await msg.edit(content=out)
-                elif str(reaction.emoji) == '➡':
+                elif str(reaction.emoji) == ARROW_RIGHT_EMOJI:
                     if current_page < len(messages) - 1:
                         current_page += 1
                         out = messages[current_page] 

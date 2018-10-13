@@ -7,10 +7,11 @@ from cogs.helper import adventures as adv
 from cogs.helper import items
 from cogs.helper import prayer
 from cogs.helper import users
-from config import RECIPE_JSON, XP_FACTOR
+from config import RECIPE_JSON, XP_FACTOR, GATHER_EMOJI, ARTISAN_EMOJI, RC_EMOJI
 
-GATHER_HEADER = f':hammer_pick: __**GATHERING**__ :hammer_pick: \n'
-CRAFT_HEADER = f':hammer_pick: __**CRAFTING**__ :hammer_pick: \n'
+GATHER_HEADER = f'{GATHER_EMOJI} __**GATHERING**__ {GATHER_EMOJI}\n'
+CRAFT_HEADER = f'{ARTISAN_EMOJI} __**CRAFTING**__ {ARTISAN_EMOJI}\n'
+RUNECRAFT_HEADER = f'{RC_EMOJI} __**RUNECRAFTING**__ {RC_EMOJI}\n'
 
 with open(RECIPE_JSON, 'r') as f:
     RECIPES = ujson.load(f)
@@ -303,7 +304,7 @@ def get_runecraft(person, *args):
     rc_level_after = users.xp_to_level(users.read_user(person.id, users.RC_XP_KEY))
 
     xp_formatted = '{:,}'.format(xp)
-    out = f'{GATHER_HEADER}' \
+    out = f'{RUNECRAFT_HEADER}' \
           f'{person.mention}, your runecrafting session has finished! You have crafted ' \
           f'{items.add_plural(number, itemid)} and have gained {xp_formatted} runecrafting xp! '
     if rc_level_after > rc_level_before:
@@ -434,7 +435,7 @@ def start_gather(guildid, channelid, userid, item, length=-1, number=-1):
 
 def start_runecraft(guildid, channelid, userid, item, number=1, pure=0):
     """Starts a runecrafting session."""
-    out = ''
+    out = RUNECRAFT_HEADER
     if not adv.is_on_adventure(userid):
         try:
             itemid = items.find_by_name(item)

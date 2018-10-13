@@ -5,6 +5,7 @@ import time
 import ujson
 from collections import Counter
 
+import config
 from cogs.helper import items
 from cogs.helper import prayer
 from cogs.helper import quests
@@ -72,22 +73,22 @@ LEADERBOARD_TITLES = {
         ARTISAN_XP_KEY: 'artisan',
         COOK_XP_KEY: 'cooking',
         PRAY_XP_KEY: 'prayer',
-        RC_XP_KEY: 'rc',
+        RC_XP_KEY: 'runecrafting',
         QUESTS_KEY: 'quest points',
         'total': 'total level'
     }
 
 LEADERBOARD_EMOJI = {
-        ITEMS_KEY: '💰',
-        SLAYER_XP_KEY: '🗡',
-        COMBAT_XP_KEY: '⚔',
-        GATHER_XP_KEY: '⚒',
-        ARTISAN_XP_KEY: '✂',
-        COOK_XP_KEY: '🍳',
-        PRAY_XP_KEY: '🙏',
-        RC_XP_KEY: '⚪',
-        QUESTS_KEY: '🔹',
-        'total': '➕'
+        ITEMS_KEY: config.ITEMS_EMOJI,
+        SLAYER_XP_KEY: config.SLAYER_EMOJI,
+        COMBAT_XP_KEY: config.COMBAT_EMOJI,
+        GATHER_XP_KEY: config.GATHER_EMOJI,
+        ARTISAN_XP_KEY: config.ARTISAN_EMOJI,
+        COOK_XP_KEY: config.COOK_EMOJI,
+        PRAY_XP_KEY: config.PRAY_EMOJI,
+        RC_XP_KEY: config.RC_EMOJI,
+        QUESTS_KEY: config.QUEST_EMOJI,
+        'total': config.TOTAL_LEVEL_EMOJI
     }
 
 LEADERBOARD_QUANTIFIERS = {
@@ -105,8 +106,8 @@ LEADERBOARD_QUANTIFIERS = {
 
 LEADERBOARD_LENGTH = 10
 
-CHARACTER_HEADER = f':crossed_swords: __**$NAME**__ :crossed_swords:\n'
-LEADERBOARD_HEADER = f'$EMOJI __**$KEY Leaderboard**__ $EMOJI\n'
+CHARACTER_HEADER = f'{config.COMBAT_EMOJI} __**$NAME**__ {config.COMBAT_EMOJI}\n'
+LEADERBOARD_HEADER = f'$EMOJI __**$KEY LEADERBOARD**__ $EMOJI\n'
 
 
 def add_counter(userid, value, number, key=MONSTERS_KEY):
@@ -482,7 +483,7 @@ def print_inventory(person, search):
         name = person.name
     else:
         name = person.nick
-    header = f":moneybag: __**{name.upper()}'S INVENTORY**__ :moneybag:\n"
+    header = f"{config.ITEMS_EMOJI} __**{name.upper()}'S INVENTORY**__ {config.ITEMS_EMOJI}\n"
     messages = []
     out = header
 

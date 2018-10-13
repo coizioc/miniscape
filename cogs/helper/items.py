@@ -7,7 +7,7 @@ from cogs.helper import clues
 from cogs.helper import monsters as mon
 from cogs.helper import prayer
 from cogs.helper import users
-from config import ITEM_JSON, SHOP_FILE
+from config import ITEM_JSON, SHOP_FILE, ITEMS_EMOJI
 
 with open(ITEM_JSON, 'r', encoding='utf-8-sig') as f:
     ITEMS = ujson.load(f)
@@ -68,7 +68,7 @@ DEFAULT_ITEM = {NAME_KEY: 'unknown item',
                 LUCK_KEY: 1
                 }
 
-SHOP_HEADER = '__**:moneybag: SHOP :moneybag:**__\n'
+SHOP_HEADER = f'{ITEMS_EMOJI} __**SHOP**__ {ITEMS_EMOJI}\n'
 
 
 def add_plural(number, itemid, with_zero=False):

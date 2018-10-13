@@ -7,7 +7,7 @@ from cogs.helper import craft
 from cogs.helper import items
 from cogs.helper import monsters as mon
 from cogs.helper import users
-from config import QUESTS_JSON
+from config import QUESTS_JSON, QUEST_EMOJI
 
 with open(QUESTS_JSON, 'r') as f:
     QUESTS = ujson.load(f)
@@ -42,7 +42,7 @@ DEFAULT_QUEST = {
     TIME_KEY: 10
 }
 
-QUEST_HEADER = ':crossed_swords: __**QUESTS**__ :shield:\n'
+QUEST_HEADER = f'{QUEST_EMOJI} __**QUESTS**__ {QUEST_EMOJI}\n'
 
 
 def calc_chance(userid, questid, remove_food=False):
