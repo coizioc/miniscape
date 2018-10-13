@@ -100,7 +100,7 @@ LEADERBOARD_QUANTIFIERS = {
         PRAY_XP_KEY: 'xp',
         RC_XP_KEY: 'xp',
         QUESTS_KEY: 'quest points',
-        'total': 'xp *($LEVEL levels)*'
+        'total': 'levels'
     }
 
 LEADERBOARD_LENGTH = 10

@@ -877,8 +877,8 @@ class Miniscape():
     async def leaderboard(self, ctx, *args):
         """Allows users to easily compare each others' stats."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            name = " ".join(args)
-            self.print_leaderboard(ctx, name)
+            name = " ".join(args) if len(args) > 0 else None
+            await self.print_leaderboard(ctx, name)
 
     async def print_leaderboard(self, ctx, name):
         """Prints the leaderboard and provides an interface for showing various leaderboards."""
@@ -886,38 +886,40 @@ class Miniscape():
         for key in users.LEADERBOARD_TITLES.keys():
             leaderboards[key] = users.get_values_by_account(key)
 
-        msg = await ctx.send("test")
+        msg = await ctx.send("Loading leaderboards...")
 
         leaderboard_messages = {}
         for key in users.LEADERBOARD_TITLES.keys():
             leaderboard = leaderboards[key]
 
             try:
-                lower, upper = self.get_leaderboard_range(ctx, name, leaderboard)
+                lower, upper = await self.get_leaderboard_range(ctx, name, leaderboard)
             except ValueError:
                 continue
 
-            out = users.LEADERBOARD_HEADER.replace("$KEY", users.LEADERBOARD_TITLES[key])
-
+            out = users.LEADERBOARD_HEADER.replace("$KEY", users.LEADERBOARD_TITLES[key].title())
+            out = out.replace("$EMOJI", users.LEADERBOARD_EMOJI[key])
+            
             try:
                 for i in range(lower, upper):
-                    user_id, amount = leaderboards[key]
+                    user_id, amount = leaderboard[i]
                     amount_formatted = '{:,}'.format(amount)
                     member = ctx.message.guild.get_member(user_id)
                     if member is not None:
-                        name = get_display_name(member)
+                        username = get_display_name(member)
                     else:
-                        name = f'User {user_id}'
-                    out_user = f'**({1 + i}) {name}**: {amount_formatted} {users.LEADERBOARD_QUANTIFIERS[key]}\n'
-                    if key == 'total':
-                        out_user.replace("$LEVEL", users.xp_to_level(amount))
+                        username = f'User {user_id}'
+                    out_user = f'**({1 + i}) {username}**: {amount_formatted} {users.LEADERBOARD_QUANTIFIERS[key]}\n'
+                    # if key == 'total':
+                    #     out_user = out_user.replace("$LEVEL", f"{users.xp_to_level(amount)}")
                     out += out_user
             except IndexError:
                 pass
 
             leaderboard_messages[key] = out
-            msg.add_reaction(users.LEADERBOARD_EMOJI[key])
-
+            await msg.add_reaction(users.LEADERBOARD_EMOJI[key])
+        await msg.edit(content=leaderboard_messages['total'])
+        
         while True:
             reaction, user = await self.bot.wait_for('reaction_add')
             if user == ctx.author and reaction.message.id == msg.id:
@@ -948,6 +950,9 @@ class Miniscape():
                     upper = len(leaderboard)
                     lower = len(leaderboard) - 10
                 leaderboard_range = (lower, upper)
+            except NameError:
+                print(name)
+                pass
             except ValueError:
                 raise ValueError
         return leaderboard_range
