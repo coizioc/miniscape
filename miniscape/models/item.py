@@ -89,12 +89,21 @@ class Item(models.Model):
         return Item.objects.filter(name__icontains=name, food_value__gte=1).order_by('name')
 
     @property
+    def alias_strings(self):
+        nicknames = self.itemnickname_set.all().order_by('nickname')
+        return [n.nickname for n in nicknames]
+
+    @property
     def is_food(self):
         return self.food_value > 0
 
     @property
     def is_equippable(self):
         return self.slot > 0
+
+    @property
+    def dropped_by_monsters(self):
+        return self.monster_set.all().order_by('name')
 
     def __repr__(self):
         return "Item ID %d: %s" % (self.id, self.name)

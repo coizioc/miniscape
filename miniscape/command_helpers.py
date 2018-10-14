@@ -1,4 +1,4 @@
-from miniscape.models import Item, User, UserInventory
+from miniscape.models import Item, User, UserInventory, MonsterLoot
 from config import ARMOUR_SLOTS_FILE
 
 
@@ -190,6 +190,54 @@ def bury(author: User, itemname: str, number: int):
         out += f'You have also gained {level_difference} prayer levels!'
     return out
 
+
+def print_item_stats(itemname: str):
+    """Prints the stats of an item."""
+    item: Item = Item.find_by_name_or_nick(itemname)
+    if not item:
+        return f'Error: {item} is not an item.'
+
+    name = item.name.title()
+    value = '{:,}'.format(item.value)
+    aliases = ', '.join(item.alias_strings)
+    damage = item.damage
+    accuracy = item.accuracy
+    prayer = item.prayer
+    slot = item.slot
+    level = item.level
+
+    out = f'__**:moneybag: ITEMS :moneybag:**__\n'
+    out += f'**Name**: {name}\n'
+    if len(aliases) > 0:
+        out += f'**Aliases**: {aliases}\n'
+    out += f'**Value**: {value} gp\n'
+    if slot > 0:
+        out += f'**Damage**: {damage}\n'
+        out += f'**Accuracy**: {accuracy}\n'
+        out += f'**Armour**: {armour}\n'
+        out += f'**Prayer Bonus**: {prayer}\n'
+        out += f'**Slot**: {users.SLOTS[str(slot)].title()}\n'
+        out += f'**Combat Requirement**: {level}\n'
+    if item.is_gatherable:
+        xp = item.xp
+        out += f'**Gather Requirement**: {level}\n'
+        out += f'**xp**: {xp}\n'
+
+    out += "\n**Drop Sources:**"
+    dropping_monsters = item.monsterloot_set.all().order_by('rarity')
+    ml: MonsterLoot
+    for ml in dropping_monsters:
+        if ml.min_amount == ml.max_amount:
+            amt = ml.min_amount
+        else:
+            amt = "%d-%d" % (ml.min_amount, ml.max_amount)
+
+        out += f'\n{ml.monster.name.title()} _(amount: {amt}, rarity: {ml.rarity_str})_'
+
+
+    # TODO: add clue stuff
+    # out += clues.print_item_from_lootable(itemid)
+    return out
 
 
 

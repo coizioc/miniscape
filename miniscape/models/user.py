@@ -289,6 +289,26 @@ class User(models.Model):
                            amount=amount)
         ui.save()
 
+    def lock_item(self, itemname):
+        item: UserInventory = self.get_item_by_name(itemname)
+        if not item:
+            return False
+        else:
+            item = item[0]
+            item.is_locked = True
+            item.save()
+            return True
+
+    def unlock_item(self, itemname):
+        item: UserInventory = self.get_item_by_name(itemname)
+        if not item:
+            return False
+        else:
+            item = item[0]
+            item.is_locked = False
+            item.save()
+            return True
+
     @property
     def max_possible_level(self):
         return 99 * len(self.level_fields)

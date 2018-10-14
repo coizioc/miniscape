@@ -256,21 +256,27 @@ class Miniscape():
     async def _item_info(self, ctx, *args):
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             item = ' '.join(args)
-            out = items.print_stats(item)
+            out = ch.print_item_stats(item)
             await ctx.send(out)
 
     @items.command(name='lock')
     async def _item_lock(self, ctx, *args):
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             item = ' '.join(args)
-            out = users.lock_item(ctx.author.id, item)
+            if ctx.user_object.lock_item(item):
+                out = f'{item.title()} has been locked!'
+            else:
+                out = f'{item.title()} does not exist in your inventory. You must have it present to lock it'
             await ctx.send(out)
 
     @items.command(name='unlock')
     async def _item_unlock(self, ctx, *args):
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             item = ' '.join(args)
-            out = users.unlock_item(ctx.author.id, item)
+            if ctx.user_object.unlock_item(item):
+                out = f'{item.title()} has been unlocked!'
+            else:
+                out = f'{item.title()} does not exist in your inventory. You must have it present to unlock it'
             await ctx.send(out)
 
     @commands.command()
