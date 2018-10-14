@@ -1,5 +1,9 @@
-from miniscape.models import Item, User
+from miniscape.models import Item, User, UserInventory
 from config import ARMOUR_SLOTS_FILE
+
+
+PRAYER_HEADER = f':pray: __**PRAYER**__ :pray:\n'
+
 
 SLOTS = {}
 with open(ARMOUR_SLOTS_FILE, 'r') as f:
@@ -149,6 +153,42 @@ def unequip_item(author: User, item: str):
     author.save()
     return f'{found_item.name} unequipped from {SLOTS[str(slot+1)]}!'
 
+
+def bury(author: User, itemname: str, number: int):
+    """Buries (a given amount) of an item and gives the user prayer xp."""
+
+    item: Item = Item.find_by_name_or_nick(itemname)
+    if not item:
+        return f'Error: {itemname} is not an item.'
+
+    if not item.is_buryable:
+        return f"You cannot bury {item.name}."
+
+    user_items = author.get_item_by_item(item)
+    if not author.has_item_amount_by_item(item, number) or not user_items:
+        # TODO: Pluralize this
+        return f'You do not have enough {item.name} in your inventory.'
+
+    user_item: UserInventory = user_items[0]
+    xp_difference = item.xp * number
+    pre_bury_level = author.prayer_level
+
+    author.pray_xp += xp_difference
+    author.save()
+
+    user_item.amount -= number
+    user_item.save()
+
+    post_bury_level = author.prayer_level
+    level_difference = post_bury_level - pre_bury_level
+    prayer_xp_formatted = '{:,}'.format(xp_difference)
+
+    out = PRAYER_HEADER
+    # TODO: pluralize this
+    out += f'You get {prayer_xp_formatted} prayer xp from your {str(number)} {item.name}! '
+    if level_difference:
+        out += f'You have also gained {level_difference} prayer levels!'
+    return out
 
 
 

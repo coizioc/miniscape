@@ -38,35 +38,8 @@ DEFAULT_PRAYER = {
     QUEST_KEY: -1
 }
 
-PRAYER_HEADER = f':pray: __**PRAYER**__ :pray:\n'
 
 
-def bury(userid, item, number):
-    """Buries (a given amount) of an item and gives the user prayer xp."""
-    try:
-        itemid = items.find_by_name(item)
-        number = int(number)
-    except KeyError:
-        return f'Error: {item} is not an item.'
-    except ValueError:
-        return f'Error: {number} is not a number.'
-    item_name = items.get_attr(itemid)
-    if not items.get_attr(itemid, key=items.BURY_KEY):
-        return f"You cannot bury {item_name}."
-    if not users.item_in_inventory(userid, itemid, number):
-        return f'You do not have {items.add_plural(number, itemid)} in your inventory.'
-    xp = items.get_attr(itemid, key=items.XP_KEY)
-    prayer_xp = number * xp
-    prayer_xp_formatted = '{:,}'.format(prayer_xp)
-    prayer_level = users.get_level(userid, key=users.PRAY_XP_KEY)
-    users.update_inventory(userid, number * [itemid], remove=True)
-    users.update_user(userid, prayer_xp, key=users.PRAY_XP_KEY)
-    new_pray_level = users.get_level(userid, key=users.PRAY_XP_KEY)
-    out = PRAYER_HEADER
-    out += f'You get {prayer_xp_formatted} prayer xp from your {items.add_plural(number, itemid)}! '
-    if new_pray_level > prayer_level:
-        out += f'You have also gained {new_pray_level - prayer_level} prayer levels!'
-    return out
 
 
 def calc_pray_bonus(userid, userprayer=None):

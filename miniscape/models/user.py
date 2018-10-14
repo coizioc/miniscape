@@ -209,6 +209,15 @@ class User(models.Model):
         else:
             return False
 
+    def has_item_amount_by_item(self, item: Item, amount):
+        item = self.get_item_by_item(item)
+        if not item:
+            return False
+        elif item[0].amount >= amount:
+            return True
+        else:
+            return False
+
     def get_item_by_name(self, item_name):
         """ Get a particular item from user """
         item = Item.objects.filter(name=item_name)

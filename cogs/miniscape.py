@@ -228,7 +228,7 @@ class Miniscape():
             except ValueError:
                 number = 1
                 item = ' '.join(args)
-            out = prayer.bury(ctx.author.id, item, number)
+            out = ch.bury(ctx.user_object, item, number)
             await ctx.send(out)
 
     @commands.command(aliases=['pray', 'prayers'])
