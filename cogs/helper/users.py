@@ -468,7 +468,6 @@ def print_equipment(author, name=None, with_header=False):
     else:
         out += f'**Active Prayer**: none\n\n'
 
-
     for slot in armour_print_order:
         item = equipment[slot]
         out += f'**{slot.title()}**: '
@@ -480,17 +479,7 @@ def print_equipment(author, name=None, with_header=False):
                        f'pray: {item.prayer})*\n'
         else:
             out += 'none *(dam: 0, acc: 0, arm: 0, pray: 0)*\n'
-    #
-    # for slot in equipment.keys():
-    #     out += f'**{SLOTS[str(slot)].title()}**: '
-    #     if int(equipment[slot]) > -1:
-    #         out += f'{items.get_attr(equipment[slot])} ' \
-    #                f'*(dam: {items.get_attr(equipment[slot], key=items.DAMAGE_KEY)}, ' \
-    #                f'acc: {items.get_attr(equipment[slot], key=items.ACCURACY_KEY)}, ' \
-    #                f'arm: {items.get_attr(equipment[slot], key=items.ARMOUR_KEY)}, ' \
-    #                f'pray: {items.get_attr(equipment[slot], key=items.PRAYER_KEY)})*\n'
-    #     else:
-    #         out += f'none *(dam: 0, acc: 0, arm: 0, pray: 0)*\n'
+
     return out
 
 
