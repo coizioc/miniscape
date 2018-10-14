@@ -135,18 +135,21 @@ def backup():
         shutil.copy(f'{USER_DIRECTORY}{file}', destination)
 
 
-def calc_xp_to_level(userid, skill, level):
+def calc_xp_to_level(author, skill, level):
     """Calculates the xp needed to get to a level."""
-    if skill not in SKILLS:
+    author_levels = author.skill_level_mapping
+    author_xps = author.skill_xp_mapping
+
+    if skill not in author_levels.keys():
         return f'{skill} is not a skill.'
 
     if level is None:
-        level = get_level(userid, key=skill) + 1
+        level = author_levels[skill] + 1
 
     if level > 99:
         return f'You have already attained the maximum level in this skill.'
 
-    current_xp = read_user(userid, key=skill)
+    current_xp = author_xps[skill]
     for xp_value in XP.keys():
         if XP[xp_value] == level:
             xp_needed = int(xp_value) - current_xp

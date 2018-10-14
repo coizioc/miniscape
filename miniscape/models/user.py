@@ -19,6 +19,20 @@ class User(models.Model):
                              self.rc_level
                              ]
 
+        self.skill_level_mapping = {'combat': self.combat_level,
+                                    'cb': self.combat_level,
+                                    'slayer': self.slayer_level,
+                                    'slay': self.slayer_level,
+                                    'gather': self.gather_level,
+                                    'artisan': self.artisan_level,
+                                    'craft': self.artisan_level,
+                                    'cook': self.cook_level,
+                                    'cooking': self.cook_level,
+                                    'pray': self.prayer_level,
+                                    'prayer':  self.prayer_level,
+                                    'rc': self.rc_level,
+                                    'runecrafting': self.rc_level}
+
         self.level_fields_str = ['combat_level',
                                  'slayer_level',
                                  'gather_level',
@@ -34,6 +48,20 @@ class User(models.Model):
                           self.cook_xp,
                           self.pray_xp,
                           self.rc_xp]
+
+        self.skill_xp_mapping = {'combat': self.combat_xp,
+                                 'cb': self.combat_xp,
+                                 'slayer': self.slayer_xp,
+                                 'slay': self.slayer_xp,
+                                 'gather': self.gather_xp,
+                                 'artisan': self.artisan_xp,
+                                 'craft': self.artisan_xp,
+                                 'cook': self.cook_xp,
+                                 'cooking': self.cook_xp,
+                                 'pray': self.pray_xp,
+                                 'prayer':  self.pray_xp,
+                                 'rc': self.rc_xp,
+                                 'runecrafting': self.rc_xp}
 
         self.xp_fields_str = ['combat_xp',
                               'slayer_xp',

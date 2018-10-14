@@ -195,7 +195,7 @@ class Miniscape():
             else:
                 level = None
                 skill = ' '.join(args)
-            out = users.calc_xp_to_level(ctx.author.id, skill, level)
+            out = users.calc_xp_to_level(ctx.user_object, skill, level)
             await ctx.send(out)
 
     @commands.command()
