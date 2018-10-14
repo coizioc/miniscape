@@ -177,21 +177,7 @@ def clear_inventory(userid, under=None):
     update_user(userid, inventory, key=ITEMS_KEY)
 
 
-def eat(userid, item):
-    if item == 'none' or item == 'nothing':
-        update_user(userid, '-1', key=FOOD_KEY)
-        return f'You are now eating nothing.'
-    try:
-        itemid = items.find_by_name(item)
-    except KeyError:
-        return f'{item} does not exist.'
-    item_name = items.get_attr(itemid)
-    edible = items.get_attr(itemid, key=items.EAT_KEY)
-    if edible > 0:
-        update_user(userid, itemid, key=FOOD_KEY)
-        return f'You are now eating {items.add_plural(0, itemid)}!'
-    else:
-        return f'You cannot eat {item_name}.'
+
 
 
 def equip_item(userid, item):

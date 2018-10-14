@@ -34,6 +34,7 @@ def print_inventory(person, search):
     ret.append(out)
     return ret
 
+
 def print_pets(person):
     """Prints a formatted list of pets a user has."""
 
@@ -56,4 +57,24 @@ def print_pets(person):
     out += f'{len(user_pets)}/{len(all_pets)}'
     messages.append(out)
     return messages
+
+
+def eat(author, item):
+    if item == 'none' or item == 'nothing':
+        author.active_food = None
+        author.save()
+        return f'You are now eating nothing.'
+
+    item = Item.find_food_by_name(item)[0]
+    all_food = Item.all_food()
+    if item in Item.all_food():
+        author.active_food = item
+        author.save()
+        # TODO: Readd the pluaralization here per this comment
+        # return f'You are now eating {items.add_plural(0, itemid)}!'
+        return f'You are now eating {item.name}'
+    else:
+        return f'You cannot eat {item.name}.'
+
+
 

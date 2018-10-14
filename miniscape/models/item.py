@@ -40,6 +40,8 @@ class Item(models.Model):
     # misc
     pouch = models.PositiveIntegerField(default=0)
     luck_modifier = models.FloatField(default=0)
+    food_value = models.PositiveIntegerField(default=0)
+
 
     MELEE = 0
     RANGE = 1
@@ -64,7 +66,19 @@ class Item(models.Model):
 
     @classmethod
     def all_pets(cls):
-        return Item.objects.all().filter(is_pet=True).order_by('name')
+        return Item.objects.filter(is_pet=True).order_by('name')
+
+    @classmethod
+    def all_food(cls):
+        return Item.objects.filter(food_value__gte=1).order_by('name')
+
+    @classmethod
+    def find_food_by_name(cls, name):
+        return Item.objects.filter(name__icontains=name, food_value__gte=1).order_by('name')
+
+    @property
+    def is_food(self):
+        return self.food_value > 0
 
     def __repr__(self):
         return "Item ID %d: %s" % (self.id, self.name)

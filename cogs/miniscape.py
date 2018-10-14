@@ -203,7 +203,7 @@ class Miniscape():
         """Sets a food to eat during adventures."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             item = ' '.join(args)
-            out = users.eat(ctx.author.id, item.lower())
+            out = ch.eat(ctx.user_object, item.lower())
             await ctx.send(out)
 
     @commands.command()

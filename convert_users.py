@@ -204,6 +204,7 @@ def load_items():
                      is_buryable=v['bury'],
                      is_max_only=v['max'],
                      is_pet=v['pet'],
+                     food_value=v['eat'],
                      pouch=v['pouch'],
                      luck_modifier=v['luck']
                      )
@@ -385,11 +386,11 @@ def load_clue_loot():
     pass
 if __name__ == '__main__':
     # load_quests()
-    # load_items()
+    load_items()
     # load_monsters()
     # load_clue_loot()
     # load_prayers()
     # load_recipes()
-    load_users()
+    # load_users()
 
     pass

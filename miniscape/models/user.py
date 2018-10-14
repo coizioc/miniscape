@@ -128,9 +128,11 @@ class User(models.Model):
     pocket_slot = models.ForeignKey('Item', on_delete=models.SET_NULL, null=True, related_name="item_pocket")
     hatchet_slot = models.ForeignKey('Item', on_delete=models.SET_NULL, null=True, related_name="item_hatchet")
     pickaxe_slot = models.ForeignKey('Item', on_delete=models.SET_NULL, null=True, related_name="item_pickaxe")
+
+    # Boosts
     potion_slot = models.ForeignKey('Item', on_delete=models.SET_NULL, null=True, related_name="item_potion")
-    # Prayer
     prayer_slot = models.ForeignKey('Prayer', on_delete=models.SET_NULL, null=True)
+    active_food = models.ForeignKey('Item', on_delete=models.SET_NULL, null=True, related_name="item_food")
 
     # Clues
     easy_clues = models.PositiveIntegerField(default=0)
