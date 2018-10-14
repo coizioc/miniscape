@@ -143,12 +143,7 @@ class Miniscape():
     async def _me_monsters(self, ctx, *args):
         """Shows how many monsters a user has killed."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            if len(args) == 0:
-                out = mon.print_monster_kills(ctx.user_object)
-            elif len(args) == 1:
-                out = mon.print_monster_kills(ctx.user_object, search=args[0])
-            else:
-                out = mon.print_monster_kills(ctx.user_object, search=" ".join(args))
+            out = mon.print_monster_kills(ctx.user_object, search=" ".join(args))
             await ctx.send(out)
 
     @me.command(name='clues')
@@ -202,8 +197,7 @@ class Miniscape():
     async def eat(self, ctx, *args):
         """Sets a food to eat during adventures."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            item = ' '.join(args)
-            out = ch.eat(ctx.user_object, item.lower())
+            out = ch.eat(ctx.user_object, ' '.join(args).lower())
             await ctx.send(out)
 
     @commands.command()
@@ -211,7 +205,7 @@ class Miniscape():
         """Equips an item from a user's inventory."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             item = ' '.join(args)
-            out = users.equip_item(ctx.author.id, item.lower())
+            out = ch.equip_item(ctx.user_object, item.lower())
             await ctx.send(out)
 
     @commands.command()
@@ -219,7 +213,7 @@ class Miniscape():
         """Unequips an item from a user's equipment."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             item = ' '.join(args)
-            out = users.unequip_item(ctx.author.id, item.lower())
+            out = ch.unequip_item(ctx.user_object, item.lower())
             await ctx.send(out)
 
     @commands.command()

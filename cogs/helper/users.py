@@ -17,11 +17,7 @@ with open(XP_FILE, 'r') as f:
         line_split = line.split(';')
         XP[line_split[0]] = int(line_split[1])
 
-SLOTS = {}
-with open(ARMOUR_SLOTS_FILE, 'r') as f:
-    for line in f.read().splitlines()[1:]:
-        line_split = line.split(';')
-        SLOTS[line_split[0]] = line_split[1]
+
 
 IRONMAN_KEY = 'ironman'         # User's ironman status, stored as a boolean.
 ITEMS_KEY = 'items'             # User's inventory, stored as a Counter.
@@ -180,67 +176,7 @@ def clear_inventory(userid, under=None):
 
 
 
-def equip_item(userid, item):
-    """Takes an item out of a user's inventory and places it into their equipment."""
-    try:
-        itemid = items.find_by_name(item)
-    except KeyError:
-        return f'Error: {item} does not exist.'
-    item_level = items.get_attr(itemid, key=items.LEVEL_KEY)
-    user_cb_level = xp_to_level(read_user(userid, key=COMBAT_XP_KEY))
 
-    if user_cb_level >= item_level:
-        item_name = items.get_attr(itemid)
-        if item_in_inventory(userid, itemid):
-            slot = str(items.get_attr(itemid, key=items.SLOT_KEY))
-            if int(slot) > 0:
-                if items.get_attr(itemid, key=items.MAX_KEY):
-                    total = get_total_level(userid)
-                    if total != 99 * len(SKILLS):
-                        return f"You cannot equip this item since you do not have {99 * len(SKILLS)} skill total."
-                equipment = read_user(userid, key=EQUIPMENT_KEY)
-                if slot not in equipment.keys() or equipment[slot] == -1:
-                    equipment[slot] = itemid
-                else:
-                    update_inventory(userid, [equipment[slot]])
-                    equipment[slot] = itemid
-                update_inventory(userid, [itemid], remove=True)
-                update_user(userid, equipment, EQUIPMENT_KEY)
-                return f'{item_name} equipped to {SLOTS[slot]}!'
-            else:
-                return f'Error: {item_name} cannot be equipped.'
-        else:
-            return f'Error: {item_name} not in inventory.'
-    else:
-        return f'Error: Insufficient level to equip item ({item_level}). Your current combat level is {user_cb_level}.'
-
-
-def unequip_item(userid, item, isitemid=False):
-    """Takes an item out of a user's equipment and places it into their inventory."""
-    if not isitemid:
-        try:
-            itemid = items.find_by_name(item)
-        except KeyError:
-            return f'Error: {item} does not exist.'
-    else:
-        itemid=item
-    
-    item_name = items.get_attr(itemid)
-    equipment = read_user(userid, key=EQUIPMENT_KEY)
-    if itemid in equipment.values():
-        slot = str(items.get_attr(itemid, key=items.SLOT_KEY))
-        if int(slot) > 0:
-            equipment = read_user(userid, key=EQUIPMENT_KEY)
-            if equipment[slot] == -1:
-                return f'{item_name} is not equipped in {SLOTS[str(slot)]}.'
-            update_inventory(userid, [itemid])
-            equipment[slot] = -1
-            update_user(userid, equipment, EQUIPMENT_KEY)
-            return f'{item_name} unequipped from {SLOTS[str(slot)]}!'
-        else:
-            return f'Error: {item_name} cannot be unequipped.'
-    else:
-        return f'You do not have {item_name} equipped.'
 
 
 def count_item_in_inventory(userid, itemid):

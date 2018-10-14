@@ -1,14 +1,18 @@
-from miniscape.models import Item, User, UserInventory
+from miniscape.models import Item, User
+from config import ARMOUR_SLOTS_FILE
+
+SLOTS = {}
+with open(ARMOUR_SLOTS_FILE, 'r') as f:
+    for line in f.read().splitlines()[1:]:
+        line_split = line.split(';')
+        SLOTS[line_split[0]] = line_split[1]
 
 
 def print_inventory(person, search):
     """Prints a list of a user's inventory into discord message-sized chunks."""
     name = person.nick if person.nick else person.plain_name
 
-    if search:
-        inventory = person.get_name_filtered_inventory(search)
-    else:
-        inventory = person.get_inventory()
+    inventory = person.get_inventory(search)
 
     lock_template = "**%s (:lock:)**: %s. *(value: %s, %s ea)*\n"
     unlock_template = "**%s**: %s. *(value: %s, %s ea)*\n"
@@ -65,8 +69,11 @@ def eat(author, item):
         author.save()
         return f'You are now eating nothing.'
 
-    item = Item.find_food_by_name(item)[0]
-    all_food = Item.all_food()
+    try:
+        item = Item.find_food_by_name(item)[0]
+    except IndexError:
+        # No food matching what was sent in
+        return f'You cannot eat {item.name}.'
     if item in Item.all_food():
         author.active_food = item
         author.save()
@@ -75,6 +82,74 @@ def eat(author, item):
         return f'You are now eating {item.name}'
     else:
         return f'You cannot eat {item.name}.'
+
+
+def equip_item(author: User, item: str):
+    """Takes an item out of a user's inventory and places it into their equipment."""
+    found_item = Item.find_by_name_or_nick(item)
+    if found_item is None:
+        return f'Error: {item} does not exist.'
+
+    item_level = found_item.level
+    user_cb_level = author.combat_level
+
+    # Error checking/verification
+    if user_cb_level <= item_level:
+        return f'Error: Insufficient level to equip item ({found_item.level}). \
+                Your current combat level is {user_cb_level}.'
+
+    if not author.has_item_by_item(found_item):
+        return f'Error: {found_item.name} not in inventory.'
+
+    if not found_item.is_equippable:
+        return f'Error: {item_name} cannot be equipped.'
+
+    if found_item.is_max_only and not author.is_maxed:
+        return f"You cannot equip this item since you do not have {author.max_possible_level} skill total."
+
+    slot = found_item.slot - 1  # I blame coiz for starting this at slot 1 :ANGERY:
+    curr_equip = author.equipment_slots[slot]
+
+    # if found_item == curr_equip:
+    #     return f"You already have {found_item.name} equipped!"
+
+    item_name = found_item.name
+    slot_name = author.equipment_slot_strs[slot]
+
+    # Set the equipment slot
+    setattr(author, slot_name, found_item)
+
+    # Update the inventories
+    author.update_inventory(curr_equip)
+    author.update_inventory(found_item, remove=True)
+
+    author.save()
+    return f'{item_name} equipped to {SLOTS[str(slot+1)]}!'
+
+
+def unequip_item(author: User, item: str):
+    """Takes an item out of a user's equipment and places it into their inventory."""
+    found_item = Item.find_by_name_or_nick(item)
+    if not found_item:
+        return f'Error: {item} does not exist.'
+
+    item_name = found_item.name
+    equipment = author.all_armour
+
+    if found_item not in author.equipment_slots:
+        return f'You do not have {item_name} equipped.'
+
+    slot = found_item.slot - 1
+    slot_name = author.equipment_slot_strs[slot]
+    curr_equip = author.equipment_slots[slot]
+
+    # Set the equipment slot
+    setattr(author, slot_name, None)
+    author.update_inventory(curr_equip)
+    author.save()
+    return f'{found_item.name} unequipped from {SLOTS[str(slot+1)]}!'
+
+
 
 
 

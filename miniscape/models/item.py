@@ -69,6 +69,18 @@ class Item(models.Model):
         return Item.objects.filter(is_pet=True).order_by('name')
 
     @classmethod
+    def find_by_name_or_nick(cls, name):
+        item = Item.objects.filter(name=name)
+        if item:
+            return item[0]
+        else:
+            nick = ItemNickname.objects.filter(nickname=name)
+            if nick:
+                return nick[0].real_item
+            else:
+                return None
+
+    @classmethod
     def all_food(cls):
         return Item.objects.filter(food_value__gte=1).order_by('name')
 
@@ -79,6 +91,10 @@ class Item(models.Model):
     @property
     def is_food(self):
         return self.food_value > 0
+
+    @property
+    def is_equippable(self):
+        return self.slot > 0
 
     def __repr__(self):
         return "Item ID %d: %s" % (self.id, self.name)

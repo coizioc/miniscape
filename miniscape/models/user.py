@@ -1,10 +1,13 @@
 from collections import Counter
 
 from django.db import models
+
+from .userinventory import UserInventory
 from .item import Item, ItemNickname
 from django.core.exceptions import ObjectDoesNotExist
 from .playermonsterkills import PlayerMonsterKills
 from cogs.helper.users import xp_to_level
+
 
 class User(models.Model):
 
@@ -87,13 +90,11 @@ class User(models.Model):
                                 self.pickaxe_slot,
                                 self.potion_slot]
 
+
+
     # TODO:
     # - test inventory (including locked items)
-    # - Implement Monsters killed
     # - Implement Equipment
-    # - Implement Food
-    # - Implement current prayer
-    # - Implement completed quests
 
     id = models.PositiveIntegerField(primary_key=True)
     name = models.CharField(max_length=200,
@@ -159,12 +160,30 @@ class User(models.Model):
 
     completed_quests = models.ManyToManyField('Quest')
 
+    equipment_slot_strs = ['head_slot',
+                           'back_slot',
+                           'neck_slot',
+                           'ammo_slot',
+                           'mainhand_slot',
+                           'torso_slot',
+                           'offhand_slot',
+                           'legs_slot',
+                           'hands_slot',
+                           'feet_slot',
+                           'ring_slot',
+                           'pocket_slot',
+                           'hatchet_slot',
+                           'pickaxe_slot',
+                           'potion_slot']
 
-    def get_inventory(self):
+    def get_inventory(self, search=None):
         """ Returns a list of UserInventory Objects related to this user"""
-        return self.userinventory_set.all().order_by('item__name')
+        if search:
+            return self._get_name_filtered_inventory(search)
+        else:
+            return self.userinventory_set.all().order_by('item__name')
 
-    def get_name_filtered_inventory(self, name):
+    def _get_name_filtered_inventory(self, name):
         """ Returns a list of UserInventory Objects related to user filtered by name"""
         return self.userinventory_set.filter(item__name__icontains=name).order_by('item__name')
 
@@ -173,6 +192,13 @@ class User(models.Model):
             return False
         else:
             return True
+
+    def get_item_by_item(self, item):
+        return self.userinventory_set.filter(item=item)
+
+    def has_item_by_item(self, item):
+        item = self.get_item_by_item(item)
+        return len(item) > 0
 
     def has_item_amount_by_name(self, item_name, amount):
         item = self.get_item_by_name(item_name)
@@ -199,20 +225,64 @@ class User(models.Model):
         """ Returns all pets owned by a user """
         return self.userinventory_set.filter(item__is_pet=True).order_by('item__name')
 
-    def get_items_by_id(self, items):
+    def get_items_by_id(self, item):
+        items = self.userinventory_set.filter(item__id=item)
+        return items
+
+    def get_items_by_ids(self, items):
         items = self.userinventory_set.filter(item__id__in=items).order_by('item__name')
         return items
 
-    def update_inventory(self, loot, remove=False):
+    def get_items_by_obj(self, item):
+        items = self.userinventory_set.filter(item=item)
+        return items
+
+    def get_items_by_objs(self, items):
+        items = self.userinventory_set.filter(item__in=items).order_by('item__name')
+        return items
+
+    def update_inventory(self, loot, amount=1, remove=False):
+        if type(loot) == Item:
+            # Need to pass in UserInventory object
+            loot = {loot.id: amount}
+
         loot = Counter(loot)
-        items = self.get_items_by_id(loot.keys())
-        for item in items:
-            print(item.amount)
-            if remove:
-                item.amount -= loot[str(item.item.id)]
+        for itemid, amount in loot.items():
+            item = self.get_items_by_id(itemid)
+            if item:
+                self._update_inventory_object(item[0], amount=amount, remove=remove)
             else:
-                item.amount += loot[str(item.item.id)]
-            item.save()
+                self._add_inventory_item_id(itemid)
+
+    def _update_inventory_item_id(self, loot: str, amount=1,  remove=False):
+        item = Item.objects.get(id=loot)
+        return self._update_inventory_object(item, amount=amount, remove=remove)
+
+    def _update_inventory_object(self, loot: Item, amount=1, remove=False):
+        new_amt = (loot.amount - amount) if remove else (loot.amount + amount)
+
+        if new_amt == 0:
+            loot.delete()
+        elif new_amt >= 0:
+            loot.amount = new_amt
+            loot.save()
+        else:
+            # Negative ??
+            raise ValueError("Update would result in negative inventory")
+
+    def _add_inventory_item_id(self, item: str, amount=1):
+        obj = Item.objects.get(id=item)
+        return self._add_inventory_object(obj, amount=amount)
+
+    def _add_inventory_object(self, loot: Item, amount=1):
+        ui = UserInventory(user=self,
+                           item=loot,
+                           amount=amount)
+        ui.save()
+
+    @property
+    def max_possible_level(self):
+        return 99 * len(self.level_fields)
 
     @staticmethod
     def _calc_level(xp):
@@ -224,7 +294,7 @@ class User(models.Model):
                 'Back': self.back_slot,
                 'Neck': self.neck_slot,
                 'Ammunition': self.ammo_slot,
-                'Main-Hand': self.ammo_slot,
+                'Main-Hand': self.mainhand_slot,
                 'Torso': self.torso_slot,
                 'Off-Hand': self.offhand_slot,
                 'Legs': self.legs_slot,
@@ -311,7 +381,7 @@ class User(models.Model):
 
     @property
     def is_maxed(self):
-        return self.total_level == (99 * len(self.level_fields))
+        return self.total_level == self.max_possible_level
 
     @property
     def total_xp(self):
