@@ -182,7 +182,8 @@ class Miniscape():
                 await ctx.send(f'Could not find {search_string} in server.')
                 return
 
-            await ctx.send(users.print_account(member.id, name))
+            target = User.objects.get(id=member.id)
+            await ctx.send(users.print_account(target))
 
     @commands.command()
     async def tolevel(self, ctx, *args):
