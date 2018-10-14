@@ -73,6 +73,9 @@ class User(models.Model):
                                       through=PlayerMonsterKills,
                                       through_fields=('user', 'monster'))
 
+    completed_quests = models.ManyToManyField('Quest')
+
+
     def get_inventory(self):
         """ Returns a list of UserInventory Objects related to this user"""
         return self.userinventory_set.all().order_by('item__name')
@@ -81,18 +84,32 @@ class User(models.Model):
         """ Returns a list of UserInventory Objects related to user filtered by name"""
         return self.userinventory_set.filter(item__name__icontains=name).order_by('item__name')
 
-    def get_item(self, item_id=None, item_name=None):
+    def has_item_by_name(self, item_name):
+        if self.get_item_by_name(item_name) is None:
+            return False
+        else:
+            return True
+
+    def has_item_amount_by_name(self, item_name, amount):
+        item = self.get_item_by_name(item_name)
+        if not item:
+            return False
+        elif item[0].amount >= amount:
+            return True
+        else:
+            return False
+
+    def get_item_by_name(self, item_name):
         """ Get a particular item from user """
-        if item_id is None and item_name is None:
-            raise ValueError("Both item_id and item_name in user.get_item can't be None, dipshit")
-        elif item_id is not None:
-            return self.userinventory_set.get(item=Item.objects.get(id=item_id))
-        elif item_name is not None:
-            try:
-                return self.userinventory_set.get(item=Item.objects.get(item_name))
-            except ObjectDoesNotExist:
-                    item = ItemNickname(nickname=item_name).item
-                    return self.userinventory_sert.get(item=item)
+        item = Item.objects.filter(name=item_name)
+        if item:
+            return self.userinventory_set.filter(item=item[0])
+
+        item = ItemNickname.objects.filter(nickname=item_name)
+        if item:
+            return self.userinventory_set.filter(item=item[0])
+
+        return None
 
     def get_pets(self):
         """ Returns all pets owned by a user """

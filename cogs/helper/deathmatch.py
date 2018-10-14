@@ -44,14 +44,14 @@ def calculate_damage(power):
 
 def do_deathmatch(fighter1, fighter2, bet=None):
     """Simulates each turn in a deathmatch and outputs the turns in the deathmatch as a list of strings."""
-    if fighter1.nick is not None:
+    if fighter1.nick:
         fighter1name = fighter1.nick
     else:
-        fighter1name = fighter1.name
-    if fighter2.nick is not None:
+        fighter1name = fighter1.plain_name
+    if fighter2.nick:
         fighter2name = fighter2.nick
     else:
-        fighter2name = fighter2.name
+        fighter2name = fighter2.plain_name
     is_fighter1turn = False
     fighter1_health = 100
     fighter2_health = 100
@@ -116,6 +116,7 @@ def do_deathmatch(fighter1, fighter2, bet=None):
         previous_attack = current_attack
 
         # Checks if either fighter is dead and breaks the loop.
+        winner = None
         if fighter2_health < 1:
             current_message += f'\n:trophy: **{fighter1name} has won'
             if bet is not None:
@@ -124,6 +125,7 @@ def do_deathmatch(fighter1, fighter2, bet=None):
                 current_message += f'!**'
             deathmatch_messages.append(current_message)
             deathmatch_messages.append(fighter1.id)
+            winner = fighter1
             break
         if fighter1_health < 1:
             current_message += f'\n:trophy: **{fighter2name} has won'
@@ -133,5 +135,6 @@ def do_deathmatch(fighter1, fighter2, bet=None):
                 current_message += f'!**'
             deathmatch_messages.append(current_message)
             deathmatch_messages.append(fighter2.id)
+            winner = fighter2
             break
-    return deathmatch_messages
+    return deathmatch_messages, winner

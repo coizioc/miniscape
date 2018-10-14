@@ -7,10 +7,9 @@ import django
 django.setup()
 
 import ujson
-from miniscape.models import User, Item, UserInventory, ItemNickname
+from miniscape.models import User, Item, UserInventory, ItemNickname, Quest
 import config
 
-userid = 147501762566291457
 USER_DIRECTORY = config.USER_DIRECTORY
 
 class safe_dict:
@@ -46,6 +45,7 @@ class quest_dict:
                 return ''
             return 0
 def load_alan():
+    userid = 116380350296358914
     with open(f'{USER_DIRECTORY}{userid}.json', 'r+') as f:
         u = safe_dict(ujson.load(f))
 
@@ -76,10 +76,23 @@ def load_alan():
                     )
         user.save()
 
+        hex_number = int(str(u['quests'])[2:], 16)
+        binary_number = str(bin(hex_number))[2:]
+        completed_quests = []
+        for bit in range(len(binary_number)):
+            if binary_number[bit] == '1':
+                completed_quests.append(len(binary_number) - bit)
+
+        # Add quests
+        for q in completed_quests:
+            user.completed_quests.add(Quest.objects.get(id=q))
+        user.save()
+
+        # Add items
         for k,v in u['items'].items():
             locked = k in u['locked']
 
-            if not UserInventory.objects.get(user=user, item=Item.objects.get(id=k)):
+            if not UserInventory.objects.filter(user=user, item=Item.objects.get(id=k)):
                 inv = UserInventory(user = user,
                                     item = Item.objects.get(id=k),
                                     amount=v,
@@ -88,6 +101,19 @@ def load_alan():
             else:
                 print("Object already exists: %s" % UserInventory.objects.get(user=user, item=Item.objects.get(id=k)))
             pass
+
+        # Add killed monsters
+        try:
+            monsters = u['monsters']
+        except KeyError:
+            monsters = None
+        if monsters:
+            from miniscape.models import PlayerMonsterKills, Monster
+            for monster, num in monsters.items():
+                pmk = PlayerMonsterKills.objects.update_or_create(user=user,
+                                                                  monster=Monster.objects.get(id=monster),
+                                                                  amount=num)
+                pmk[0].save()
 
 
 item_json = config.ITEM_JSON
@@ -144,6 +170,7 @@ def load_items():
 def load_recipes():
     from config import RECIPE_JSON, XP_FACTOR
     from miniscape.models.recipe import Recipe, RecipeRequirement
+    from miniscape.models.quest import Quest
 
     with open(RECIPE_JSON, 'r') as f:
         RECIPES = ujson.load(f)
@@ -162,10 +189,16 @@ def load_recipes():
             skill = 'artisan'
             print('wut')
 
-        # if
+
+
+        try:
+            quest_req = Quest.objects.get(id=v['quest req'][0])
+        except KeyError:
+            quest_req = None
         r = Recipe(creates=created_item,
                    skill_requirement=skill,
                    level_requirement=v[skill],
+                   quest_requirement = quest_req,
                    )
         r.save()
         for itemid, amt in v['inputs'].items():
@@ -187,11 +220,11 @@ def load_quests():
         v = quest_dict(v)
         q = Quest(id=k,
                   name=v['name'],
-                  descrition=v['description'],
+                  description=v['description'],
                   success=v['success'],
                   failure=v['failure'],
                   damage=v['damage'],
-                  accurac=v['accuracy'],
+                  accuracy=v['accuracy'],
                   armour=v['armour'],
                   level=v['level'],
                   time=v['time'],
@@ -200,23 +233,105 @@ def load_quests():
         q.save()
 
         if v['quest req']:
-            for req in v['quest req']
-                q.quest_req = Quest.objects.get(id=req)
+            for req in v['quest req']:
+                q.quest_reqs.add(Quest.objects.get(id=req))
+                q.save()
 
 
         if v['item_req']:
-            for qid,amt in v['item_req'].items()
-                qir = QuestItemRequirements(quest=q,
-                                            item=Item.objects.get(id=qid),
-                                            amount=amt)
-                qir.save()
+            for qid,amt in v['item_req'].items():
+                qir = QuestItemRequirements.objects.update_or_create(quest=q,
+                                                                     item=Item.objects.get(id=qid),
+                                                                     amount=amt)
+                qir[0].save()
 
         if v['reward']:
+            for itemid, amt in v['reward'].items():
+                qir = QuestItemRewards.objects.update_or_create(quest=q,
+                                                                item=Item.objects.get(id=itemid),
+                                                                amount=amt)
+                qir[0].save()
+            pass
 
 
+class monster_dict:
+    def __init__(self, dict):
+        self.d = dict
+
+    def __getitem__(self, item):
+        try:
+            return self.d[item]
+        except KeyError:
+            if item in ['name', 'plural']:
+                return ''
+            return 0
+
+def load_monsters():
+    from config import MONSTER_DIRECTORY, MONSTERS_JSON
+    from miniscape.models import Monster, MonsterLoot
+    with open(MONSTERS_JSON, 'r') as f:
+        monsters = ujson.load(f)
+
+    for monsterid, monster in monsters.items():
+        m = monster_dict(monster)
+        monster = Monster.objects.update_or_create(id=monsterid,
+                                                   name=m['name'],
+                                                   plural=m['plural'],
+                                                   xp=m['xp'],
+                                                   slayer_level_req=m['slayer req'],
+                                                   damage=m['damage'],
+                                                   accuracy=m['accuracy'],
+                                                   armour=m['armour'],
+                                                   is_slayable=m['slayer'],
+                                                   is_boss=m['boss'],
+                                                   is_dragon=m['dragon'],
+                                                   min_assignable=m['task_min'],
+                                                   max_assignable=m['task_max'],
+                                                   affinity=m['aff'])
+        monster[0].save()
+        pass
+
+    # Load the loot in
+    from django.db.utils import IntegrityError
+    for monster in Monster.objects.all():
+        with open(MONSTER_DIRECTORY + str(monster.id) + '.txt', 'r') as f:
+            loot = f.readlines()
+            loot.sort()
+        for line in loot:
+            line = line.split(';')
+            try:
+                ml = MonsterLoot.objects.update_or_create(item=Item.objects.get(id=line[0]),
+                                                          monster=monster,
+                                                          min_amount=line[1],
+                                                          max_amount=line[2],
+                                                          rarity=line[3])
+                ml[0].save()
+            except IntegrityError as e:
+                raise e
+
+
+def load_clue_loot():
+    from config import CLUES_DIRECTORY
+    from miniscape.models import ClueLoot
+
+    for i in [1,2,3,4,5]:
+        with open(CLUES_DIRECTORY + str(i) + '.txt', 'r') as f:
+            loot = f.readlines()
+            loot.sort()
+        for line in loot:
+            line = line.split(';')
+            cl = ClueLoot.objects.update_or_create(loot_item=Item.objects.get(id=line[0]),
+                                                   clue_item=Item.objects.get(id=i),
+                                                   min_amount=line[1],
+                                                   max_amount=line[2],
+                                                   rarity=line[3])
+            cl[0].save()
+    pass
 if __name__ == '__main__':
-    load_quests()
-    #load_items()
-    #load_alan()
-    load_recipes()
+    # load_quests()
+    # load_items()
+    # load_monsters()
+    # load_clue_loot()
+    load_alan()
+    # load_recipes()
     pass

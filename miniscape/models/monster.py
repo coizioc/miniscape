@@ -41,3 +41,22 @@ class Monster(models.Model):
     )
     affinity = models.PositiveIntegerField(choices=affinity_choices,
                                            default=MELEE)
+
+    loot = models.ManyToManyField('Item',
+                                  through='MonsterLoot',
+                                  through_fields=('monster', 'item'))
+
+
+class MonsterLoot(models.Model):
+    # class Meta:
+    #     unique_together = (('item', 'monster', 'rarity', 'min_amount'),)
+
+    item = models.ForeignKey('Item',
+                             on_delete=models.CASCADE)
+
+    monster = models.ForeignKey('Monster',
+                                on_delete=models.CASCADE)
+
+    min_amount = models.PositiveIntegerField(default=1)
+    max_amount = models.PositiveIntegerField(default=1)
+    rarity = models.PositiveIntegerField(default=1)

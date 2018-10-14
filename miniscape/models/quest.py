@@ -32,7 +32,16 @@ class Quest(models.Model):
     has_dragon = models.BooleanField(default=False)
 
     # Relationships
-    quest_req = models.ManyToManyField('self', blank=True)
+    quest_reqs = models.ManyToManyField('self',
+                                        blank=True,
+                                        related_name='quest_unlocks',
+                                        symmetrical=False)
+
+    def __repr__(self):
+        return "Quest: %s" % self.name
+
+    def __str__(self):
+        return self.__repr__()
 
 
 class QuestItemRequirements(models.Model):
@@ -45,6 +54,12 @@ class QuestItemRequirements(models.Model):
                              on_delete=models.CASCADE)
     amount = models.PositiveIntegerField(default=1)
 
+    def __repr__(self):
+        return "QuestItemRequirements for Quest (%s), item: %s (%d)" % (self.quest, self.item, self.amount)
+
+    def __str__(self):
+        return self.__repr__()
+
 
 class QuestItemRewards(models.Model):
     class Meta:
@@ -55,3 +70,9 @@ class QuestItemRewards(models.Model):
     item = models.ForeignKey(Item,
                              on_delete=models.CASCADE)
     amount = models.PositiveIntegerField(default=1)
+
+    def __repr__(self):
+        return "QuestItemRewards for Quest (%s), item: %s (%d)" % (self.quest, self.item, self.amount)
+
+    def __str__(self):
+        return self.__repr__()

@@ -11,6 +11,7 @@ class Item(models.Model):
     id = models.PositiveIntegerField(primary_key=True)
     name = models.CharField(max_length=200,
                             unique=True)
+    nick = models.ManyToManyField('ItemNickname')
     plural = models.CharField(max_length=200,
                               blank=True)
     value = models.PositiveIntegerField(default=0)
@@ -57,6 +58,10 @@ class Item(models.Model):
                                   on_delete=models.SET_NULL,
                                   null=True)
 
+    clue_loot = models.ManyToManyField('Item',
+                                       through='ClueLoot',
+                                       through_fields=('clue_item', 'loot_item'))
+
     @classmethod
     def all_pets(cls):
         return Item.objects.all().filter(is_pet=True).order_by('name')
@@ -70,14 +75,14 @@ class Item(models.Model):
 
 class ItemNickname(models.Model):
     class Meta:
-        unique_together = (('nickname', 'item'),)
+        unique_together = (('nickname', 'real_item'),)
 
-    item = models.ForeignKey(Item, on_delete=models.CASCADE)
+    real_item = models.ForeignKey(Item, on_delete=models.CASCADE)
     nickname = models.CharField(max_length=200,
                                 unique=True)
 
     def __repr__(self):
-        return "Nickname for Item (%s), nickname: %s" % (str(self.item), self.nickname)
+        return "Nickname for Item (%s), nickname: %s" % (str(self.real_item), self.nickname)
 
     def __str__(self):
         return self.__repr__()

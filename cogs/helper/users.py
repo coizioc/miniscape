@@ -585,6 +585,7 @@ def update_user(userid, value, key=ITEMS_KEY):
 
 def xp_to_level(xp):
     """Converts a  user's xp into its equivalent level based on an XP table."""
+    xp = int(xp)
     for level_xp in XP:
         if int(level_xp) > xp:
             return int(XP[level_xp]) - 1

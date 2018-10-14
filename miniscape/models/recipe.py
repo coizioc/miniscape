@@ -21,6 +21,12 @@ class Recipe(models.Model):
     def get_requirements(self):
         return self.reciperequirement_set.all().order_by('item__name')
 
+    def __repr__(self):
+        return "Recipe for item %s" % self.creates
+
+    def __str__(self):
+        return self.__repr__()
+
 
 class RecipeRequirement(models.Model):
     class Meta:
@@ -33,3 +39,9 @@ class RecipeRequirement(models.Model):
                              on_delete=models.CASCADE)
 
     amount = models.PositiveIntegerField(default=1)
+
+    def __repr__(self):
+        return "RecipeRequirement for recipe (%s), item (%s), amount (%d)" % (self.recipe, self.item, self.amount)
+
+    def __str__(self):
+        return self.__repr__()
