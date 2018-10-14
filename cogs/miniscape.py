@@ -140,11 +140,15 @@ class Miniscape():
             await ctx.send(users.print_equipment(ctx.user_object, with_header=True))
 
     @me.group(name='monsters')
-    async def _me_monsters(self, ctx):
+    async def _me_monsters(self, ctx, *args):
         """Shows how many monsters a user has killed."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            name = get_display_name(ctx.author)
-            out = mon.print_monster_kills(ctx.author.id, name)
+            if len(args) == 0:
+                out = mon.print_monster_kills(ctx.user_object)
+            elif len(args) == 1:
+                out = mon.print_monster_kills(ctx.user_object, search=args[0])
+            else:
+                out = mon.print_monster_kills(ctx.user_object, search=" ".join(args))
             await ctx.send(out)
 
     @me.command(name='clues')

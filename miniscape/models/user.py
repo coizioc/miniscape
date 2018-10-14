@@ -291,6 +291,14 @@ class User(models.Model):
     def plain_name(self):
         return self.name.split("#")[0]
 
+    def monster_kills(self, search=None):
+        if search:
+            return self.playermonsterkills_set.\
+                filter(monster__name__icontains=search)\
+                .order_by('monster__name')
+        else:
+            return self.playermonsterkills_set.all().order_by('monster__name')
+
     def __repr__(self):
         return "User ID %d: %s" % (self.id, self.name)
 

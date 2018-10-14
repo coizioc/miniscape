@@ -290,17 +290,13 @@ def print_monster(monster):
     return messages
 
 
-def print_monster_kills(userid, name):
+def print_monster_kills(author, search=None):
     """Prints the number of monsters a user has killed."""
-    monster_kills = users.read_user(userid, key=users.MONSTERS_KEY)
-    monster_names = {}
-    for monsterid in monster_kills.keys():
-        monster_names[get_attr(monsterid)] = monsterid
+    monster_kills = author.monster_kills(search)
+    out = f"{users.CHARACTER_HEADER.replace('$NAME', author.plain_name)}"
 
-    out = f"{users.CHARACTER_HEADER.replace('$NAME', name)}"
-    for monster_name in sorted(monster_names):
-        monsterid = monster_names[monster_name]
-        if monster_kills[monsterid] > 0:
-            out += f'**{monster_name.title()}**: {monster_kills[monsterid]}\n'
+    for monster in monster_kills:
+        out += f'**{monster.monster.name.title()}**: {monster.amount}\n'
+        pass
 
     return out
