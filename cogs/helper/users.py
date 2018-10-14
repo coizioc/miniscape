@@ -461,7 +461,13 @@ def print_equipment(author, name=None, with_header=False):
     out += f'**Damage**: {damage}\n' \
            f'**Accuracy**: {accuracy}\n' \
            f'**Armour**: {armour}\n' \
-           f'**Prayer Bonus**: {prayer}\n\n'
+           f'**Prayer Bonus**: {prayer}\n'
+
+    if author.prayer_slot:
+        out += f'**Active Prayer**: {author.prayer_slot.name}\n\n'
+    else:
+        out += f'**Active Prayer**: none\n\n'
+
 
     for slot in armour_print_order:
         item = equipment[slot]
