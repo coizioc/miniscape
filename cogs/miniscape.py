@@ -155,7 +155,7 @@ class Miniscape():
     async def _me_clues(self, ctx):
         """Shows how many clue scrolls a user has completed."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            out = clues.print_clue_scrolls(ctx.author.id)
+            out = clues.print_clue_scrolls(ctx.user_object)
             await ctx.send(out)
 
     @me.command(name='pets')

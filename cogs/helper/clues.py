@@ -99,14 +99,11 @@ def get_rares(difficulty):
     return rares
 
 
-def print_clue_scrolls(userid):
+def print_clue_scrolls(author):
     """Prints the number of clues a user has completed."""
-    clue_counts = users.read_user(userid, key=users.CLUES_KEY)
-
     out = f'{CLUE_HEADER}'
-    for difficulty in sorted(list(clue_counts.keys())):
-        if clue_counts[difficulty] > 0:
-            out += f'**{DIFFICULTY[int(difficulty)].title()}**: {clue_counts[difficulty]}\n'
+    for clue in author.clue_counts:
+        out += f'**{clue[0].title()}**: {clue[1]}\n'
 
     return out
 

@@ -291,6 +291,14 @@ class User(models.Model):
     def plain_name(self):
         return self.name.split("#")[0]
 
+    @property
+    def clue_counts(self):
+        return [('easy', self.easy_clues),
+                ('medium', self.medium_clues),
+                ('hard', self.hard_clues),
+                ('elite', self.elite_clues),
+                ('master', self.master_clues)]
+
     def monster_kills(self, search=None):
         if search:
             return self.playermonsterkills_set.\
