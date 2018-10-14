@@ -7,8 +7,10 @@ import django
 django.setup()
 
 import ujson
-from miniscape.models import User, Item, UserInventory, ItemNickname, Quest
+from miniscape.models import User, Item, UserInventory, ItemNickname, Quest, Prayer
 import config
+from django.core.exceptions import ObjectDoesNotExist
+from django.db.utils import IntegrityError
 
 USER_DIRECTORY = config.USER_DIRECTORY
 
@@ -44,76 +46,130 @@ class quest_dict:
             if item in ['name', 'description', 'success', 'failure']:
                 return ''
             return 0
-def load_alan():
-    userid = 116380350296358914
-    with open(f'{USER_DIRECTORY}{userid}.json', 'r+') as f:
-        u = safe_dict(ujson.load(f))
+def load_users():
+    userids = [116380350296358914, 147501762566291457, 293219528450637824, 132049789461200897]
+    for userid in userids:
+        with open(f'{USER_DIRECTORY}{userid}.json', 'r+') as f:
+            u = safe_dict(ujson.load(f))
 
-        clues = safe_dict(u['clues'])
-        easy_clues = clues['1'] if clues['1'] else 0
-        med_clues = clues['2'] if clues['2'] else 0
-        hard_clues = clues['3'] if clues['3'] else 0
-        elite_clues = clues['4'] if clues['4'] else 0
-        master_clues = clues['5'] if clues['5'] else 0
-        user = User(id=userid,
-                    name="",
-                    combat_xp=u['combat'],
-                    slayer_xp=u['slayer'],
-                    artisan_xp=u['artisan'],
-                    cook_xp=u['cook'],
-                    gather_xp=u['gather'],
-                    pray_xp=u['pray'],
-                    rc_xp=u['runecrafting'],
-                    easy_clues=easy_clues,
-                    medium_clues=med_clues,
-                    hard_clues=hard_clues,
-                    elite_clues=elite_clues,
-                    master_clues=master_clues,
-                    is_ironman=u['ironman'],
-                    is_reaper_complete=u['reaperdone'],
-                    is_vis_complete=u['vis'],
-                    vis_attempts=u['visattempts'],
-                    )
-        user.save()
+            clues = safe_dict(u['clues'])
+            easy_clues = clues['1'] if clues['1'] else 0
+            med_clues = clues['2'] if clues['2'] else 0
+            hard_clues = clues['3'] if clues['3'] else 0
+            elite_clues = clues['4'] if clues['4'] else 0
+            master_clues = clues['5'] if clues['5'] else 0
+            user = User(id=userid,
+                        name="",
+                        combat_xp=u['combat'],
+                        slayer_xp=u['slayer'],
+                        artisan_xp=u['artisan'],
+                        cook_xp=u['cook'],
+                        gather_xp=u['gather'],
+                        pray_xp=u['prayer'],
+                        rc_xp=u['runecrafting'],
+                        easy_clues=easy_clues,
+                        medium_clues=med_clues,
+                        hard_clues=hard_clues,
+                        elite_clues=elite_clues,
+                        master_clues=master_clues,
+                        is_ironman=u['ironman'],
+                        is_reaper_complete=u['reaperdone'],
+                        is_vis_complete=u['vis'],
+                        vis_attempts=u['visattempts'],
+                        )
+            user.save()
+            # TODO
+            # Set active prayer
+            # prayer = Prayer.objects.get(id=)
 
-        hex_number = int(str(u['quests'])[2:], 16)
-        binary_number = str(bin(hex_number))[2:]
-        completed_quests = []
-        for bit in range(len(binary_number)):
-            if binary_number[bit] == '1':
-                completed_quests.append(len(binary_number) - bit)
+            hex_number = int(str(u['quests'])[2:], 16)
+            binary_number = str(bin(hex_number))[2:]
+            completed_quests = []
+            for bit in range(len(binary_number)):
+                if binary_number[bit] == '1':
+                    completed_quests.append(len(binary_number) - bit)
 
-        # Add quests
-        for q in completed_quests:
-            user.completed_quests.add(Quest.objects.get(id=q))
-        user.save()
+            # Add quests
+            for q in completed_quests:
+                user.completed_quests.add(Quest.objects.get(id=q))
+            user.save()
 
-        # Add items
-        for k,v in u['items'].items():
-            locked = k in u['locked']
+            # Add items
+            for k,v in u['items'].items():
+                locked = k in u['locked']
+                try:
+                    inv = UserInventory.objects.update_or_create(user=user,
+                                                                 item=Item.objects.get(id=k),
+                                                                 defaults={'amount':v,'is_locked':locked})
+                                                                 # amount=v,
+                                                                 # is_locked=locked)
+                    pass
+                except IntegrityError as e:
+                    pass
 
-            if not UserInventory.objects.filter(user=user, item=Item.objects.get(id=k)):
-                inv = UserInventory(user = user,
-                                    item = Item.objects.get(id=k),
-                                    amount=v,
-                                    is_locked= locked)
-                inv.save()
-            else:
-                print("Object already exists: %s" % UserInventory.objects.get(user=user, item=Item.objects.get(id=k)))
-            pass
 
-        # Add killed monsters
-        try:
-            monsters = u['monsters']
-        except KeyError:
-            monsters = None
-        if monsters:
-            from miniscape.models import PlayerMonsterKills, Monster
-            for monster, num in monsters.items():
-                pmk = PlayerMonsterKills.objects.update_or_create(user=user,
-                                                                  monster=Monster.objects.get(id=monster),
-                                                                  amount=num)
-                pmk[0].save()
+            # Add killed monsters
+            try:
+                monsters = u['monsters']
+            except KeyError:
+                monsters = None
+            if monsters:
+                from miniscape.models import PlayerMonsterKills, Monster
+                for monster, num in monsters.items():
+                    pmk = PlayerMonsterKills.objects.update_or_create(user=user,
+                                                                      monster=Monster.objects.get(id=monster),
+                                                                      amount=num)
+
+            # Add Equipment
+            try:
+                equipment = u['equip']
+            except KeyError:
+                equipment = None
+
+            if equipment:
+                for slot, item in equipment.items():
+                    #ugh
+                    if int(item) == -1:
+                        continue
+
+                    try:
+                        item_obj = Item.objects.get(id=int(item))
+                    except ObjectDoesNotExist as e:
+                        pass
+
+                    slot = int(slot)
+                    if slot == 1:
+                        user.head_slot = item_obj
+                    elif slot == 2:
+                        user.back_slot = item_obj
+                    elif slot == 3:
+                        user.neck_slot = item_obj
+                    elif slot == 4:
+                        user.ammo_slot = item_obj
+                    elif slot == 5:
+                        user.mainhand_slot = item_obj
+                    elif slot == 6:
+                        user.torso_slot = item_obj
+                    elif slot == 7:
+                        user.offhand_slot = item_obj
+                    elif slot == 8:
+                        user.legs_slot = item_obj
+                    elif slot == 9:
+                        user.hands_slot = item_obj
+                    elif slot == 10:
+                        user.feet_slot = item_obj
+                    elif slot == 11:
+                        user.ring_slot = item_obj
+                    elif slot == 12:
+                        user.pocket_slot = item_obj
+                    elif slot == 13:
+                        user.hatchet_slot = item_obj
+                    elif slot == 14:
+                        user.pickaxe_slot = item_obj
+                    elif slot == 15:
+                        user.potion_slot = item_obj
+
+                    user.save()
 
 
 item_json = config.ITEM_JSON
@@ -332,6 +388,8 @@ if __name__ == '__main__':
     # load_items()
     # load_monsters()
     # load_clue_loot()
-    load_alan()
+    # load_prayers()
     # load_recipes()
+    load_users()
+
     pass

@@ -6,7 +6,6 @@ from django.core.exceptions import ObjectDoesNotExist
 from .playermonsterkills import PlayerMonsterKills
 from cogs.helper.users import xp_to_level
 
-
 class User(models.Model):
 
     def __init__(self, *args, **kwargs):
@@ -20,8 +19,45 @@ class User(models.Model):
                              self.rc_level
                              ]
 
+        self.level_fields_str = ['combat_level',
+                                 'slayer_level',
+                                 'gather_level',
+                                 'artisan_level',
+                                 'cook_level',
+                                 'prayer_level',
+                                 'rc_level']
+
         self.xp_fields = [self.combat_xp,
-                          self.slayer_xp]
+                          self.slayer_xp,
+                          self.gather_xp,
+                          self.artisan_xp,
+                          self.cook_xp,
+                          self.pray_xp,
+                          self.rc_xp]
+
+        self.xp_fields_str = ['combat_xp',
+                              'slayer_xp',
+                              'gather_xp',
+                              'artisan_xp',
+                              'cook_xp',
+                              'pray_xp',
+                              'rc_xp']
+
+        self.equipment_slots = [self.head_slot,
+                                self.back_slot,
+                                self.neck_slot,
+                                self.ammo_slot,
+                                self.mainhand_slot,
+                                self.torso_slot,
+                                self.offhand_slot,
+                                self.legs_slot,
+                                self.hands_slot,
+                                self.feet_slot,
+                                self.ring_slot,
+                                self.pocket_slot,
+                                self.hatchet_slot,
+                                self.pickaxe_slot,
+                                self.potion_slot]
 
     # TODO:
     # - test inventory (including locked items)
@@ -49,6 +85,24 @@ class User(models.Model):
     pray_xp = models.BigIntegerField(default=0)
     rc_xp = models.BigIntegerField(default=0)
 
+    # Armour
+    head_slot = models.ForeignKey('Item', on_delete=models.SET_NULL, null=True, related_name="item_head")
+    back_slot = models.ForeignKey('Item', on_delete=models.SET_NULL, null=True, related_name="item_back")
+    neck_slot = models.ForeignKey('Item', on_delete=models.SET_NULL, null=True, related_name="item_neck")
+    ammo_slot = models.ForeignKey('Item', on_delete=models.SET_NULL, null=True, related_name="item_ammo")
+    mainhand_slot = models.ForeignKey('Item', on_delete=models.SET_NULL, null=True, related_name="item_mainhand")
+    torso_slot = models.ForeignKey('Item', on_delete=models.SET_NULL, null=True, related_name="item_torso")
+    offhand_slot = models.ForeignKey('Item', on_delete=models.SET_NULL, null=True, related_name="item_offhand")
+    legs_slot = models.ForeignKey('Item', on_delete=models.SET_NULL, null=True, related_name="item_legs")
+    hands_slot = models.ForeignKey('Item', on_delete=models.SET_NULL, null=True, related_name="item_hands")
+    feet_slot = models.ForeignKey('Item', on_delete=models.SET_NULL, null=True, related_name="item_feet")
+    ring_slot = models.ForeignKey('Item', on_delete=models.SET_NULL, null=True, related_name="item_ring")
+    pocket_slot = models.ForeignKey('Item', on_delete=models.SET_NULL, null=True, related_name="item_pocket")
+    hatchet_slot = models.ForeignKey('Item', on_delete=models.SET_NULL, null=True, related_name="item_hatchet")
+    pickaxe_slot = models.ForeignKey('Item', on_delete=models.SET_NULL, null=True, related_name="item_pickaxe")
+    potion_slot = models.ForeignKey('Item', on_delete=models.SET_NULL, null=True, related_name="item_potion")
+    # Prayer
+    prayer_slot = models.ForeignKey('Prayer', on_delete=models.SET_NULL, null=True)
 
     # Clues
     easy_clues = models.PositiveIntegerField(default=0)
@@ -135,6 +189,65 @@ class User(models.Model):
         return xp_to_level(xp)
 
     @property
+    def all_armour(self):
+        return {'Head': self.head_slot,
+                'Back': self.back_slot,
+                'Neck': self.neck_slot,
+                'Ammunition': self.ammo_slot,
+                'Main-Hand': self.ammo_slot,
+                'Torso': self.torso_slot,
+                'Off-Hand': self.offhand_slot,
+                'Legs': self.legs_slot,
+                'Hands': self.hands_slot,
+                'Feet': self.feet_slot,
+                'Ring': self.ring_slot,
+                'Pocket': self.pocket_slot,
+                'Hatchet': self.hatchet_slot,
+                'Pickaxe': self.pickaxe_slot,
+                'Potion': self.potion_slot
+                }
+
+    @property
+    def damage(self):
+        damage = 0
+        for item in self.equipment_slots:
+            if item:
+                damage += item.damage
+        return damage
+
+    @property
+    def accuracy(self):
+        accuracy = 0
+        for item in self.equipment_slots:
+            if item:
+                accuracy += item.accuracy
+        return accuracy
+
+    @property
+    def armour(self):
+        armour = 0
+        for item in self.equipment_slots:
+            if item:
+                armour += item.armour
+        return armour
+
+    @property
+    def prayer_bonus(self):
+        prayer_bonus = 0
+        for item in self.equipment_slots:
+            if item:
+                prayer_bonus += item.prayer
+        return prayer_bonus
+
+    @property
+    def equipment_stats(self):
+        return self.damage, self.accuracy, self.armour, self.prayer_bonus
+
+    @property
+    def quests_completed(self):
+        return len(self.qu)
+
+    @property
     def combat_level(self):
         return self._calc_level(self.combat_xp)
 
@@ -169,6 +282,10 @@ class User(models.Model):
     @property
     def is_maxed(self):
         return self.total_level == (99 * len(self.level_fields))
+
+    @property
+    def total_xp(self):
+        return sum(self.xp_fields)
 
     @property
     def plain_name(self):

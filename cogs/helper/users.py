@@ -432,53 +432,59 @@ def print_account(author, printequipment=True):
     nickname = author.nick if author.nick else author.name
     out = f"{CHARACTER_HEADER.replace('$NAME', nickname.upper())}"
 
-    for skill in author.level_fields:
-        xp = getattr(author, skill, 0)
-        xp_formatted = '{:,}'.format(author.skill)
-        pass
+    # TODO: This can probably be done better
+    for skill, level, skill_name in zip(author.xp_fields_str, author.level_fields_str, SKILLS):
+        xp_formatted = '{:,}'.format(getattr(author, skill, 0))
+        out += f'**{skill_name.title()} Level**: {getattr(author, level, 0)} *({xp_formatted} xp)*\n'
 
-    for skill in SKILLS:
-        xp_formatted = '{:,}'.format(read_user(userid, key=skill))
-        level = get_level(userid, skill)
-        out += f'**{skill.title()} Level**: {level} *({xp_formatted} xp)*\n'
+    out += f'**Skill Total**: {author.total_level}/{len(SKILLS) * 99}\n\n'
+    out += f'**Quests Completed**: {len(author.completed_quests.all())}/{len(quests.QUESTS.keys())}\n\n'
 
-    total = get_total_level(userid)
-    out += f'**Skill Total**: {total}/{len(SKILLS) * 99}\n\n'
-    out += f'**Quests Completed**: {len(get_completed_quests(userid))}/{len(quests.QUESTS.keys())}\n\n'
-
-    if total < 99 * len(SKILLS):
-        for itemid in read_user(userid, key=EQUIPMENT_KEY).values():
-            if itemid != -1:
-                if items.get_attr(itemid, key=items.MAX_KEY):
-                    unequip_item(userid, itemid, isitemid=True)
     if printequipment:
-        out += print_equipment(userid)
+        out += print_equipment(author)
 
     return out
 
 
-def print_equipment(userid, name=None, with_header=False):
+def print_equipment(author, name=None, with_header=False):
     """Writes a string showing the stats of a user's equipment."""
+
+    armour_print_order = ['Head', 'Back', 'Neck', 'Ammunition', 'Main-Hand', 'Torso', 'Off-Hand',
+                          'Legs', 'Hands', 'Feet', 'Ring', 'Pocket', 'Hatchet', 'Pickaxe', 'Potion']
+
     if with_header and name is not None:
         out = f"{CHARACTER_HEADER.replace('$NAME', name.upper())}"
     else:
         out = ''
-    equipment = read_user(userid, key=EQUIPMENT_KEY)
-    damage, accuracy, armour, prayer = get_equipment_stats(equipment)
+    equipment = author.all_armour
+    damage, accuracy, armour, prayer = author.equipment_stats
     out += f'**Damage**: {damage}\n' \
            f'**Accuracy**: {accuracy}\n' \
            f'**Armour**: {armour}\n' \
            f'**Prayer Bonus**: {prayer}\n\n'
-    for slot in equipment.keys():
-        out += f'**{SLOTS[str(slot)].title()}**: '
-        if int(equipment[slot]) > -1:
-            out += f'{items.get_attr(equipment[slot])} ' \
-                   f'*(dam: {items.get_attr(equipment[slot], key=items.DAMAGE_KEY)}, ' \
-                   f'acc: {items.get_attr(equipment[slot], key=items.ACCURACY_KEY)}, ' \
-                   f'arm: {items.get_attr(equipment[slot], key=items.ARMOUR_KEY)}, ' \
-                   f'pray: {items.get_attr(equipment[slot], key=items.PRAYER_KEY)})*\n'
+
+    for slot in armour_print_order:
+        item = equipment[slot]
+        out += f'**{slot.title()}**: '
+        if item is not None:
+            out += f'{item.name} '
+            out += f'*(dam: {item.damage}, ' \
+                       f'acc: {item.accuracy}, ' \
+                       f'arm: {item.armour}, ' \
+                       f'pray: {item.prayer})*\n'
         else:
-            out += f'none *(dam: 0, acc: 0, arm: 0, pray: 0)*\n'
+            out += 'none *(dam: 0, acc: 0, arm: 0, pray: 0)*\n'
+    #
+    # for slot in equipment.keys():
+    #     out += f'**{SLOTS[str(slot)].title()}**: '
+    #     if int(equipment[slot]) > -1:
+    #         out += f'{items.get_attr(equipment[slot])} ' \
+    #                f'*(dam: {items.get_attr(equipment[slot], key=items.DAMAGE_KEY)}, ' \
+    #                f'acc: {items.get_attr(equipment[slot], key=items.ACCURACY_KEY)}, ' \
+    #                f'arm: {items.get_attr(equipment[slot], key=items.ARMOUR_KEY)}, ' \
+    #                f'pray: {items.get_attr(equipment[slot], key=items.PRAYER_KEY)})*\n'
+    #     else:
+    #         out += f'none *(dam: 0, acc: 0, arm: 0, pray: 0)*\n'
     return out
 
 
