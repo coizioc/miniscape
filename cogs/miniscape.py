@@ -289,7 +289,7 @@ class Miniscape():
             out = slayer.get_reaper_task(ctx.guild.id, ctx.channel.id, ctx.author.id)
             await ctx.send(out)
 
-    @commands.group(invoke_without_command=True, aliases=['grind', 'fring', 'yeet'])
+    @commands.group(invoke_without_command=True, aliases=['grind', 'fring', 'dab', 'yeet'])
     async def kill(self, ctx, *args):
         """Lets the user kill monsters for a certain number or a certain amount of time."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
