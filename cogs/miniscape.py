@@ -465,15 +465,18 @@ class Miniscape():
         """Drinks a potion."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             name = ' '.join(args)
-            out = items.drink(ctx.author.id, name)
+            if ctx.user_object.drink(name):
+                out = f'You drank the {name}! Your stats will be increased for your next adventure.'
+            else:
+                out = f'Unable to drink {name}'
             await ctx.send(out)
 
     @commands.group(invoke_without_command=True)
     async def shop(self, ctx):
         """Shows the items available at the shop."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            messages = items.print_shop(ctx.author.id)
-            await self.paginate(messages)
+            messages = item_helpers.print_shop(ctx.author.id)
+            await self.paginate(ctx, messages)
 
     @commands.command()
     async def buy(self, ctx, *args):
@@ -499,7 +502,7 @@ class Miniscape():
             except ValueError:
                 number = 1
                 item = ' '.join(args)
-            out = items.sell(ctx.author.id, item, number=number)
+            out = item_helpers.sell(ctx.author.id, item, number=number)
             await ctx.send(out)
 
     @commands.command()
@@ -586,7 +589,7 @@ class Miniscape():
                 ctx.bot.trade_manager.reset_trade(trade, ctx.author.id, name_member.id)
 
     @commands.command()
-    async def ironman(self, ctx):
+    async def ironmemememe(self, ctx):
         """Lets a user become an ironman, by the way."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             out = ':tools: __**IRONMAN**__ :tools:\n' \
@@ -601,8 +604,9 @@ class Miniscape():
                 try:
                     reaction, user = await self.bot.wait_for('reaction_add', timeout=60)
                     if str(reaction.emoji) == '👍' and user == ctx.author and reaction.message.id == msg.id:
-                        users.reset_account(ctx.author.id)
-                        users.update_user(ctx.author.id, True, key=users.IRONMAN_KEY)
+                        ctx.user_object.reset_account()
+                        ctx.user_object.is_ironman = True
+                        ctx.user_object.save()
                         ironman_role = discord.utils.get(ctx.guild.roles, name="Ironman")
                         await ctx.author.add_roles(ironman_role, reason='Wanted to become an ironmeme.')
                         name = get_display_name(ctx.author)
@@ -628,9 +632,10 @@ class Miniscape():
                 try:
                     reaction, user = await self.bot.wait_for('reaction_add', timeout=60)
                     if str(reaction.emoji) == '👍' and user == ctx.author and reaction.message.id == msg.id:
-                        users.update_user(ctx.author.id, False, key=users.IRONMAN_KEY)
+                        ctx.user_object.is_ironman = False
+                        ctx.user_object.save()
                         ironman_role = discord.utils.get(ctx.guild.roles, name="Ironman")
-                        await ctx.author.remove_roles(ironman_role, reason="Bot mute ended.")
+                        await ctx.author.remove_roles(ironman_role, reason="No longer wants to be ironmeme.")
                         name = get_display_name(ctx.author)
                         await msg.edit(content=f':tools: __**IRONMAN**__ :tools:\nCongratulations, {name}, you are now '
                                                'a normal user!')

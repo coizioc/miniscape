@@ -6,7 +6,8 @@ class UserInventory(models.Model):
         unique_together = (('user', 'item'),)
 
     user = models.ForeignKey('User',
-                              on_delete=models.CASCADE)
+                             on_delete=models.CASCADE)
+
     item = models.ForeignKey('Item',
                              on_delete=models.CASCADE)
     amount = models.PositiveIntegerField(default=1)

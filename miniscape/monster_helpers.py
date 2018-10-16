@@ -1,6 +1,8 @@
 from miniscape.models import Monster, User, MonsterLoot
 import random
 
+CHARACTER_HEADER = f':crossed_swords: __**$NAME**__ :crossed_swords:\n'
+
 RARITY_NAMES = {
         1: 'always',
         16: 'common',
@@ -41,7 +43,7 @@ def get_random(author: User, wants_boss=False):
 def print_monster_kills(author, search=None):
     """Prints the number of monsters a user has killed."""
     monster_kills = author.monster_kills(search)
-    out = f"{users.CHARACTER_HEADER.replace('$NAME', author.plain_name)}"
+    out = f"{CHARACTER_HEADER.replace('$NAME', author.plain_name)}"
 
     for monster in monster_kills:
         out += f'**{monster.monster.name.title()}**: {monster.amount}\n'

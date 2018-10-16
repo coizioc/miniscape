@@ -92,6 +92,21 @@ class User(models.Model):
                                 self.pickaxe_slot,
                                 self.potion_slot]
 
+        self.equipment_slot_strs = equipment_slot_strs = ['head_slot',
+                                                          'back_slot',
+                                                          'neck_slot',
+                                                          'ammo_slot',
+                                                          'mainhand_slot',
+                                                          'torso_slot',
+                                                          'offhand_slot',
+                                                          'legs_slot',
+                                                          'hands_slot',
+                                                          'feet_slot',
+                                                          'ring_slot',
+                                                          'pocket_slot',
+                                                          'hatchet_slot',
+                                                          'pickaxe_slot',
+                                                          'potion_slot']
 
 
     # TODO:
@@ -160,23 +175,11 @@ class User(models.Model):
                                       through=PlayerMonsterKills,
                                       through_fields=('user', 'monster'))
 
-    completed_quests = models.ManyToManyField('Quest')
+    completed_quests = models.ManyToManyField('Quest',
+                                              through='UserQuest',
+                                              through_fields=('user', 'quest'))
 
-    equipment_slot_strs = ['head_slot',
-                           'back_slot',
-                           'neck_slot',
-                           'ammo_slot',
-                           'mainhand_slot',
-                           'torso_slot',
-                           'offhand_slot',
-                           'legs_slot',
-                           'hands_slot',
-                           'feet_slot',
-                           'ring_slot',
-                           'pocket_slot',
-                           'hatchet_slot',
-                           'pickaxe_slot',
-                           'potion_slot']
+
 
     def get_inventory(self, search=None):
         """ Returns a list of UserInventory Objects related to this user"""
@@ -261,7 +264,7 @@ class User(models.Model):
         for itemid, amount in loot.items():
             if type(itemid) == Item:
                 item = self.get_items_by_obj(itemid)
-                itemid = item.id
+                itemid = item[0].id
             else:
                 item = self.get_items_by_id(itemid)
 
@@ -336,18 +339,94 @@ class User(models.Model):
         # Validate prayer level
         if self.prayer_level >= prayer.level_required:
             # Validate quest req
-            if not prayer.quest_req or prayer.quest_req in self.completed_quests.all():
+            if not prayer.quest_req or prayer.quest_req in self.userquest_set.all():
                 return True
 
         # Default
         return False
+
+    def drink(self, potion):
+        if type(potion) == Item:
+            pot = potion
+            if pot.is_pot:
+                self.potion_slot = pot
+            else:
+                return False
+        else:
+            pot = Item.find_by_name_or_nick(potion)
+            if pot and pot.is_pot:
+                self.potion_slot = pot
+            else:
+                return False
+
+        self.update_inventory(Counter({pot: 1}), remove=True)
+        self.save()
+        return True
+
+    def reset_account(self):
+        """ Completely resets a user's account. Primarily used by ~ironman"""
+        self.clear_armour()
+        self.clear_inventory()
+        self.clear_stats()
+        self.clear_quests()
+        self.clear_monster_kills()
+        self.clear_boosts()
+        self.clear_clues()
+        self.clear_flags()
+        self.save()
+
+    def clear_inventory(self):
+        """ Deletes _all_ items in user's inventory, incl coins"""
+        ui = UserInventory.objects.filter(user=self)
+        ui.delete()
+
+    def clear_stats(self):
+        """ Reset's user's stats to 0 xp"""
+        for stat in self.xp_fields_str:
+            setattr(self, stat, 0)
+        self.save()
+
+    def clear_armour(self):
+        """ Clear users armour, prayer, potion"""
+        for eq in self.equipment_slot_strs:
+            setattr(self, eq, None)
+        self.save()
+
+    def clear_quests(self):
+        self.userquest_set.all().delete()
+        pass
+
+    def clear_monster_kills(self):
+        mk = PlayerMonsterKills.objects.filter(user=self)
+        mk.delete()
+
+    def clear_boosts(self):
+        self.potion_slot = None
+        self.prayer_slot = None
+        self.active_food = None
+        self.save()
+
+    def clear_clues(self):
+        self.easy_clues = 0
+        self.medium_clues = 0
+        self.hard_clues = 0
+        self.elite_clues = 0
+        self.master_clues = 0
+        self.save()
+
+    def clear_flags(self):
+        self.is_ironman = False
+        self.is_reaper_complete = False
+        self.is_vis_complete = False
+        self.vis_attempts = 0
+        self.save()
 
     @property
     def usable_prayers(self):
         prayers = Prayer.objects.filter(level_required__lte=self.prayer_level)
         ret = []
         for p in prayers:
-            if p.quest_req and p.quest_req in self.completed_quests.all():
+            if p.quest_req and p.quest_req in self.completed_quests_list:
                 ret.append(p)
             elif not p.quest_req:
                 ret.append(p)
@@ -355,8 +434,11 @@ class User(models.Model):
         return ret
 
     @property
+    def completed_quests_list(self):
+        return [uq.quest for uq in self.userquest_set.all()]
+    @property
     def num_quests_complete(self):
-        return len(self.completed_quests.all())
+        return len(self.completed_quests_list)
 
     @property
     def is_eating(self):

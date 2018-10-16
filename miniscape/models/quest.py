@@ -1,13 +1,9 @@
 from django.db import models
 from .item import Item
+from .user import User
+
 
 class Quest(models.Model):
-
-    # TODO:
-    # - Implement "quest unlocks item x"
-    # - Test quest item requirements
-    # - Test quest-on-quest requirements _lenny face_
-    # - Test quest item rewards
 
     id = models.PositiveIntegerField(primary_key=True)
     name = models.CharField(max_length=200,
@@ -44,6 +40,16 @@ class Quest(models.Model):
 
     def __str__(self):
         return self.__repr__()
+
+
+class UserQuest(models.Model):
+    class Meta:
+        unique_together = (('quest', 'user'),)
+
+    quest = models.ForeignKey(Quest,
+                              on_delete=models.CASCADE)
+    user = models.ForeignKey(User,
+                             on_delete=models.CASCADE)
 
 
 class QuestItemRequirements(models.Model):

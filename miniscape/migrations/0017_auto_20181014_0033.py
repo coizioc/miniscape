@@ -9,10 +9,3 @@ class Migration(migrations.Migration):
         ('miniscape', '0016_user_quests'),
     ]
 
-    operations = [
-        migrations.RenameField(
-            model_name='user',
-            old_name='quests',
-            new_name='completed_quests',
-        ),
-    ]

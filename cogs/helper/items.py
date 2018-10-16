@@ -83,32 +83,6 @@ def add_plural(number, itemid, with_zero=False):
     return out
 
 
-def buy(userid, item, number):
-    """Buys (a given amount) of an item and places it in the user's inventory."""
-    try:
-        itemid = find_by_name(item)
-        number = int(number)
-    except KeyError:
-        return f'Error: {item} is not an item.'
-    except ValueError:
-        return f'Error: {number} is not a number.'
-    item_name = get_attr(itemid)
-    if item_in_shop(itemid):
-        items = open_shop()
-        if int(items[itemid]) in users.get_completed_quests(userid) or int(items[itemid]) == 0:
-            value = get_attr(itemid, key=VALUE_KEY)
-            cost = 4 * number * value
-            if users.item_in_inventory(userid, "0", cost):
-                users.update_inventory(userid, [itemid] * number)
-                users.update_inventory(userid, (4 * number * value) * ["0"], remove=True)
-                value_formatted = '{:,}'.format(4 * value * number)
-                return f'{number} {item_name} bought for {value_formatted} coins!'
-            else:
-                return f'You do not have enough coins to buy this item. ({cost} coins)'
-        else:
-            return 'Error: You do not have the requirements to buy this item.'
-    else:
-        return f'Error: {item_name} not in inventory or you do not have at least {number} in your inventory.'
 
 
 def claim(userid, itemname, number):
@@ -166,27 +140,6 @@ def claim(userid, itemname, number):
 
 
 
-def drink(userid, name):
-    try:
-        itemid = find_by_name(name)
-    except KeyError:
-        return f'Error: {name} does not exist.'
-    item_name = get_attr(itemid)
-
-    is_pot = get_attr(itemid, key=POT_KEY)
-    if is_pot:
-        if users.item_in_inventory(userid, itemid):
-            users.update_inventory(userid, [itemid], remove=True)
-            equipment = users.read_user(userid, key=users.EQUIPMENT_KEY)
-            equipment['15'] = str(itemid)
-            users.update_user(userid, equipment, key=users.EQUIPMENT_KEY)
-        else:
-            return f"You do not have any {add_plural(0, itemid)} in your inventory."
-    else:
-        return f"{item_name} isn't a potion!"
-
-    out = f'You drank the {item_name}! Your stats will be increased for your next adventure.'
-    return out
 
 
 def find_by_name(name):
@@ -257,58 +210,7 @@ def is_tradable(itemid):
     return True
 
 
-def item_in_shop(itemid):
-    """Checks if an item is in the shop."""
-    return str(itemid) in set(open_shop().keys())
 
 
-def open_shop():
-    """Opens the shop file and places the items and quest reqs in a dictionary."""
-    with open(SHOP_FILE, 'r') as f:
-        lines = f.read().splitlines()
-    items = {}
-    for line in lines:
-        itemid, quest_req = line.split(';')
-        items[itemid] = quest_req
-    return items
-
-
-def sell(userid, item, number):
-    """Sells (a given amount) of an item from a user's inventory."""
-    try:
-        itemid = find_by_name(item)
-        number = int(number)
-    except KeyError:
-        return f'Error: {item} is not an item.'
-    except ValueError:
-        return f'Error: {number} is not a number.'
-
-    item_name = get_attr(itemid)
-    if users.item_in_inventory(userid, itemid, number=number):
-        value = get_attr(itemid, key=VALUE_KEY)
-        users.update_inventory(userid, [itemid] * number, remove=True)
-        users.update_inventory(userid, (number * value) * ["0"])
-        value_formatted = '{:,}'.format(value * number)
-        return f'{number} {item_name} sold for {value_formatted} coins!'
-    else:
-        return f'Error: {item_name} not in inventory or you do not have at least {number} in your inventory.'
-
-
-def print_shop(userid):
-    """Prints the shop."""
-    items = open_shop()
-
-    out = SHOP_HEADER
-    messages = []
-    for itemid in list(items.keys()):
-        if int(items[itemid]) in set(users.get_completed_quests(userid)) or items[itemid] == '0':
-            name = get_attr(itemid)
-            price = '{:,}'.format(4 * get_attr(itemid, key=VALUE_KEY))
-            out += f'**{name.title()}**: {price} coins\n'
-        if len(out) > 1800:
-            messages.append(out)
-            out = SHOP_HEADER
-    messages.append(out)
-    return messages
 
 

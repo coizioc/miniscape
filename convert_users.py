@@ -14,6 +14,8 @@ from miniscape.models import User, Item, UserInventory, ItemNickname, Quest, Pra
 import config
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.utils import IntegrityError
+from miniscape.models.quest import UserQuest
+
 
 USER_DIRECTORY = config.USER_DIRECTORY
 
@@ -97,7 +99,9 @@ def load_users():
 
             # Add quests
             for q in completed_quests:
-                user.completed_quests.add(Quest.objects.get(id=q))
+                uq = UserQuest.objects.get_or_create(user=user,
+                                                     quest=Quest.objects.get(id=q))[0]
+                uq.save()
             user.save()
 
             # Add items
@@ -188,45 +192,40 @@ def load_items():
             k = int(k)
             qs = Item.objects.filter(id=k)
 
-            i = Item(id=k,
-                     name=v['name'],
-                     plural=v['plural'] if v['plural'] else '',
-                     value=v['value'],
-                     damage=v['damage'],
-                     accuracy=v['accuracy'],
-                     armour=v['armour'],
-                     prayer=v['prayer'],
-                     slot=v['slot'],
-                     level=v['level'],
-                     xp=v['xp'],
-                     affinity=v['aff'],
-                     is_gatherable=v['gather'],
-                     is_tree=v['tree'],
-                     is_rock=v['rock'],
-                     is_fish=v['fish'],
-                     is_pot=v['potion'],
-                     is_rune=v['rune'],
-                     is_cookable=v['cook'],
-                     is_buryable=v['bury'],
-                     is_max_only=v['max'],
-                     is_pet=v['pet'],
-                     food_value=v['eat'],
-                     pouch=v['pouch'],
-                     luck_modifier=v['luck'],
-                     )
+            i = Item.objects.get_or_create(id=k)[0]
 
-            i.save(force_update=bool(qs))
+            i.name = v['name']
+            i.plural = v['plural'] if v['plural'] else ''
+            i.value = v['value']
+            i.damage = v['damage']
+            i.accuracy = v['accuracy']
+            i.armour = v['armour']
+            i.prayer = v['prayer']
+            i.slot = v['slot']
+            i.level = v['level']
+            i.xp = v['xp']
+            i.affinity = v['aff']
+            i.is_gatherable = v['gather']
+            i.is_tree = v['tree']
+            i.is_rock = v['rock']
+            i.is_fish = v['fish']
+            i.is_pot = v['potion']
+            i.is_rune = v['rune']
+            i.is_cookable = v['cook']
+            i.is_buryable = v['bury']
+            i.is_max_only = v['max']
+            i.is_pet = v['pet']
+            i.food_value = v['eat']
+            i.pouch = v['pouch']
+            i.luck_modifier = v['luck']
+            i.save()
+
             if v['nick']:
                 for n in v['nick']:
-                    qs = ItemNickname.objects.filter(nickname=n)
-                    nick = None
-                    if qs:
-                        nick = qs[0]
-                        nick.item=i
-                        nick.nickname=n
-                    else:
-                        nick = ItemNickname(item=i,
-                                            nickname=n)
+                    nick = ItemNickname.objects.get_or_create(real_item=i,
+                                                              nickname=n)[0]
+                    nick.item = i
+                    nick.nickname = n
                     nick.save()
                     pass
 
@@ -251,7 +250,6 @@ def load_recipes():
         else:
             v['artisan'] = 1
             skill = 'artisan'
-            print('wut')
 
 
 
@@ -282,28 +280,29 @@ def load_quests():
 
     for k,v in quests.items():
         v = quest_dict(v)
-        q = Quest(id=k,
-                  name=v['name'],
-                  description=v['description'],
-                  success=v['success'],
-                  failure=v['failure'],
-                  damage=v['damage'],
-                  accuracy=v['accuracy'],
-                  armour=v['armour'],
-                  level=v['level'],
-                  time=v['time'],
-                  has_dragon=v['dragon']
-                  )
+        q = Quest.objects.get_or_create(id=k)[0]
+        q.name = v['name']
+        q.description = v['description']
+        q.success = v['success']
+        q.failure = v['failure']
+        q.damage = v['damage']
+        q.accuracy = v['accuracy']
+        q.armour = v['armour']
+        q.level = v['level']
+        q.time = v['time']
+        q.has_dragon = v['dragon']
         q.save()
 
+    for k,v in quests.items():
+        v = quest_dict(v)
+        q = Quest.objects.get(id=k)
         if v['quest req']:
             for req in v['quest req']:
                 q.quest_reqs.add(Quest.objects.get(id=req))
                 q.save()
 
-
         if v['item_req']:
-            for qid,amt in v['item_req'].items():
+            for qid, amt in v['item_req'].items():
                 qir = QuestItemRequirements.objects.update_or_create(quest=q,
                                                                      item=Item.objects.get(id=qid),
                                                                      amount=amt)
@@ -469,13 +468,12 @@ def load_prayers():
 
 
 if __name__ == '__main__':
-    # load_quests()
-    # load_items()
-    # load_prayers()
-    # load_monsters()
-    # load_clue_loot()
+    load_items()
+    load_quests()
+    load_monsters()
+    load_clue_loot()
     load_prayers()
-    # load_recipes()
-    # load_users()
+    load_recipes()
+    load_users()
 
     pass
