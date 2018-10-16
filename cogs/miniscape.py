@@ -2,6 +2,7 @@
 import asyncio
 import datetime
 import random
+from collections import Counter
 
 import discord
 from discord.ext import commands
@@ -327,15 +328,16 @@ class Miniscape():
                     out = 'args not valid. Please put in the form `[number] [monster name] [length]`'
             await ctx.send(out)
 
+    # TODO: Pick up here
     @commands.command(aliases=['starter'])
     async def starter_gear(self, ctx):
         """Gives the user a set of bronze armour."""
+        author: User = ctx.user_object
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            name = get_display_name(ctx.author)
-            if User.objects.get(id=ctx.author.id).combat_xp == 0:
-                users.update_inventory(ctx.author.id, [63, 66, 69, 70, 64, 72])
+            if author.combat_xp == 0:
+                author.update_inventory(Counter([63, 66, 69, 70, 64, 72]))
 
-                await ctx.send(f'Bronze set given to {name}! You can see your items by typing `~inventory` in #bank '
+                await ctx.send(f'Bronze set given to {author.plain_name}! You can see your items by typing `~inventory` in #bank '
                                f'and equip them by typing `~equip [item]`. You can see your current stats by typing '
                                f'`~me`. If you need help with commands, feel free to look at #welcome or ask around!')
             else:
