@@ -74,7 +74,7 @@ class Item(models.Model):
 
     @classmethod
     def find_by_name_or_nick(cls, name):
-        item = Item.objects.filter(name=name)
+        item = Item.objects.filter(name__iexact=name)
         if item:
             return item[0]
         else:

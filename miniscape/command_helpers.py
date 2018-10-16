@@ -203,23 +203,26 @@ def print_item_stats(itemname: str):
     name = item.name.title()
     value = '{:,}'.format(item.value)
     aliases = ', '.join(item.alias_strings)
-    damage = item.damage
-    accuracy = item.accuracy
-    prayer = item.prayer
-    slot = item.slot
-    level = item.level
+
 
     out = f'__**:moneybag: ITEMS :moneybag:**__\n'
     out += f'**Name**: {name}\n'
     if len(aliases) > 0:
         out += f'**Aliases**: {aliases}\n'
     out += f'**Value**: {value} gp\n'
-    if slot > 0:
-        out += f'**Damage**: {damage}\n'
+
+    if item.slot > 0:
+        damage = item.damage if item.damage else 0
+        accuracy = item.accuracy if item.accuracy else 0
+        prayer = item.prayer if item.prayer else 0
+        level = item.level if item.level else 1
+        armour = item.armour if item.armour else 0
+
+        out += f'\n**Damage**: {damage}\n'
         out += f'**Accuracy**: {accuracy}\n'
         out += f'**Armour**: {armour}\n'
         out += f'**Prayer Bonus**: {prayer}\n'
-        out += f'**Slot**: {users.SLOTS[str(slot)].title()}\n'
+        out += f'**Slot**: {SLOTS[str(item.slot)].title()}\n'
         out += f'**Combat Requirement**: {level}\n'
     if item.is_gatherable:
         xp = item.xp
