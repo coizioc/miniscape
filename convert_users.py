@@ -38,6 +38,7 @@ class item_dict:
         except KeyError:
             return 0
 
+
 class quest_dict:
     def __init__(self, dict):
         self.d = dict
@@ -49,6 +50,8 @@ class quest_dict:
             if item in ['name', 'description', 'success', 'failure']:
                 return ''
             return 0
+
+
 def load_users():
     userids = [116380350296358914, 147501762566291457, 293219528450637824, 132049789461200897]
     for userid in userids:
@@ -384,6 +387,17 @@ def load_monsters():
                 raise e
 
 
+def get_clue_item_from_difficulty(diff: int):
+    if diff == 1:
+        return Item.objects.get(name="easy clue scroll")
+    if diff == 2:
+        return Item.objects.get(name="medium clue scroll")
+    if diff == 3:
+        return Item.objects.get(name="hard clue scroll")
+    if diff == 4:
+        return Item.objects.get(name="elite clue scroll")
+    if diff == 5:
+        return Item.objects.get(name="master clue scroll")
 
 
 def load_clue_loot():
@@ -394,14 +408,16 @@ def load_clue_loot():
         with open(CLUES_DIRECTORY + str(i) + '.txt', 'r') as f:
             loot = f.readlines()
             loot.sort()
+
         for line in loot:
             line = line.split(';')
             cl = ClueLoot.objects.update_or_create(loot_item=Item.objects.get(id=line[0]),
-                                                   clue_item=Item.objects.get(id=i),
-                                                   min_amount=line[1],
-                                                   max_amount=line[2],
-                                                   rarity=line[3])
-            cl[0].save()
+                                                   clue_item=get_clue_item_from_difficulty(i))[0]
+
+            cl.min_amount=line[1]
+            cl.max_amount=line[2]
+            cl.rarity=line[3]
+            cl.save()
 
 
 class prayer_dict:
@@ -451,13 +467,12 @@ def load_prayers():
                 pn.save()
 
 
-
 if __name__ == '__main__':
     # load_quests()
     # load_items()
     # load_prayers()
-    load_monsters()
-    # load_clue_loot()
+    # load_monsters()
+    load_clue_loot()
     # load_prayers()
     # load_recipes()
     # load_users()

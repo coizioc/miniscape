@@ -1,3 +1,4 @@
+from miniscape import clue_helpers
 from miniscape.models import Item, User, UserInventory, MonsterLoot
 from config import ARMOUR_SLOTS_FILE
 
@@ -237,9 +238,7 @@ def print_item_stats(itemname: str):
 
         out += f'\n{ml.monster.name.title()} _(amount: {amt}, rarity: {ml.rarity_str})_'
 
-
-    # TODO: add clue stuff
-    # out += clues.print_item_from_lootable(itemid)
+    out += clue_helpers.print_item_from_lootable(item)
     return out
 
 

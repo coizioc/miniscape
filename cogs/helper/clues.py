@@ -98,15 +98,6 @@ def get_rares(difficulty):
     return rares
 
 
-def print_clue_scrolls(author):
-    """Prints the number of clues a user has completed."""
-    out = f'{CLUE_HEADER}'
-    for clue in author.clue_counts:
-        out += f'**{clue[0].title()}**: {clue[1]}\n'
-
-    return out
-
-
 def print_item_from_lootable(item):
     out = ''
     for difficulty in range(1, 6):

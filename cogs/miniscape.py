@@ -21,6 +21,7 @@ from cogs.errors.trade_error import TradeError
 from miniscape.models import User
 import miniscape.command_helpers as ch
 import miniscape.slayer_helpers as sh
+import miniscape.clue_helpers as clue_helpers
 
 
 MAX_PER_ACTION = 10000
@@ -151,7 +152,7 @@ class Miniscape():
     async def _me_clues(self, ctx):
         """Shows how many clue scrolls a user has completed."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            out = clues.print_clue_scrolls(ctx.user_object)
+            out = clue_helpers.print_clue_scrolls(ctx.user_object)
             await ctx.send(out)
 
     @me.command(name='pets')
@@ -303,12 +304,12 @@ class Miniscape():
                 try:
                     number = users.parse_int(args[0])
                     monster = ' '.join(args[1:])
-                    out = slayer.get_kill(ctx.guild.id, ctx.channel.id, ctx.author.id, monster, number=number)
+                    out = sh.get_kill(ctx.guild.id, ctx.channel.id, ctx.author.id, monster, number=number)
                 except ValueError:
                     try:
                         length = users.parse_int(args[-1])
                         monster = ' '.join(args[:-1])
-                        out = slayer.get_kill(ctx.guild.id, ctx.channel.id, ctx.author.id, monster, length=length)
+                        out = sh.get_kill(ctx.guild.id, ctx.channel.id, ctx.author.id, monster, length=length)
                     except ValueError:
                         monster = ' '.join(args)
                         if monster == 'myself':
@@ -451,7 +452,7 @@ class Miniscape():
                     return
                 else:
                     parsed_difficulty = int(difficulty)
-            out = clues.start_clue(ctx.guild.id, ctx.channel.id, ctx.author.id, parsed_difficulty)
+            out = clue_helpers.start_clue(ctx.guild.id, ctx.channel.id, ctx.author.id, parsed_difficulty)
             await ctx.send(out)
 
     @commands.command(aliases=['drank', 'chug', 'suckle'])
@@ -1022,13 +1023,6 @@ class Miniscape():
                     print(e)
             await asyncio.sleep(60)
 
-    async def backup_users(self):
-        """Backs up the userjson files into another directory."""
-        await self.bot.wait_until_ready()
-        while not self.bot.is_closed():
-            users.backup()
-            await asyncio.sleep(3600)
-
     async def check_adventures(self):
         """Check if any actions are complete and notifies the user if they are done."""
         await self.bot.wait_until_ready()
@@ -1056,7 +1050,7 @@ class Miniscape():
                     1: sh.get_kill_result,
                     2: quests.get_result,
                     3: craft.get_gather,
-                    4: clues.get_clue_scroll,
+                    4: clue_helpers.get_clue_scroll,
                     5: sh.get_reaper_result,
                     6: craft.get_runecraft
                 }

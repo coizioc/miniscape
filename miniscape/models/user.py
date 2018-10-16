@@ -331,6 +331,10 @@ class User(models.Model):
         mk.save()
 
     @property
+    def num_quests_complete(self):
+        return len(self.completed_quests.all())
+
+    @property
     def is_eating(self):
         return self.active_food is not None
 

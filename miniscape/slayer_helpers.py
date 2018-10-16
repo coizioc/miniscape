@@ -302,12 +302,14 @@ def get_kill(guildid, channelid, userid, monster, length=-1, number=-1):
             if number > 500 and user.slayer_level < 99:
                 number = 500
         elif int(length) < 0:
-            length = math.floor(calc_length(userid, monster.id, number)[1] / 60)
+            length = math.floor(calc_length(user, monster, number)[1] / 60)
         else:
             return 'Error: argument missing (number or kill length).'
 
-        chance = calc_chance(userid, monster.id, number)
+        chance = calc_chance(user, monster, number)
 
+        # TODO: remove this for 'prod'
+        length = 0.1
         grind = adv.format_line(1, userid, adv.get_finish_time(length * 60), guildid, channelid,
                                 monster.id, monster_name, number, length, chance)
         adv.write(grind)
@@ -370,11 +372,11 @@ def print_loot(loot, person: Member, monster: Monster, num_to_kill: int, add_men
     #
     out += f'Your loot from your {monster.pluralize(num_to_kill, with_zero=True)} has arrived!**\n'
 
-    # TODO: pick up here, need to port this 'rares' thing into models.Monster
-    rares = monster.rares
+    # TODO: Update this to print in order of rarity
+    rares = [ml.item for ml in monster.rares]
     for item, amount in loot.items():
         item_name = item.pluralize(amount)
-        if item.id in rares:
+        if item in rares:
             out += f'**{item_name}**\n'
         else:
             out += f'{item_name}\n'
@@ -532,3 +534,92 @@ def get_reaper_task(guildid, channelid, userid):
         out += adv.print_on_adventure_error('reaper task')
     return out
 
+
+def print_status(userid, time_left, *args):
+    monsterid, monster_name, num_to_kill, chance = args[0]
+    monster = Monster.objects.get(id=monsterid)
+    chance = calc_chance(User.objects.get(id=userid),
+                         monster,
+                         num_to_kill)
+    out = f'{SLAYER_HEADER}' \
+          f'You are currently slaying {monster.pluralize(num_to_kill, with_zero=True)}. ' \
+          f'You can see the results of this slayer task {time_left}. ' \
+          f'You currently have a {chance}% chance of succeeding with your current gear. '
+    return out
+
+
+def print_kill_status(userid, time_left, *args):
+    monsterid, monster_name, num_to_kill, length, chance = args[0]
+    monster = Monster.objects.get(id=monsterid)
+    chance = calc_chance(User.objects.get(id=userid),
+                         monster,
+                         num_to_kill)
+    out = f'{SLAYER_HEADER}' \
+          f'You are currently killing {monster.pluralize(num_to_kill, with_zero=True)} for {length} minutes. ' \
+          f'You currently have a {chance}% chance of killing this many monsters without dying. ' \
+          f'You can see your loot {time_left}.'
+    return out
+
+
+def get_task_info(userid):
+    """Gets the info associated with a user's slayer task and returns it as a tuple."""
+    task = adv.read(userid)
+    taskid, userid, finish_time, guildid, channelid, monsterid, monster_name, num_to_kill, chance = task
+    time_left = adv.get_delta(finish_time)
+    return taskid, userid, time_left, monsterid, monster_name, num_to_kill, chance
+
+
+def print_chance(userid, monsterid, monster_dam=-1, monster_acc=-1, monster_arm=-1, monster_combat=-1, xp=-1,
+                 number=100, dragonfire=False):
+    user = User.objects.get(id=userid)
+    monster = Monster.objects.get(monsterid)
+    player_dam, player_acc, player_arm, player_pray = user.equipment_stats
+
+    player_combat = user.combat_level
+    if monster_dam == -1:
+        monster_dam = monster.damage
+        monster_acc = monster.accuracy
+        monster_arm = monster.armour
+        xp = monster.xp
+        monster_combat = monster.level
+    if dragonfire:
+        monster_base = 100
+    else:
+        monster_base = 1
+
+    c = 1 + monster_combat / 200
+    d = 1 + player_combat / 99
+    dam_multiplier = monster_base + monster_acc / 200
+    chance = round(min(100 * max(0, (2 * d * player_arm) / (number / 50 * monster_dam * dam_multiplier + c)), 100))
+
+    dam_multiplier = 1 + player_acc / 200
+    base_time = math.floor(number * xp / 10)
+    time = round(base_time * (monster_arm * monster_base / (player_dam * dam_multiplier + player_combat)))
+    out = f'level {monster_combat} monster with {monster_dam} dam {monster_acc} acc {monster_arm} arm giving {xp} xp: ' \
+          f'chance: {chance}%, base time: {base_time}, time to kill {number}: {time}, time ratio: {time / base_time}.'
+    return out
+
+
+def print_reaper_status(userid, time_left, *args):
+    monsterid, monster_name, num_to_kill, chance = args[0]
+    chance = calc_chance(userid, monsterid, num_to_kill)
+    monster = Monster.objects.get(id=monsterid)
+    out = f'{SLAYER_HEADER}' \
+          f'You are currently on a reaper task of {monster.pluralize(num_to_kill, with_zero=True)}. ' \
+          f'You can see the results of this slayer task {time_left}. ' \
+          f'You currently have a {chance}% chance of succeeding with your current gear. '
+    return out
+
+
+def print_task(userid, reaper=False):
+    """Converts a user's task into a string."""
+    taskid, userid, task_length, monsterid, monster_name, num_to_kill, chance = get_task_info(userid)
+    if reaper:
+        out = f'New reaper task received: '
+    else:
+        out = f'New slayer task received: '
+    monster = Monster.objects.get(id=monsterid)
+    out += f'Kill __{monster.pluralize(num_to_kill, with_zero=True)}__!\n'
+    out += f'This will take {task_length} minutes '
+    out += f'and has a success rate of {chance}% with your current gear. '
+    return out
