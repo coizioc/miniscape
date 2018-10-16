@@ -163,34 +163,7 @@ def claim(userid, itemname, number):
     return out
 
 
-def compare(item1, item2):
-    """Prints a string comparing the stats of two given items."""
-    try:
-        item1id = find_by_name(item1)
-    except KeyError:
-        return f'Error: {item1} does not exist.'
-    try:
-        item2id = find_by_name(item2)
-    except KeyError:
-        return f'Error: {item2} does not exist.'
 
-    item1_acc = get_attr(item1id, key=ACCURACY_KEY)
-    item1_dam = get_attr(item1id, key=DAMAGE_KEY)
-    item1_arm = get_attr(item1id, key=ARMOUR_KEY)
-    item1_pra = get_attr(item1id, key=PRAYER_KEY)
-
-    item2_acc = get_attr(item2id, key=ACCURACY_KEY)
-    item2_dam = get_attr(item2id, key=DAMAGE_KEY)
-    item2_arm = get_attr(item2id, key=ARMOUR_KEY)
-    item2_pra = get_attr(item2id, key=PRAYER_KEY)
-
-    out = f':moneybag: __**COMPARE**__ :moneybag:\n'\
-          f'**{item1} vs {item2}:**\n\n'\
-          f'**Accuracy**: {item1_acc} vs {item2_acc} *({item1_acc - item2_acc})*\n' \
-          f'**Damage**: {item1_dam} vs {item2_dam} *({item1_dam - item2_dam})*\n' \
-          f'**Armour**: {item1_arm} vs {item2_arm} *({item1_arm - item2_arm})*\n' \
-          f'**Prayer Bonus**: {item1_pra} vs {item2_pra} *({item1_pra - item2_pra})*'
-    return out
 
 
 def drink(userid, name):

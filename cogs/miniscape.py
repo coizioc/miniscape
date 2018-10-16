@@ -9,7 +9,7 @@ from discord.ext import commands
 
 from cogs.helper import channel_permissions as cp
 from cogs.helper import clues
-from miniscape import adventures as adv
+from miniscape import adventures as adv, item_helpers
 from cogs.helper import craft
 from cogs.helper import items
 from cogs.helper import quests
@@ -364,6 +364,7 @@ class Miniscape():
 
     @commands.command()
     async def claim(self, ctx, *args):
+        # TODO: Come back to this. Honestly maybe leave it as is but adjust for user.update_inv?
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             try:
                 number = int(args[0])
@@ -420,7 +421,7 @@ class Miniscape():
     async def compare(self, ctx, item1, item2):
         """Compares the stats of two items."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            out = items.compare(item1.lower(), item2.lower())
+            out = item_helpers.compare(item1.lower(), item2.lower())
             await ctx.send(out)
 
     @commands.command(aliases=['stuatus'])
