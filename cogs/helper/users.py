@@ -389,7 +389,7 @@ def print_equipment(author, name=None, with_header=False):
            f'**Prayer Bonus**: {prayer}\n'
 
     if author.prayer_slot:
-        out += f'**Active Prayer**: {author.prayer_slot.name}\n\n'
+        out += f'**Active Prayer**: {author.prayer_slot.name}\n'
     else:
         out += f'**Active Prayer**: none\n'
 

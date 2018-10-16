@@ -208,7 +208,6 @@ def print_task(userid, reaper=False):
         out = f'New slayer task received: '
     num_to_kill = int(num_to_kill)
     monster = Monster.objects.get(id=monsterid)
-    # TODO: readd pluralization
     out += f'Kill __{monster.pluralize(num_to_kill)}__!\n'
     out += f'This will take {task_length} minutes '
     out += f'and has a success rate of {chance}% with your current gear. '

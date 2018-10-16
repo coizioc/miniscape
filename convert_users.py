@@ -426,7 +426,8 @@ class prayer_dict:
 
     def __getitem__(self, item):
         try:
-            return self.d[item]
+            ret = self.d[item]
+            return ret
         except KeyError:
             if item in ['name', 'plural']:
                 return ''
@@ -440,30 +441,30 @@ def load_prayers():
 
     for k, v in prayers.items():
         v = prayer_dict(v)
-        p = Prayer.objects.update_or_create(name=v['name'],
-                                            id=k,
-                                            description=v['description'],
-                                            level_required=v['level'],
-                                            drain=v['drain'],
-                                            damage=v['damage'],
-                                            accuracy=v['accuracy'],
-                                            armour=v['armour'],
-                                            chance=v['chance'],
-                                            luck_factor=v['factor'],
-                                            affinity=v['affinity'],
-                                            gather=v['gather'])[0]
+        p = Prayer.objects.get_or_create(name=v['name'],
+                                            id=int(k))[0]
+        p.description=v['description']
+        p.level_required=v['prayer']
+        p.drain=v['drain']
+        p.damage=v['damage']
+        p.accuracy=v['accuracy']
+        p.armour=v['armour']
+        p.chance=v['chance']
+        p.luck_factor=v['factor']
+        p.affinity=v['affinity']
+        p.gather=v['gather']
         p.save()
 
         # MAke the quest reqs
         if v['quest']:
             quest = Quest.objects.get(id=v['quest'])
-            p.quest = quest
+            p.quest_req = quest
             p.save()
 
         if v['nick']:
             for nick in v['nick']:
-                pn = PrayerNickname(real_prayer=p,
-                                    nickname=nick)
+                pn = PrayerNickname.objects.get_or_create(real_prayer=p,
+                                    nickname=nick)[0]
                 pn.save()
 
 
@@ -472,8 +473,8 @@ if __name__ == '__main__':
     # load_items()
     # load_prayers()
     # load_monsters()
-    load_clue_loot()
-    # load_prayers()
+    # load_clue_loot()
+    load_prayers()
     # load_recipes()
     # load_users()
 

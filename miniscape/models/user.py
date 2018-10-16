@@ -261,13 +261,15 @@ class User(models.Model):
         for itemid, amount in loot.items():
             if type(itemid) == Item:
                 item = self.get_items_by_obj(itemid)
+                itemid = item.id
             else:
                 item = self.get_items_by_id(itemid)
 
             if item:
                 self._update_inventory_object(item[0], amount=amount, remove=remove)
             else:
-                self._add_inventory_object(itemid, amount=amount)
+                item = Item.objects.get(id=itemid)
+                self._add_inventory_object(item, amount=amount)
         self.save()
 
     def _update_inventory_item_id(self, loot: str, amount=1,  remove=False):
@@ -329,6 +331,28 @@ class User(models.Model):
                                                                            monster=monster)[0]
         mk.amount += num
         mk.save()
+
+    def can_use_prayer(self, prayer: Prayer):
+        # Validate prayer level
+        if self.prayer_level >= prayer.level_required:
+            # Validate quest req
+            if not prayer.quest_req or prayer.quest_req in self.completed_quests.all():
+                return True
+
+        # Default
+        return False
+
+    @property
+    def usable_prayers(self):
+        prayers = Prayer.objects.filter(level_required__lte=self.prayer_level)
+        ret = []
+        for p in prayers:
+            if p.quest_req and p.quest_req in self.completed_quests.all():
+                ret.append(p)
+            elif not p.quest_req:
+                ret.append(p)
+
+        return ret
 
     @property
     def num_quests_complete(self):

@@ -45,6 +45,30 @@ class Prayer(models.Model):
                                   on_delete=models.SET_NULL,
                                   null=True)
 
+    @classmethod
+    def find_by_name_or_nick(cls, name: str):
+        prayer = Prayer.objects.filter(name=name)
+        if prayer:
+            return prayer[0]
+        else:
+            nick = PrayerNickname.objects.filter(nickname=name)
+            if nick:
+                return nick[0].real_prayer
+            else:
+                return None
+
+    @property
+    def nickname_str_list(self):
+        nicks = self.nickname_list
+        if nicks:
+            return [n.real_prayer.name for n in nicks]
+        else:
+            return []
+
+    @property
+    def nickname_list(self):
+        return PrayerNickname.objects.filter(real_prayer=self).all()
+
     def __repr__(self):
         return "Prayer \"%s\" (id: %d)" % (self.name, self.id)
 

@@ -7,12 +7,11 @@ import discord
 from discord.ext import commands
 
 from cogs.helper import channel_permissions as cp
-from miniscape import adventures as adv
 from cogs.helper import clues
+from miniscape import adventures as adv
 from cogs.helper import craft
 from cogs.helper import items
 from cogs.helper import monsters as mon
-from cogs.helper import prayer
 from cogs.helper import quests
 from cogs.helper import slayer
 from cogs.helper import users
@@ -22,6 +21,7 @@ from miniscape.models import User
 import miniscape.command_helpers as ch
 import miniscape.slayer_helpers as sh
 import miniscape.clue_helpers as clue_helpers
+import miniscape.prayer_helpers as prayer
 
 
 MAX_PER_ACTION = 10000
@@ -114,7 +114,6 @@ class Miniscape():
     def __init__(self, bot):
         self.bot = bot
         self.bot.loop.create_task(self.check_adventures())
-        self.bot.loop.create_task(self.backup_users())
         self.bot.loop.create_task(self.reset_dailies())
  
     # @commands.command()
@@ -297,6 +296,7 @@ class Miniscape():
 
     @commands.group(invoke_without_command=True, aliases=['grind', 'fring', 'yeet'])
     async def kill(self, ctx, *args):
+        from miniscape import adventures as adv
         """Lets the user kill monsters for a certain number or a certain amount of time."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             if len(args) > 0:
@@ -375,6 +375,8 @@ class Miniscape():
     @commands.command(aliases=['cancle'])
     async def cancel(self, ctx):
         """Cancels your current action."""
+        from miniscape import adventures as adv
+
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             try:
                 task = adv.get_adventure(ctx.author.id)

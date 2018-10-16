@@ -99,7 +99,7 @@ def equip_item(author: User, item: str):
     user_cb_level = author.combat_level
 
     # Error checking/verification
-    if user_cb_level <= item_level:
+    if user_cb_level < item_level:
         return f'Error: Insufficient level to equip item ({found_item.level}). \
                 Your current combat level is {user_cb_level}.'
 
@@ -188,8 +188,7 @@ def bury(author: User, itemname: str, number: int):
     prayer_xp_formatted = '{:,}'.format(xp_difference)
 
     out = PRAYER_HEADER
-    # TODO: pluralize this
-    out += f'You get {prayer_xp_formatted} prayer xp from your {str(number)} {item.name}! '
+    out += f'You get {prayer_xp_formatted} prayer xp from your {item.pluralize(number)}! '
     if level_difference:
         out += f'You have also gained {level_difference} prayer levels!'
     return out
