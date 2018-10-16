@@ -176,8 +176,11 @@ def bury(author: User, itemname: str, number: int):
     author.pray_xp += xp_difference
     author.save()
 
-    user_item.amount -= number
-    user_item.save()
+    if user_item.amount == number:
+        user_item.delete()
+    else:
+        user_item.amount -= number
+        user_item.save()
 
     post_bury_level = author.prayer_level
     level_difference = post_bury_level - pre_bury_level

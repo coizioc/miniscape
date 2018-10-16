@@ -42,7 +42,6 @@ class Item(models.Model):
     luck_modifier = models.FloatField(default=0)
     food_value = models.PositiveIntegerField(default=0)
 
-
     MELEE = 0
     RANGE = 1
     MAGIC = 2
@@ -63,6 +62,11 @@ class Item(models.Model):
     clue_loot = models.ManyToManyField('Item',
                                        through='ClueLoot',
                                        through_fields=('clue_item', 'loot_item'))
+
+    # TODO: make this actually do something
+    def pluralize(self, number):
+        num_formatted = '{:,}'.format(number)
+        return "%s %s" % (num_formatted, self.name)
 
     @classmethod
     def all_pets(cls):
@@ -104,6 +108,11 @@ class Item(models.Model):
     @property
     def dropped_by_monsters(self):
         return self.monster_set.all().order_by('name')
+
+    @property
+    def is_anti_dragon(self):
+        return self.name.lower() in ["Dragonfire Shield".lower(),
+                                     "anti-dragon shield".lower()]
 
     def __repr__(self):
         return "Item ID %d: %s" % (self.id, self.name)

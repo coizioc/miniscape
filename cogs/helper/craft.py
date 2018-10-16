@@ -3,7 +3,6 @@ import random
 import ujson
 from collections import Counter
 
-from cogs.helper import adventures as adv
 from cogs.helper import items
 from cogs.helper import prayer
 from cogs.helper import users
@@ -375,6 +374,8 @@ def print_rc_status(userid, time_left, *args):
 
 def start_gather(guildid, channelid, userid, item, length=-1, number=-1):
     """Starts a gathering session."""
+    from miniscape import adventures as adv
+
     out = ''
     if not adv.is_on_adventure(userid):
         try:
@@ -434,6 +435,8 @@ def start_gather(guildid, channelid, userid, item, length=-1, number=-1):
 
 def start_runecraft(guildid, channelid, userid, item, number=1, pure=0):
     """Starts a runecrafting session."""
+    from miniscape import adventures as adv
+
     out = ''
     if not adv.is_on_adventure(userid):
         try:

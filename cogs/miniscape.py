@@ -6,9 +6,8 @@ import random
 import discord
 from discord.ext import commands
 
-from config import TEST_CHANNEL, CREATOR_ID
 from cogs.helper import channel_permissions as cp
-from cogs.helper import adventures as adv
+from miniscape import adventures as adv
 from cogs.helper import clues
 from cogs.helper import craft
 from cogs.helper import items
@@ -21,6 +20,8 @@ from cogs.helper import vis
 from cogs.errors.trade_error import TradeError
 from miniscape.models import User
 import miniscape.command_helpers as ch
+import miniscape.slayer_helpers as sh
+
 
 MAX_PER_ACTION = 10000
 
@@ -283,14 +284,14 @@ class Miniscape():
     async def slayer(self, ctx):
         """Gives the user a slayer task."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            out = slayer.get_task(ctx.guild.id, ctx.channel.id, ctx.author.id)
+            out = sh.get_task(ctx.guild.id, ctx.channel.id, ctx.user_object)
             await ctx.send(out)
 
     @commands.command()
     async def reaper(self, ctx):
         """Gives the user a reaper task."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            out = slayer.get_reaper_task(ctx.guild.id, ctx.channel.id, ctx.author.id)
+            out = sh.get_reaper_task(ctx.guild.id, ctx.channel.id, ctx.author.id)
             await ctx.send(out)
 
     @commands.group(invoke_without_command=True, aliases=['grind', 'fring', 'yeet'])
@@ -1051,22 +1052,30 @@ class Miniscape():
                 person = bot_guild.get_member(int(userid))
                 
                 adventures = {
-                    0: slayer.get_result,
-                    1: slayer.get_kill_result,
+                    0: sh.get_result,
+                    1: sh.get_kill_result,
                     2: quests.get_result,
                     3: craft.get_gather,
                     4: clues.get_clue_scroll,
-                    5: slayer.get_reaper_result,
+                    5: sh.get_reaper_result,
                     6: craft.get_runecraft
                 }
                 try:
                     out = adventures[adventureid](person, task[5:])
                     await bot_self.send(out)
+                # except KeyError as e:  # TODO: Remove this, only for testing
+                #     raise e
+                # TODO: Maybe readd this before going back to "prod"
                 except Exception as e:
+                    import traceback
+                    traceback.print_exc()
+                    traceback.print_exception(e)
                     with open('./resources/debug.txt', 'a+') as f:
                         f.write(f'{e}\n')
+                    print(e)
                 print('done')
-            await asyncio.sleep(60)
+            # TODO: Change this 5 back to 60
+            await asyncio.sleep(5)
 
 
 def setup(bot):

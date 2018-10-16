@@ -2,12 +2,15 @@
 
 import os
 
+
 os.environ.setdefault("DJANGO_SETTINGS_MODULE","mathbot.settings")
 import django
 django.setup()
 
 import ujson
-from miniscape.models import User, Item, UserInventory, ItemNickname, Quest, Prayer
+from miniscape.models.monster import MonsterNickname
+
+from miniscape.models import User, Item, UserInventory, ItemNickname, Quest, Prayer, PrayerNickname
 import config
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.utils import IntegrityError
@@ -206,8 +209,9 @@ def load_items():
                      is_pet=v['pet'],
                      food_value=v['eat'],
                      pouch=v['pouch'],
-                     luck_modifier=v['luck']
+                     luck_modifier=v['luck'],
                      )
+
             i.save(force_update=bool(qs))
             if v['nick']:
                 for n in v['nick']:
@@ -344,9 +348,22 @@ def load_monsters():
                                                    is_dragon=m['dragon'],
                                                    min_assignable=m['task_min'],
                                                    max_assignable=m['task_max'],
-                                                   affinity=m['aff'])
-        monster[0].save()
+                                                   affinity=m['aff'],
+                                                   )[0]
+        monster.level = m['level']
+        monster.save()
         pass
+
+        # Load Quest requirements
+        if m['quest req']:
+            monster.quest_req = Quest.objects.get(id=m['quest req'])
+            monster.save()
+
+        if m['nick']:
+            for nick in m['nick']:
+                mn = MonsterNickname.objects.update_or_create(real_monster=monster,
+                                                              nickname=nick)[0]
+                mn.save()
 
     # Load the loot in
     from django.db.utils import IntegrityError
@@ -367,6 +384,8 @@ def load_monsters():
                 raise e
 
 
+
+
 def load_clue_loot():
     from config import CLUES_DIRECTORY
     from miniscape.models import ClueLoot
@@ -383,11 +402,61 @@ def load_clue_loot():
                                                    max_amount=line[2],
                                                    rarity=line[3])
             cl[0].save()
-    pass
+
+
+class prayer_dict:
+    def __init__(self, dict):
+        self.d = dict
+
+    def __getitem__(self, item):
+        try:
+            return self.d[item]
+        except KeyError:
+            if item in ['name', 'plural']:
+                return ''
+            return 0
+
+
+def load_prayers():
+    from config import PRAYERS_JSON
+    with open(PRAYERS_JSON, 'r') as f:
+        prayers = ujson.load(f)
+
+    for k, v in prayers.items():
+        v = prayer_dict(v)
+        p = Prayer.objects.update_or_create(name=v['name'],
+                                            id=k,
+                                            description=v['description'],
+                                            level_required=v['level'],
+                                            drain=v['drain'],
+                                            damage=v['damage'],
+                                            accuracy=v['accuracy'],
+                                            armour=v['armour'],
+                                            chance=v['chance'],
+                                            luck_factor=v['factor'],
+                                            affinity=v['affinity'],
+                                            gather=v['gather'])[0]
+        p.save()
+
+        # MAke the quest reqs
+        if v['quest']:
+            quest = Quest.objects.get(id=v['quest'])
+            p.quest = quest
+            p.save()
+
+        if v['nick']:
+            for nick in v['nick']:
+                pn = PrayerNickname(real_prayer=p,
+                                    nickname=nick)
+                pn.save()
+
+
+
 if __name__ == '__main__':
     # load_quests()
-    load_items()
-    # load_monsters()
+    # load_items()
+    # load_prayers()
+    load_monsters()
     # load_clue_loot()
     # load_prayers()
     # load_recipes()

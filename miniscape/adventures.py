@@ -4,6 +4,7 @@ import random
 
 from cogs.helper import quests, slayer, craft, clues
 from config import ADVENTURES_FILE
+from miniscape import slayer_helpers as sh
 
 # An adventure in the adventure file is stored as the following (with semicolon delimiters in between):
 # adventureid, userid, completion_time, guildid, channelid, *args
@@ -112,12 +113,12 @@ def print_adventure(userid):
         raise KeyError
     adventureid, userid, finish_time = adventure[0:3]
     adventures = {
-        '0': slayer.print_status,
-        '1': slayer.print_kill_status,
+        '0': sh.print_status,
+        '1': sh.print_kill_status,
         '2': quests.print_status,
         '3': craft.print_status,
         '4': clues.print_status,
-        '5': slayer.print_reaper_status,
+        '5': sh.print_reaper_status,
         '6': craft.print_rc_status
     }
     time_left = get_delta(finish_time)

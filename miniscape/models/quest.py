@@ -12,6 +12,8 @@ class Quest(models.Model):
     id = models.PositiveIntegerField(primary_key=True)
     name = models.CharField(max_length=200,
                             unique=True)
+    nick = models.ManyToManyField('QuestNickname')
+
     description = models.CharField(max_length=40960,
                                    default="Go something for this person "
                                            "and get some stuff in return.")
@@ -73,6 +75,21 @@ class QuestItemRewards(models.Model):
 
     def __repr__(self):
         return "QuestItemRewards for Quest (%s), item: %s (%d)" % (self.quest, self.item, self.amount)
+
+    def __str__(self):
+        return self.__repr__()
+
+
+class QuestNickname(models.Model):
+    class Meta:
+        unique_together = (('nickname', 'real_quest'),)
+
+    real_quest = models.ForeignKey(Quest, on_delete=models.CASCADE)
+    nickname = models.CharField(max_length=200,
+                                unique=True)
+
+    def __repr__(self):
+        return "Nickname for Quest (%s), nickname: %s" % (str(self.real_quest), self.nickname)
 
     def __str__(self):
         return self.__repr__()

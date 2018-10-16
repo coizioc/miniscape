@@ -2,7 +2,6 @@ import math
 import random
 from collections import Counter
 
-from cogs.helper import adventures as adv
 from cogs.helper import items
 from cogs.helper import monsters as mon
 from cogs.helper import quests
@@ -163,6 +162,8 @@ def print_status(userid, time_left, *args):
 
 def start_clue(guildid, channelid, userid, difficulty):
     """Starts a clue scroll."""
+    from miniscape import adventures as adv
+
     out = f'{CLUE_HEADER}'
     if not adv.is_on_adventure(userid):
         scrollid = str(EASY_CLUE_SCROLL_ID + difficulty - 1)

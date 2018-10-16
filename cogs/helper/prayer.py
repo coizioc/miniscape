@@ -1,7 +1,6 @@
 import ujson
 
-from cogs.helper import adventures as adv
-from cogs.helper import items, users
+from cogs.helper import users
 from config import PRAYERS_JSON
 
 with open(PRAYERS_JSON, 'r') as f:
@@ -142,6 +141,8 @@ def print_list(userid):
 
 def set_prayer(userid, prayer):
     """Sets a user's prayer."""
+    from miniscape import adventures as adv
+
     if adv.is_on_adventure(userid):
         return 'You cannot change your prayer while on an adventure.'
 

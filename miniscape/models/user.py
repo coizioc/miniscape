@@ -2,6 +2,8 @@ from collections import Counter
 
 from django.db import models
 
+from .prayer import Prayer
+from .monster import Monster
 from .userinventory import UserInventory
 from .item import Item, ItemNickname
 from django.core.exceptions import ObjectDoesNotExist
@@ -257,17 +259,22 @@ class User(models.Model):
 
         loot = Counter(loot)
         for itemid, amount in loot.items():
-            item = self.get_items_by_id(itemid)
+            if type(itemid) == Item:
+                item = self.get_items_by_obj(itemid)
+            else:
+                item = self.get_items_by_id(itemid)
+
             if item:
                 self._update_inventory_object(item[0], amount=amount, remove=remove)
             else:
-                self._add_inventory_item_id(itemid)
+                self._add_inventory_object(itemid, amount=amount)
+        self.save()
 
     def _update_inventory_item_id(self, loot: str, amount=1,  remove=False):
         item = Item.objects.get(id=loot)
         return self._update_inventory_object(item, amount=amount, remove=remove)
 
-    def _update_inventory_object(self, loot: Item, amount=1, remove=False):
+    def _update_inventory_object(self, loot: UserInventory, amount=1, remove=False):
         new_amt = (loot.amount - amount) if remove else (loot.amount + amount)
 
         if new_amt == 0:
@@ -279,8 +286,8 @@ class User(models.Model):
             # Negative ??
             raise ValueError("Update would result in negative inventory")
 
-    def _add_inventory_item_id(self, item: str, amount=1):
-        obj = Item.objects.get(id=item)
+    def _add_inventory_item_id(self, item: Item, amount=1):
+        obj = Item.objects.get(id=int(item))
         return self._add_inventory_object(obj, amount=amount)
 
     def _add_inventory_object(self, loot: Item, amount=1):
@@ -308,6 +315,24 @@ class User(models.Model):
             item.is_locked = False
             item.save()
             return True
+
+    def monster_kills(self, search=None):
+        if search:
+            return self.playermonsterkills_set.\
+                filter(monster__name__icontains=search)\
+                .order_by('monster__name')
+        else:
+            return self.playermonsterkills_set.all().order_by('monster__name')
+
+    def add_kills(self, monster: Monster, num: int):
+        mk: PlayerMonsterKills = self.playermonsterkills_set.get_or_create(user=self,
+                                                                           monster=monster)[0]
+        mk.amount += num
+        mk.save()
+
+    @property
+    def is_eating(self):
+        return self.active_food is not None
 
     @property
     def max_possible_level(self):
@@ -373,10 +398,6 @@ class User(models.Model):
         return self.damage, self.accuracy, self.armour, self.prayer_bonus
 
     @property
-    def quests_completed(self):
-        return len(self.qu)
-
-    @property
     def combat_level(self):
         return self._calc_level(self.combat_xp)
 
@@ -428,13 +449,15 @@ class User(models.Model):
                 ('elite', self.elite_clues),
                 ('master', self.master_clues)]
 
-    def monster_kills(self, search=None):
-        if search:
-            return self.playermonsterkills_set.\
-                filter(monster__name__icontains=search)\
-                .order_by('monster__name')
-        else:
-            return self.playermonsterkills_set.all().order_by('monster__name')
+    @property
+    def luck_factor(self) -> float:
+        factor = 0
+        if self.prayer_slot:
+            factor += self.prayer_slot.luck_factor
+        for equip in self.equipment_slots:
+            if equip:
+                factor += equip.luck_modifier
+        return factor
 
     def __repr__(self):
         return "User ID %d: %s" % (self.id, self.name)

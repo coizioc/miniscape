@@ -151,15 +151,7 @@ def get_quest_monsters(questid):
     return quest_monsters
 
 
-def get_rares(monster_name):
-    monsterid = find_by_name(monster_name)
-    loottable = get_loot_table(monsterid)
 
-    rares = []
-    for item in list(loottable.keys()):
-        if int(loottable[item]['rarity']) > 256:
-            rares.append(item)
-    return rares
 
 
 def get_task_length(monsterid):
@@ -171,6 +163,7 @@ def get_task_length(monsterid):
 
 def get_random(check_for_key=None, slayer_level=1):
     """Randomly selects and returns a monster (given a particular boolean key)."""
+    print("This function is deprecated (monsters.get_random)")
     while True:
         monsterid = random.sample(MONSTERS.keys(), 1)[0]
         if slayer_level >= get_attr(monsterid, key=SLAYER_REQ_KEY):

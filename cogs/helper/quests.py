@@ -2,7 +2,6 @@ import math
 import ujson
 from collections import Counter
 
-from cogs.helper import adventures as adv
 from cogs.helper import craft
 from cogs.helper import items
 from cogs.helper import monsters as mon
@@ -140,6 +139,8 @@ def get_attr(questid, key=NAME_KEY):
 
 def get_result(person, *args):
     """Gets the result of a quest."""
+    from miniscape import adventures as adv
+
     try:
         questid, chance = args[0]
     except ValueError as e:
@@ -271,6 +272,8 @@ def print_status(userid, time_left, *args):
 
 def start_quest(guildid, channelid, userid, questid):
     """Assigns a user a slayer task provided they are not in the middle of another adventure."""
+    from miniscape import adventures as adv
+
     out = QUEST_HEADER
     if not adv.is_on_adventure(userid):
         try:
