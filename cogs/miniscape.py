@@ -12,7 +12,6 @@ from cogs.helper import clues
 from miniscape import adventures as adv
 from cogs.helper import craft
 from cogs.helper import items
-from cogs.helper import monsters as mon
 from cogs.helper import quests
 from cogs.helper import slayer
 from cogs.helper import users
@@ -23,6 +22,7 @@ import miniscape.command_helpers as ch
 import miniscape.slayer_helpers as sh
 import miniscape.clue_helpers as clue_helpers
 import miniscape.prayer_helpers as prayer
+import miniscape.monster_helpers as mon
 
 
 MAX_PER_ACTION = 10000

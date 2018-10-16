@@ -342,6 +342,8 @@ class User(models.Model):
         # Default
         return False
 
+    def claim
+
     @property
     def usable_prayers(self):
         prayers = Prayer.objects.filter(level_required__lte=self.prayer_level)

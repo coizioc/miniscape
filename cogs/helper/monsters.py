@@ -74,18 +74,7 @@ def add_plural(number, monsterid, with_zero=False):
     return out
 
 
-def find_by_name(name):
-    """Finds a monster's ID from its name."""
-    name = name.lower()
-    for monsterid in list(MONSTERS.keys()):
-        if name == MONSTERS[monsterid][NAME_KEY]:
-            return monsterid
-        if name == add_plural(0, monsterid):
-            return monsterid
-        if any([name == nick for nick in get_attr(monsterid, key=NICK_KEY)]):
-            return monsterid
-    else:
-        raise KeyError
+
 
 
 def get_attr(monsterid, key=NAME_KEY):
@@ -202,94 +191,6 @@ def print_item_from_lootable(item):
     return out
 
 
-def print_list():
-    """Prints a string containing a list of all monsters."""
-    header = '__**:skull_crossbones: BESTIARY :skull_crossbones:**__\n'
-    messages = []
-    monster_list = []
-    for monsterid in list(MONSTERS.keys()):
-        level = get_attr(monsterid, key=LEVEL_KEY)
-        name = get_attr(monsterid)
-        slayer_req = get_attr(monsterid, key=SLAYER_REQ_KEY)
-        monster_list.append((level, name, slayer_req))
-    out = header
-    for level, name, req in sorted(monster_list):
-        out += f'**{name.title()}** *(combat: {level}'
-        if int(req) > 1:
-            out += f', slayer: {req}'
-        out += ')*\n'
-        if len(out) >= 1800:
-            messages.append(out)
-            out = header
-    messages.append(out)
-    return messages
 
 
-def print_monster(monster):
-    """Prints information related to a monster."""
-    try:
-        monsterid = find_by_name(monster.lower())
-    except KeyError:
-        return [f'Error: {monster} is not a monster.']
 
-    messages = []
-
-    aliases = ', '.join(get_attr(monsterid, key=NICK_KEY))
-
-    out = f'__**:skull_crossbones: BESTIARY :skull_crossbones:**__\n'\
-          f'**Name**: {MONSTERS[monsterid][NAME_KEY].title()}\n'
-
-    if len(aliases) > 0:
-        out += f'**Aliases**: {aliases}\n'
-    quest_req = get_attr(monsterid, key=QUEST_REQ_KEY)
-    if quest_req != DEFAULT_MONSTER[QUEST_REQ_KEY]:
-        out += f'**Quest Requirement**: {quests.get_attr(quest_req)}\n'
-    slayer_req = get_attr(monsterid, key=SLAYER_REQ_KEY)
-    if slayer_req > 1:
-        out += f'**Slayer Requirement**: {slayer_req}\n'
-
-    out += f'**Level**: {MONSTERS[monsterid][LEVEL_KEY]}\n'
-    out += f'**Accuracy**: {MONSTERS[monsterid][ACCURACY_KEY]}\n'
-    out += f'**Damage**: {MONSTERS[monsterid][DAMAGE_KEY]}\n'
-    out += f'**Armour**: {MONSTERS[monsterid][ARMOUR_KEY]}\n'
-    out += f'**Affinity**: {AFFINITIES[MONSTERS[monsterid][AFFINITY_KEY]]}\n'
-    out += f'**XP**: {MONSTERS[monsterid][XP_KEY]}\n\n'
-    out += f'**Loot Table**:\n'
-
-    loottable = get_loot_table(monsterid)
-
-    for item in list(loottable.keys()):
-        itemname = items.get_attr(item)
-        itemmin = int(loottable[item]['min'])
-        itemmax = int(loottable[item]['max'])
-        rarity = loottable[item]['rarity']
-        for key in list(RARITY_NAMES.keys()):
-            if key <= rarity:
-                name = key
-            else:
-                break
-
-        out += f"{itemname} *(amount: "
-        if itemmin == itemmax:
-            out += f'{itemmin}, '
-        else:
-            out += f"{itemmin}-{itemmax}, "
-        out += f"rarity: {RARITY_NAMES[name]})*\n"
-
-        if len(out) >= 1800:
-            messages.append(out)
-            out = f'__**:skull_crossbones: BESTIARY :skull_crossbones:**__\n'
-    messages.append(out)
-    return messages
-
-
-def print_monster_kills(author, search=None):
-    """Prints the number of monsters a user has killed."""
-    monster_kills = author.monster_kills(search)
-    out = f"{users.CHARACTER_HEADER.replace('$NAME', author.plain_name)}"
-
-    for monster in monster_kills:
-        out += f'**{monster.monster.name.title()}**: {monster.amount}\n'
-        pass
-
-    return out

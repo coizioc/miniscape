@@ -72,9 +72,18 @@ class Monster(models.Model):
     def rares(self):
         return self.monsterloot_set.filter(rarity__gt=256)
 
+    @property
+    def loot_table(self):
+        return self.monsterloot_set.all()
+
+    @property
+    def alias_strings(self):
+        nicknames = self.monsternickname_set.all().order_by('nickname')
+        return [n.nickname for n in nicknames]
+
     def generate_loot(self, num, luck_factor):
         """Generates a Counter from a number of killed monsters"""
-        loot_table = self.monsterloot_set.all()
+        loot_table = self.loot_table
         loot = Counter()
 
         # Assign our always loots
