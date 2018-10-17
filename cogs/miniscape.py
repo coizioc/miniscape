@@ -23,6 +23,7 @@ import miniscape.slayer_helpers as sh
 import miniscape.clue_helpers as clue_helpers
 import miniscape.prayer_helpers as prayer
 import miniscape.monster_helpers as mon
+import miniscape.quest_helpers as quest_helpers
 
 
 MAX_PER_ACTION = 10000
@@ -645,20 +646,28 @@ class Miniscape():
                     return
 
     @commands.group(invoke_without_command=True, aliases=['quest'])
-    async def quests(self, ctx, questid=None):
+    async def quests(self, ctx, *args, questid=None):
+
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            if questid is not None:
-                out = quests.print_details(ctx.author.id, questid)
+            try:
+                qid = int(args[0])
+                out = quest_helpers.print_details(ctx.user_object, qid)
                 await ctx.send(out)
-            else:
-                messages = quests.print_list(ctx.author.id)
+            except ValueError:
+                if args[0] == 'start':
+                    self._start(ctx, args[1])
+                elif args[0] == 'incomplete':
+                    messages = quest_helpers.print_list(ctx.user_object, args[0] == 'incomplete')
+                    await self.paginate(ctx, messages)
+            except IndexError:
+                messages = quest_helpers.print_list(ctx.user_object)
                 await self.paginate(ctx, messages)
 
     @quests.command(name='start')
     async def _start(self, ctx, questid):
         """lets a user start a quest."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            out = quests.start_quest(ctx.guild.id, ctx.channel.id, ctx.author.id, questid)
+            out = quest_helpers.start_quest(ctx.guild.id, ctx.channel.id, ctx.user_object, questid)
             await ctx.send(out)
 
     @commands.command()
@@ -1058,7 +1067,7 @@ class Miniscape():
                 adventures = {
                     0: sh.get_result,
                     1: sh.get_kill_result,
-                    2: quests.get_result,
+                    2: quest_helpers.get_result,
                     3: craft.get_gather,
                     4: clue_helpers.get_clue_scroll,
                     5: sh.get_reaper_result,
@@ -1067,9 +1076,6 @@ class Miniscape():
                 try:
                     out = adventures[adventureid](person, task[5:])
                     await bot_self.send(out)
-                # except KeyError as e:  # TODO: Remove this, only for testing
-                #     raise e
-                # TODO: Maybe readd this before going back to "prod"
                 except Exception as e:
                     import traceback
                     traceback.print_exc()

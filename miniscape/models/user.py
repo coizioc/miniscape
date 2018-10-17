@@ -2,6 +2,7 @@ from collections import Counter
 
 from django.db import models
 
+from .quest import Quest
 from .prayer import Prayer
 from .monster import Monster
 from .userinventory import UserInventory
@@ -179,8 +180,6 @@ class User(models.Model):
                                               through='UserQuest',
                                               through_fields=('user', 'quest'))
 
-
-
     def get_inventory(self, search=None):
         """ Returns a list of UserInventory Objects related to this user"""
         if search:
@@ -223,6 +222,13 @@ class User(models.Model):
         else:
             return False
 
+    def has_item_amount_by_counter(self, loot: Counter({Item: int})):
+        for item, amt in loot.items():
+            if not self.has_item_amount_by_item(item, amt):
+                return False
+        else:
+            return True
+
     def get_item_by_name(self, item_name):
         """ Get a particular item from user """
         item = Item.objects.filter(name=item_name)
@@ -234,6 +240,19 @@ class User(models.Model):
             return self.userinventory_set.filter(item=item[0])
 
         return None
+
+    def get_item_count(self, item=None, itemid=None, itemname=None):
+        """ Returns the number of items in user inventory by either object, name, or ID"""
+        if item:
+            ui = self.get_items_by_obj(item)
+        elif itemid:
+            ui = self.get_item_by_id(itemid)
+        elif itemname:
+            ui = self.get_item_by_name(itemname)
+
+        if ui:
+            return ui.amount
+        return 0
 
     def get_pets(self):
         """ Returns all pets owned by a user """
@@ -421,6 +440,25 @@ class User(models.Model):
         self.vis_attempts = 0
         self.save()
 
+    def has_quest_req_for_quest(self, quest: Quest, cached=None):
+        complete = cached if cached else self.completed_quests_list
+        for quest in quest.quest_reqs.all():
+            if quest not in complete:
+                return False
+        return True
+
+    def has_completed_quest(self, quest):
+        return quest in self.completed_quests_list
+
+    def has_items_for_quest(self, quest: Quest):
+        quest_items = quest.required_items
+        if quest_items:
+            quest_items = {qir.item : qir.amount for qir in quest_items}
+            quest_items = Counter(quest_items)
+            return self.has_item_amount_by_counter(quest_items)
+        else:
+            return True
+
     @property
     def usable_prayers(self):
         prayers = Prayer.objects.filter(level_required__lte=self.prayer_level)
@@ -436,6 +474,7 @@ class User(models.Model):
     @property
     def completed_quests_list(self):
         return [uq.quest for uq in self.userquest_set.all()]
+
     @property
     def num_quests_complete(self):
         return len(self.completed_quests_list)

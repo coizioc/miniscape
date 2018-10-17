@@ -183,51 +183,60 @@ def load_users():
 
 
 item_json = config.ITEM_JSON
-def load_items():
+
+
+def load_items(quests_unlocks=False):
     with open(item_json, 'r', encoding='utf-8-sig') as f:
         ITEMS = ujson.load(f)
-        item_list = []
-        for k,v in ITEMS.items():
+        for k, v in ITEMS.items():
             v = item_dict(v)
             k = int(k)
-            qs = Item.objects.filter(id=k)
-
             i = Item.objects.get_or_create(id=k)[0]
 
-            i.name = v['name']
-            i.plural = v['plural'] if v['plural'] else ''
-            i.value = v['value']
-            i.damage = v['damage']
-            i.accuracy = v['accuracy']
-            i.armour = v['armour']
-            i.prayer = v['prayer']
-            i.slot = v['slot']
-            i.level = v['level']
-            i.xp = v['xp']
-            i.affinity = v['aff']
-            i.is_gatherable = v['gather']
-            i.is_tree = v['tree']
-            i.is_rock = v['rock']
-            i.is_fish = v['fish']
-            i.is_pot = v['potion']
-            i.is_rune = v['rune']
-            i.is_cookable = v['cook']
-            i.is_buryable = v['bury']
-            i.is_max_only = v['max']
-            i.is_pet = v['pet']
-            i.food_value = v['eat']
-            i.pouch = v['pouch']
-            i.luck_modifier = v['luck']
-            i.save()
-
-            if v['nick']:
-                for n in v['nick']:
-                    nick = ItemNickname.objects.get_or_create(real_item=i,
-                                                              nickname=n)[0]
-                    nick.item = i
-                    nick.nickname = n
-                    nick.save()
+            if quests_unlocks:
+                x = v['quest req']
+                if x:
+                    quest = Quest.objects.get(id=x)
+                    i.quest_req = quest
+                    i.save()
                     pass
+                else:
+                    pass
+            else:
+                i.name = v['name']
+                i.plural = v['plural'] if v['plural'] else ''
+                i.value = v['value']
+                i.damage = v['damage']
+                i.accuracy = v['accuracy']
+                i.armour = v['armour']
+                i.prayer = v['prayer']
+                i.slot = v['slot']
+                i.level = v['level']
+                i.xp = v['xp']
+                i.affinity = v['aff']
+                i.is_gatherable = v['gather']
+                i.is_tree = v['tree']
+                i.is_rock = v['rock']
+                i.is_fish = v['fish']
+                i.is_pot = v['potion']
+                i.is_rune = v['rune']
+                i.is_cookable = v['cook']
+                i.is_buryable = v['bury']
+                i.is_max_only = v['max']
+                i.is_pet = v['pet']
+                i.food_value = v['eat']
+                i.pouch = v['pouch']
+                i.luck_modifier = v['luck']
+                i.save()
+
+                if v['nick']:
+                    for n in v['nick']:
+                        nick = ItemNickname.objects.get_or_create(real_item=i,
+                                                                  nickname=n)[0]
+                        nick.item = i
+                        nick.nickname = n
+                        nick.save()
+                        pass
 
 
 def load_recipes():
@@ -257,11 +266,11 @@ def load_recipes():
             quest_req = Quest.objects.get(id=v['quest req'][0])
         except KeyError:
             quest_req = None
-        r = Recipe(creates=created_item,
-                   skill_requirement=skill,
-                   level_requirement=v[skill],
-                   quest_requirement = quest_req,
-                   )
+        r = Recipe.objects.get_or_create(creates=created_item)[0]
+        r.skill_requirement=skill
+        r.level_requirement=v[skill]
+        r.quest_requirement = quest_req
+
         r.save()
         for itemid, amt in v['inputs'].items():
             rr = RecipeRequirement(recipe=r,
@@ -301,8 +310,8 @@ def load_quests():
                 q.quest_reqs.add(Quest.objects.get(id=req))
                 q.save()
 
-        if v['item_req']:
-            for qid, amt in v['item_req'].items():
+        if v['item req']:
+            for qid, amt in v['item req'].items():
                 qir = QuestItemRequirements.objects.update_or_create(quest=q,
                                                                      item=Item.objects.get(id=qid),
                                                                      amount=amt)
@@ -468,12 +477,13 @@ def load_prayers():
 
 
 if __name__ == '__main__':
-    load_items()
-    load_quests()
-    load_monsters()
-    load_clue_loot()
-    load_prayers()
+    # load_items()
+    # load_quests()
+    # load_items(quests_unlocks=True)
+    # load_monsters()
+    # load_clue_loot()
+    # load_prayers()
     load_recipes()
-    load_users()
+    # load_users()
 
     pass

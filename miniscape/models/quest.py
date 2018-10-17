@@ -1,6 +1,5 @@
 from django.db import models
 from .item import Item
-from .user import User
 
 
 class Quest(models.Model):
@@ -35,6 +34,18 @@ class Quest(models.Model):
                                         related_name='quest_unlocks',
                                         symmetrical=False)
 
+    @property
+    def combat_stats(self):
+        return self.damage, self.accuracy, self.armour, self.level
+
+    @property
+    def required_items(self):
+        return self.questitemrequirements_set.all()
+
+    @property
+    def reward_items(self):
+        return self.questitemrewards_set.all()
+
     def __repr__(self):
         return "Quest: %s" % self.name
 
@@ -48,7 +59,7 @@ class UserQuest(models.Model):
 
     quest = models.ForeignKey(Quest,
                               on_delete=models.CASCADE)
-    user = models.ForeignKey(User,
+    user = models.ForeignKey('User',
                              on_delete=models.CASCADE)
 
 

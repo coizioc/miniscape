@@ -81,6 +81,10 @@ class Monster(models.Model):
         nicknames = self.monsternickname_set.all().order_by('nickname')
         return [n.nickname for n in nicknames]
 
+    @property
+    def combat_stats(self):
+        return self.damage, self.accuracy, self.armour, self.level
+
     def generate_loot(self, num, luck_factor):
         """Generates a Counter from a number of killed monsters"""
         loot_table = self.loot_table
