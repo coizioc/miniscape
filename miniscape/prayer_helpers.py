@@ -1,6 +1,7 @@
-from miniscape.models import User, Prayer
+from miniscape.models import User, Prayer, Item
 
 PRAYER_HEADER = f':pray: __**PRAYER**__ :pray:\n'
+PRAYER_POTION = Item.objects.get(name__iexact="prayer potion")
 NAME_KEY = None
 
 
@@ -15,17 +16,15 @@ def calc_pray_bonus(user: User, prayer: Prayer =None):
     return player_dam, player_acc, player_arm
 
 
-def calc_drain_time(userid, prayerid):
+def calc_drain_time(user: User):
     # TODO: Port this, not actively in use it appears
     """Calculates the effective drain rate of a prayer."""
     equipment_prayer = user.prayer_slot
-    user_equipment = users.read_user(userid, key=users.EQUIPMENT_KEY)
-    equipment_prayer = users.get_equipment_stats(user_equipment)[3]
-    user_potion = user_equipment['15']
-    user_prayer = users.get_level(userid, key=users.PRAY_XP_KEY)
-    prayer_drain = get_attr(prayerid, key=DRAIN_KEY)
+    user_potion = user.potion_slot
+    user_prayer = user.prayer_level
+    prayer_drain = prayer.drain
 
-    if user_potion == '199':
+    if user_potion == PRAYER_POTION:
         potion_base = 2
     else:
         potion_base = 1

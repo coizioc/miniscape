@@ -6,10 +6,6 @@ from django.db import models
 
 class Monster(models.Model):
 
-    # TODO:
-    # - Implement monster nicknames
-    # - Implement quest requirements
-
     id = models.PositiveIntegerField(primary_key=True)
     name = models.CharField(max_length=200,
                             unique=True)

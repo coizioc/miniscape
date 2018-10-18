@@ -3,11 +3,6 @@ from django.db import models
 
 class Item(models.Model):
 
-    # TODO:
-    # - Verify ItemNickname relationship
-    # - Add quest requirement relationship
-    # - Add Talisman requirement
-
     id = models.PositiveIntegerField(primary_key=True)
     name = models.CharField(max_length=200,
                             unique=True)

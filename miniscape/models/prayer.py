@@ -3,9 +3,6 @@ from django.db import models
 
 class Prayer(models.Model):
 
-    # TODO:
-    # - Verify nickname relationship
-
     id = models.PositiveIntegerField(primary_key=True)
     name = models.CharField(max_length=200,
                             unique=True)

@@ -267,7 +267,7 @@ class User(models.Model):
         return items
 
     def get_items_by_obj(self, item):
-        items = self.userinventory_set.filter(item=item)
+        items = self.userinventory_set.get_or_create(item=item)
         return items
 
     def get_items_by_objs(self, items):
@@ -283,7 +283,7 @@ class User(models.Model):
         for itemid, amount in loot.items():
             if type(itemid) == Item:
                 item = self.get_items_by_obj(itemid)
-                itemid = item[0].id
+                itemid = item[0].item.id
             else:
                 item = self.get_items_by_id(itemid)
 

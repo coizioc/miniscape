@@ -86,9 +86,6 @@ def load_users():
                         vis_attempts=u['visattempts'],
                         )
             user.save()
-            # TODO
-            # Set active prayer
-            # prayer = Prayer.objects.get(id=)
 
             hex_number = int(str(u['quests'])[2:], 16)
             binary_number = str(bin(hex_number))[2:]

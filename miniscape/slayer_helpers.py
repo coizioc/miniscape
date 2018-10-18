@@ -248,9 +248,6 @@ def get_task(guildid, channelid, author: User):
             task_length *= 0.7
             cb_perk = True
 
-        # TODO: Remove this line, testing only
-        task_length = 1
-
         task = adv.format_line(0, author.id, adv.get_finish_time(task_length), guildid, channelid, monster.id,
                                monster.name, num_to_kill, chance)
         adv.write(task)
@@ -307,8 +304,6 @@ def get_kill(guildid, channelid, userid, monster, length=-1, number=-1):
 
         chance = calc_chance(user, monster, number)
 
-        # TODO: remove this for 'prod'
-        length = 0.1
         grind = adv.format_line(1, userid, adv.get_finish_time(length * 60), guildid, channelid,
                                 monster.id, monster_name, number, length, chance)
         adv.write(grind)
@@ -520,8 +515,6 @@ def get_reaper_task(guildid, channelid, userid):
             task_length *= 0.7
             cb_perk = True
 
-        # TODO: Remove this, testing only
-        task_length = 1
         task = adv.format_line(5, userid, adv.get_finish_time(task_length), guildid, channelid, monster.id,
                                monster.name, num_to_kill, chance)
         adv.write(task)

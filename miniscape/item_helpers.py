@@ -115,8 +115,12 @@ def buy(userid, item, number):
 
     if item_in_shop(item.id):
         items = open_shop()
-        quest_req = Quest.objects.get(id=int(items[item.id]))
-        if quest_req in user.completed_quests_list or int(items[item.id]) == 0:
+        quest_id = int(items[str(item.id)])
+        quest_req = None
+        if quest_id:
+            quest_req = Quest.objects.get(id=quest_id)
+
+        if not quest_id or user.has_completed_quest(quest_req):
             value = item.value
             cost = 4 * number * value
             coin = Item.objects.get(name="coins")
