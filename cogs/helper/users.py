@@ -4,6 +4,7 @@ import shutil
 import time
 import ujson
 from collections import Counter
+import operator
 
 import config
 from cogs.helper import items
@@ -17,11 +18,7 @@ with open(XP_FILE, 'r') as f:
         line_split = line.split(';')
         XP[line_split[0]] = int(line_split[1])
 
-SLOTS = {}
-with open(ARMOUR_SLOTS_FILE, 'r') as f:
-    for line in f.read().splitlines()[1:]:
-        line_split = line.split(';')
-        SLOTS[line_split[0]] = line_split[1]
+
 
 IRONMAN_KEY = 'ironman'         # User's ironman status, stored as a boolean.
 ITEMS_KEY = 'items'             # User's inventory, stored as a Counter.
@@ -135,18 +132,21 @@ def backup():
         shutil.copy(f'{USER_DIRECTORY}{file}', destination)
 
 
-def calc_xp_to_level(userid, skill, level):
+def calc_xp_to_level(author, skill, level):
     """Calculates the xp needed to get to a level."""
-    if skill not in SKILLS:
+    author_levels = author.skill_level_mapping
+    author_xps = author.skill_xp_mapping
+
+    if skill not in author_levels.keys():
         return f'{skill} is not a skill.'
 
     if level is None:
-        level = get_level(userid, key=skill) + 1
+        level = author_levels[skill] + 1
 
     if level > 99:
         return f'You have already attained the maximum level in this skill.'
 
-    current_xp = read_user(userid, key=skill)
+    current_xp = author_xps[skill]
     for xp_value in XP.keys():
         if XP[xp_value] == level:
             xp_needed = int(xp_value) - current_xp
@@ -174,84 +174,10 @@ def clear_inventory(userid, under=None):
     update_user(userid, inventory, key=ITEMS_KEY)
 
 
-def eat(userid, item):
-    if item == 'none' or item == 'nothing':
-        update_user(userid, '-1', key=FOOD_KEY)
-        return f'You are now eating nothing.'
-    try:
-        itemid = items.find_by_name(item)
-    except KeyError:
-        return f'{item} does not exist.'
-    item_name = items.get_attr(itemid)
-    edible = items.get_attr(itemid, key=items.EAT_KEY)
-    if edible > 0:
-        update_user(userid, itemid, key=FOOD_KEY)
-        return f'You are now eating {items.add_plural(0, itemid)}!'
-    else:
-        return f'You cannot eat {item_name}.'
 
 
-def equip_item(userid, item):
-    """Takes an item out of a user's inventory and places it into their equipment."""
-    try:
-        itemid = items.find_by_name(item)
-    except KeyError:
-        return f'Error: {item} does not exist.'
-    item_level = items.get_attr(itemid, key=items.LEVEL_KEY)
-    user_cb_level = xp_to_level(read_user(userid, key=COMBAT_XP_KEY))
-
-    if user_cb_level >= item_level:
-        item_name = items.get_attr(itemid)
-        if item_in_inventory(userid, itemid):
-            slot = str(items.get_attr(itemid, key=items.SLOT_KEY))
-            if int(slot) > 0:
-                if items.get_attr(itemid, key=items.MAX_KEY):
-                    total = get_total_level(userid)
-                    if total != 99 * len(SKILLS):
-                        return f"You cannot equip this item since you do not have {99 * len(SKILLS)} skill total."
-                equipment = read_user(userid, key=EQUIPMENT_KEY)
-                if slot not in equipment.keys() or equipment[slot] == -1:
-                    equipment[slot] = itemid
-                else:
-                    update_inventory(userid, [equipment[slot]])
-                    equipment[slot] = itemid
-                update_inventory(userid, [itemid], remove=True)
-                update_user(userid, equipment, EQUIPMENT_KEY)
-                return f'{item_name} equipped to {SLOTS[slot]}!'
-            else:
-                return f'Error: {item_name} cannot be equipped.'
-        else:
-            return f'Error: {item_name} not in inventory.'
-    else:
-        return f'Error: Insufficient level to equip item ({item_level}). Your current combat level is {user_cb_level}.'
 
 
-def unequip_item(userid, item, isitemid=False):
-    """Takes an item out of a user's equipment and places it into their inventory."""
-    if not isitemid:
-        try:
-            itemid = items.find_by_name(item)
-        except KeyError:
-            return f'Error: {item} does not exist.'
-    else:
-        itemid=item
-    
-    item_name = items.get_attr(itemid)
-    equipment = read_user(userid, key=EQUIPMENT_KEY)
-    if itemid in equipment.values():
-        slot = str(items.get_attr(itemid, key=items.SLOT_KEY))
-        if int(slot) > 0:
-            equipment = read_user(userid, key=EQUIPMENT_KEY)
-            if equipment[slot] == -1:
-                return f'{item_name} is not equipped in {SLOTS[str(slot)]}.'
-            update_inventory(userid, [itemid])
-            equipment[slot] = -1
-            update_user(userid, equipment, EQUIPMENT_KEY)
-            return f'{item_name} unequipped from {SLOTS[str(slot)]}!'
-        else:
-            return f'Error: {item_name} cannot be unequipped.'
-    else:
-        return f'You do not have {item_name} equipped.'
 
 
 def count_item_in_inventory(userid, itemid):
@@ -427,117 +353,65 @@ def parse_int(number_as_string):
         raise ValueError
 
 
-def print_account(userid, nickname, printequipment=True):
+def print_account(author, printequipment=True):
     """Writes a string showing basic user information."""
+    nickname = author.nick if author.nick else author.name
     out = f"{CHARACTER_HEADER.replace('$NAME', nickname.upper())}"
 
-    for skill in SKILLS:
-        xp_formatted = '{:,}'.format(read_user(userid, key=skill))
-        level = get_level(userid, skill)
-        out += f'**{skill.title()} Level**: {level} *({xp_formatted} xp)*\n'
+    # TODO: This can probably be done better
+    for skill, level, skill_name in zip(author.xp_fields_str, author.level_fields_str, SKILLS):
+        xp_formatted = '{:,}'.format(getattr(author, skill, 0))
+        out += f'**{skill_name.title()} Level**: {getattr(author, level, 0)} *({xp_formatted} xp)*\n'
 
-    total = get_total_level(userid)
-    out += f'**Skill Total**: {total}/{len(SKILLS) * 99}\n\n'
-    out += f'**Quests Completed**: {len(get_completed_quests(userid))}/{len(quests.QUESTS.keys())}\n\n'
+    out += f'**Skill Total**: {author.total_level}/{len(SKILLS) * 99}\n\n'
+    out += f'**Quests Completed**: {len(author.completed_quests.all())}/{len(quests.QUESTS.keys())}\n\n'
 
-    if total < 99 * len(SKILLS):
-        for itemid in read_user(userid, key=EQUIPMENT_KEY).values():
-            if itemid != -1:
-                if items.get_attr(itemid, key=items.MAX_KEY):
-                    unequip_item(userid, itemid, isitemid=True)
     if printequipment:
-        out += print_equipment(userid)
+        out += print_equipment(author)
 
     return out
 
 
-def print_equipment(userid, name=None, with_header=False):
+def print_equipment(author, name=None, with_header=False):
     """Writes a string showing the stats of a user's equipment."""
+
+    armour_print_order = ['Head', 'Back', 'Neck', 'Ammunition', 'Main-Hand', 'Torso', 'Off-Hand',
+                          'Legs', 'Hands', 'Feet', 'Ring', 'Pocket', 'Hatchet', 'Pickaxe', 'Potion']
+
     if with_header and name is not None:
         out = f"{CHARACTER_HEADER.replace('$NAME', name.upper())}"
     else:
         out = ''
-    equipment = read_user(userid, key=EQUIPMENT_KEY)
-    damage, accuracy, armour, prayer = get_equipment_stats(equipment)
+    equipment = author.all_armour
+    damage, accuracy, armour, prayer = author.equipment_stats
     out += f'**Damage**: {damage}\n' \
            f'**Accuracy**: {accuracy}\n' \
            f'**Armour**: {armour}\n' \
-           f'**Prayer Bonus**: {prayer}\n\n'
-    for slot in equipment.keys():
-        out += f'**{SLOTS[str(slot)].title()}**: '
-        if int(equipment[slot]) > -1:
-            out += f'{items.get_attr(equipment[slot])} ' \
-                   f'*(dam: {items.get_attr(equipment[slot], key=items.DAMAGE_KEY)}, ' \
-                   f'acc: {items.get_attr(equipment[slot], key=items.ACCURACY_KEY)}, ' \
-                   f'arm: {items.get_attr(equipment[slot], key=items.ARMOUR_KEY)}, ' \
-                   f'pray: {items.get_attr(equipment[slot], key=items.PRAYER_KEY)})*\n'
-        else:
-            out += f'none *(dam: 0, acc: 0, arm: 0, pray: 0)*\n'
-    return out
+           f'**Prayer Bonus**: {prayer}\n'
 
-
-def print_inventory(person, search):
-    """Prints a list of a user's inventory into discord message-sized chunks."""
-    inventory = read_user(person.id)
-    if person.nick is None:
-        name = person.name
+    if author.prayer_slot:
+        out += f'**Active Prayer**: {author.prayer_slot.name}\n'
     else:
-        name = person.nick
-    header = f"{config.ITEMS_EMOJI} __**{name.upper()}'S INVENTORY**__ {config.ITEMS_EMOJI}\n"
-    messages = []
-    out = header
+        out += f'**Active Prayer**: none\n'
 
-    locked_items = read_user(person.id, key=LOCKED_ITEMS_KEY)
-    sorted_items = []
-    for itemid in inventory.keys():
-        sorted_items.append((items.get_attr(itemid), itemid))
-    for name, itemid in sorted(sorted_items, key=lambda tup: tup[0]):
-        # name = items.get_attr(itemid)
-        if search != '':
-            if search not in name.lower():
-                continue
-        value = items.get_attr(itemid, key=items.VALUE_KEY)
-        value_formatted = '{:,}'.format(value)
-        item_total_value = int(inventory[itemid]) * value
-        item_total_value_formatted = '{:,}'.format(item_total_value)
-        if inventory[itemid] > 0:
-            out += f'**{items.get_attr(itemid).title()} '
-            num_formatted = '{:,}'.format(inventory[itemid])
-            if itemid in locked_items:
-                out += f'(:lock:)'
-            out += f'**: {num_formatted}. *(value: {item_total_value_formatted}, {value_formatted} ea.)*\n'
-        if len(out) > 1800:
-            messages.append(out)
-            out = header
-    total_value = '{:,}'.format(get_value_of_inventory(person.id, add_locked=True))
-    out += f'*Total value: {total_value}*\n'
-    messages.append(out)
-    return messages
+    if author.active_food:
+        out += f'**Active Food**: {author.active_food.name}\n\n'
+    else:
+        out += f'**Active Food**: none\n\n'
 
-
-def print_pets(userid):
-    """Prints a formatted list of pets a user has."""
-    pet_ids = [x for x in items.ITEMS.keys() if items.get_attr(x, key=items.PET_KEY)]
-    pet_names = {} # [items.get_attr(x) for x in pet_ids]
-    for petid in pet_ids:
-        pet_names[items.get_attr(petid)] = petid
-    messages = []
-    pets_header = f':cat: __**PETS**__ :dog:\n'
-    out = pets_header
-    pet_count = 0
-    for pet_name in sorted(pet_names):
-        petid = pet_names[pet_name]
-        if item_in_inventory(userid, petid, 1):
-            out += f"**{pet_name.title()}**\n"
-            pet_count += 1
+    for slot in armour_print_order:
+        item = equipment[slot]
+        out += f'**{slot.title()}**: '
+        if item is not None:
+            out += f'{item.name} '
+            out += f'*(dam: {item.damage}, ' \
+                       f'acc: {item.accuracy}, ' \
+                       f'arm: {item.armour}, ' \
+                       f'pray: {item.prayer})*\n'
         else:
-            out += f'{pet_name.title()}\n'
-        if len(out) > 1900:
-            messages.append(out)
-            out = pets_header
-    out += f'{pet_count}/{len(pet_ids)}'
-    messages.append(out)
-    return messages
+            out += 'none *(dam: 0, acc: 0, arm: 0, pray: 0)*\n'
+
+    return out
 
 
 def read_user_multi(*args, **kwargs):
@@ -547,6 +421,13 @@ def read_user_multi(*args, **kwargs):
 
 def read_user(userid, key=ITEMS_KEY):
     """Reads the value of a key within a user's account."""
+
+    if key == ITEMS_KEY:
+        ret =  User.objects.get(id=userid).get_inventory()
+        return ret
+        pass
+
+
     try:
         with open(f'{USER_DIRECTORY}{userid}.json', 'r') as f:
             userjson = ujson.load(f)
@@ -633,6 +514,7 @@ def update_user(userid, value, key=ITEMS_KEY):
 
 def xp_to_level(xp):
     """Converts a  user's xp into its equivalent level based on an XP table."""
+    xp = int(xp)
     for level_xp in XP:
         if int(level_xp) > xp:
             return int(XP[level_xp]) - 1
