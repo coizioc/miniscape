@@ -55,36 +55,45 @@ class quest_dict:
 
 
 def load_users():
-    userids = [116380350296358914, 147501762566291457, 293219528450637824, 132049789461200897]
-    for userid in userids:
-        with open(f'{USER_DIRECTORY}{userid}.json', 'r+') as f:
+    from os import listdir
+    from os.path import isfile, join
+    onlyfiles = [f for f in listdir(USER_DIRECTORY) if isfile(join(USER_DIRECTORY, f))]
+
+    for file in onlyfiles:
+        with open(f'{USER_DIRECTORY}{file}', 'r+') as f:
             u = safe_dict(ujson.load(f))
 
-            clues = safe_dict(u['clues'])
-            easy_clues = clues['1'] if clues['1'] else 0
-            med_clues = clues['2'] if clues['2'] else 0
-            hard_clues = clues['3'] if clues['3'] else 0
-            elite_clues = clues['4'] if clues['4'] else 0
-            master_clues = clues['5'] if clues['5'] else 0
-            user = User(id=userid,
-                        name="",
-                        combat_xp=u['combat'],
-                        slayer_xp=u['slayer'],
-                        artisan_xp=u['artisan'],
-                        cook_xp=u['cook'],
-                        gather_xp=u['gather'],
-                        pray_xp=u['prayer'],
-                        rc_xp=u['runecrafting'],
-                        easy_clues=easy_clues,
-                        medium_clues=med_clues,
-                        hard_clues=hard_clues,
-                        elite_clues=elite_clues,
-                        master_clues=master_clues,
-                        is_ironman=u['ironman'],
-                        is_reaper_complete=u['reaperdone'],
-                        is_vis_complete=u['vis'],
-                        vis_attempts=u['visattempts'],
-                        )
+            userid = file.split('.')[0]
+            user = User.objects.get_or_create(id=userid)[0]
+
+            if u['clues']:
+                clues = safe_dict(u['clues'])
+                easy_clues = clues['1'] if clues['1'] else 0
+                med_clues = clues['2'] if clues['2'] else 0
+                hard_clues = clues['3'] if clues['3'] else 0
+                elite_clues = clues['4'] if clues['4'] else 0
+                master_clues = clues['5'] if clues['5'] else 0
+                user.easy_clues = easy_clues
+                user.medium_clues = med_clues
+                user.hard_clues = hard_clues
+                user.elite_clues = elite_clues
+                user.master_clues = master_clues
+
+
+            user.name = ""
+            user.combat_xp = u['combat']
+            user.slayer_xp = u['slayer']
+            user.artisan_xp = u['artisan']
+            user.cook_xp = u['cook']
+            user.gather_xp = u['gather']
+            user.pray_xp = u['prayer']
+            user.rc_xp = u['runecrafting']
+
+            user.is_ironman = u['ironman'] if u['ironman']  else False
+            user.is_reaper_complete = u['reaperdone']
+            user.is_vis_complete = u['vis']
+            user.vis_attempts = u['visattempts']
+
             user.save()
 
             hex_number = int(str(u['quests'])[2:], 16)
@@ -134,50 +143,90 @@ def load_users():
                 equipment = None
 
             if equipment:
-                for slot, item in equipment.items():
-                    #ugh
-                    if int(item) == -1:
-                        continue
+                if type(equipment) == dict:
+                    for slot, item in equipment.items():
+                        #ugh
+                        if int(item) == -1:
+                            continue
 
-                    try:
-                        item_obj = Item.objects.get(id=int(item))
-                    except ObjectDoesNotExist as e:
-                        pass
+                        try:
+                            item_obj = Item.objects.get(id=int(item))
+                        except ObjectDoesNotExist as e:
+                            continue
 
-                    slot = int(slot)
-                    if slot == 1:
-                        user.head_slot = item_obj
-                    elif slot == 2:
-                        user.back_slot = item_obj
-                    elif slot == 3:
-                        user.neck_slot = item_obj
-                    elif slot == 4:
-                        user.ammo_slot = item_obj
-                    elif slot == 5:
-                        user.mainhand_slot = item_obj
-                    elif slot == 6:
-                        user.torso_slot = item_obj
-                    elif slot == 7:
-                        user.offhand_slot = item_obj
-                    elif slot == 8:
-                        user.legs_slot = item_obj
-                    elif slot == 9:
-                        user.hands_slot = item_obj
-                    elif slot == 10:
-                        user.feet_slot = item_obj
-                    elif slot == 11:
-                        user.ring_slot = item_obj
-                    elif slot == 12:
-                        user.pocket_slot = item_obj
-                    elif slot == 13:
-                        user.hatchet_slot = item_obj
-                    elif slot == 14:
-                        user.pickaxe_slot = item_obj
-                    elif slot == 15:
-                        user.potion_slot = item_obj
+                        slot = int(slot)
+                        if slot == 1:
+                            user.head_slot = item_obj
+                        elif slot == 2:
+                            user.back_slot = item_obj
+                        elif slot == 3:
+                            user.neck_slot = item_obj
+                        elif slot == 4:
+                            user.ammo_slot = item_obj
+                        elif slot == 5:
+                            user.mainhand_slot = item_obj
+                        elif slot == 6:
+                            user.torso_slot = item_obj
+                        elif slot == 7:
+                            user.offhand_slot = item_obj
+                        elif slot == 8:
+                            user.legs_slot = item_obj
+                        elif slot == 9:
+                            user.hands_slot = item_obj
+                        elif slot == 10:
+                            user.feet_slot = item_obj
+                        elif slot == 11:
+                            user.ring_slot = item_obj
+                        elif slot == 12:
+                            user.pocket_slot = item_obj
+                        elif slot == 13:
+                            user.hatchet_slot = item_obj
+                        elif slot == 14:
+                            user.pickaxe_slot = item_obj
+                        elif slot == 15:
+                            user.potion_slot = item_obj
 
-                    user.save()
+                        user.save()
+                elif type(equipment) == list:
+                    for slot, item in enumerate(equipment):
 
+                        try:
+                            item_obj = Item.objects.get(id=int(item))
+                        except ObjectDoesNotExist as e:
+                            continue
+
+                        if slot == 1:
+                            user.head_slot = item_obj
+                        elif slot == 2:
+                            user.back_slot = item_obj
+                        elif slot == 3:
+                            user.neck_slot = item_obj
+                        elif slot == 4:
+                            user.ammo_slot = item_obj
+                        elif slot == 5:
+                            user.mainhand_slot = item_obj
+                        elif slot == 6:
+                            user.torso_slot = item_obj
+                        elif slot == 7:
+                            user.offhand_slot = item_obj
+                        elif slot == 8:
+                            user.legs_slot = item_obj
+                        elif slot == 9:
+                            user.hands_slot = item_obj
+                        elif slot == 10:
+                            user.feet_slot = item_obj
+                        elif slot == 11:
+                            user.ring_slot = item_obj
+                        elif slot == 12:
+                            user.pocket_slot = item_obj
+                        elif slot == 13:
+                            user.hatchet_slot = item_obj
+                        elif slot == 14:
+                            user.pickaxe_slot = item_obj
+                        elif slot == 15:
+                            user.potion_slot = item_obj
+
+                        user.save()
 
 item_json = config.ITEM_JSON
 
@@ -480,7 +529,7 @@ if __name__ == '__main__':
     # load_monsters()
     # load_clue_loot()
     # load_prayers()
-    load_recipes()
-    # load_users()
+    # load_recipes()
+    load_users()
 
     pass

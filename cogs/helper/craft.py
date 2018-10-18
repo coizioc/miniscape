@@ -7,9 +7,6 @@ from cogs.helper import items
 from cogs.helper import prayer
 from cogs.helper import users
 
-with open(RECIPE_JSON, 'r') as f:
-    RECIPES = ujson.load(f)
-
 ARTISAN_REQ_KEY = 'artisan'
 COOKING_REQ_KEY = 'cook'
 QUEST_REQ_KEY = 'quest req'
