@@ -2,7 +2,6 @@ import math
 import random
 from collections import Counter
 
-from cogs.helper import adventures as adv
 from cogs.helper import items
 from cogs.helper import monsters as mon
 from cogs.helper import quests
@@ -99,18 +98,6 @@ def get_rares(difficulty):
     return rares
 
 
-def print_clue_scrolls(userid):
-    """Prints the number of clues a user has completed."""
-    clue_counts = users.read_user(userid, key=users.CLUES_KEY)
-
-    out = f'{CLUE_HEADER}'
-    for difficulty in sorted(list(clue_counts.keys())):
-        if clue_counts[difficulty] > 0:
-            out += f'**{DIFFICULTY[int(difficulty)].title()}**: {clue_counts[difficulty]}\n'
-
-    return out
-
-
 def print_item_from_lootable(item):
     out = ''
     for difficulty in range(1, 6):
@@ -166,6 +153,8 @@ def print_status(userid, time_left, *args):
 
 def start_clue(guildid, channelid, userid, difficulty):
     """Starts a clue scroll."""
+    from miniscape import adventures as adv
+
     out = f'{CLUE_HEADER}'
     if not adv.is_on_adventure(userid):
         scrollid = str(EASY_CLUE_SCROLL_ID + difficulty - 1)

@@ -2,7 +2,7 @@
 """Provides a launcher that sets up logging for the bot."""
 import logging
 import contextlib
-from mathbot import MathBot
+from mbot import MathBot
 
 @contextlib.contextmanager
 def setup_logging():
