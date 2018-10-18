@@ -1084,8 +1084,7 @@ class Miniscape():
                         f.write(f'{e}\n')
                     print(e)
                 print('done')
-            # TODO: Change this 1 back to 60
-            await asyncio.sleep(1)
+            await asyncio.sleep(60)
 
 
 def setup(bot):

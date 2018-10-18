@@ -31,7 +31,7 @@ def print_inventory(person, search):
                 ) for item in inventory]
 
     ret = []
-    header = f":moneybag: __**{name.upper()}'S INVENTORY**__ :moneybag:\n"
+    header = f"{config.ITEMS_EMOJI} __**{name.upper()}'S INVENTORY**__ {config.ITEMS_EMOJI}\n"
     out = header
     for message in messages:
         if len(out) + len(message) > 1800:

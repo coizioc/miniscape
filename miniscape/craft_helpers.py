@@ -5,9 +5,11 @@ import random
 from config import XP_FACTOR
 from miniscape import prayer_helpers
 from miniscape.models import Item, User, Recipe, Prayer, RecipeRequirement, Quest
+from config import GATHER_EMOJI, ARTISAN_EMOJI, RC_EMOJI
 
-GATHER_HEADER = f':hammer_pick: __**GATHERING**__ :hammer_pick: \n'
-CRAFT_HEADER = f':hammer_pick: __**CRAFTING**__ :hammer_pick: \n'
+GATHER_HEADER = f'{GATHER_EMOJI} __**GATHERING**__ {GATHER_EMOJI}\n'
+CRAFT_HEADER = f'{ARTISAN_EMOJI} __**CRAFTING**__ {ARTISAN_EMOJI}\n'
+RUNECRAFT_HEADER = f'{RC_EMOJI} __**RUNECRAFTING**__ {RC_EMOJI}\n'
 
 RUNE_ESSENCE = Item.objects.get(name__iexact="rune essence")
 PURE_ESSENCE = Item.objects.get(name__iexact="pure essence")
@@ -194,7 +196,7 @@ def get_runecraft(person, *args):
     rc_level_after = user.rc_level
 
     xp_formatted = '{:,}'.format(xp)
-    out = f'{GATHER_HEADER}' \
+    out = f'{RUNECRAFT_HEADER}' \
           f'{person.mention}, your runecrafting session has finished! You have crafted ' \
           f'{item.pluralize(number)} and have gained {xp_formatted} runecrafting xp! '
     if rc_level_after > rc_level_before:
