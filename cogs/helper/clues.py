@@ -6,7 +6,7 @@ from cogs.helper import items
 from cogs.helper import monsters as mon
 from cogs.helper import quests
 from cogs.helper import users
-from config import CLUES_DIRECTORY
+from config import CLUES_DIRECTORY, CLUE_EMOJI
 
 DIFFICULTY = {
     1: 'easy',
@@ -16,7 +16,7 @@ DIFFICULTY = {
     5: 'master'
 }
 
-CLUE_HEADER = f':map: __**CLUE SCROLL**__ :map:\n'
+CLUE_HEADER = f'{CLUE_EMOJI} __**CLUE SCROLL**__ {CLUE_EMOJI}\n'
 
 EASY_CLUE_SCROLL_ID = 184
 ROLLS_PER_CLUE = 5

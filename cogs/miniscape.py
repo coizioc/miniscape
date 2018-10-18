@@ -8,6 +8,7 @@ import discord
 from discord.ext import commands
 from django.db.models import Q
 
+from config import ARROW_LEFT_EMOJI, ARROW_RIGHT_EMOJI, THUMBS_UP_EMOJI
 from cogs.helper import channel_permissions as cp
 from cogs.helper import clues
 from miniscape import adventures as adv, item_helpers, craft_helpers
@@ -297,7 +298,7 @@ class Miniscape():
             out = sh.get_reaper_task(ctx.guild.id, ctx.channel.id, ctx.author.id)
             await ctx.send(out)
 
-    @commands.group(invoke_without_command=True, aliases=['grind', 'fring', 'yeet'])
+    @commands.group(invoke_without_command=True, aliases=['grind', 'fring', 'dab', 'yeet'])
     async def kill(self, ctx, *args):
         from miniscape import adventures as adv
         """Lets the user kill monsters for a certain number or a certain amount of time."""
@@ -564,13 +565,13 @@ class Miniscape():
                   f'{items.add_plural(number, itemid)} for {offer_formatted} coins. To accept this offer, reply ' \
                   f'to this post with a :thumbsup:. Otherwise, this offer will expire in one minute.'
             msg = await ctx.send(out)
-            await msg.add_reaction('\N{THUMBS UP SIGN}')
+            await msg.add_reaction(THUMBS_UP_EMOJI)
 
             x = True
             while x:
                 try:
                     reaction, user = await self.bot.wait_for('reaction_add', timeout=60)
-                    if str(reaction.emoji) == '👍' and user == name_member and reaction.message.id == msg.id:
+                    if str(reaction.emoji) == THUMBS_UP_EMOJI and user == name_member and reaction.message.id == msg.id:
                         price = {"0": offer}
                         users.update_inventory(name_member.id, price, remove=True)
                         users.update_inventory(ctx.author.id, price)
@@ -604,7 +605,7 @@ class Miniscape():
             while True:
                 try:
                     reaction, user = await self.bot.wait_for('reaction_add', timeout=60)
-                    if str(reaction.emoji) == '👍' and user == ctx.author and reaction.message.id == msg.id:
+                    if str(reaction.emoji) == THUMBS_UP_EMOJI and user == ctx.author and reaction.message.id == msg.id:
                         ctx.user_object.reset_account()
                         ctx.user_object.is_ironman = True
                         ctx.user_object.save()
@@ -632,7 +633,7 @@ class Miniscape():
             while True:
                 try:
                     reaction, user = await self.bot.wait_for('reaction_add', timeout=60)
-                    if str(reaction.emoji) == '👍' and user == ctx.author and reaction.message.id == msg.id:
+                    if str(reaction.emoji) == THUMBS_UP_EMOJI and user == ctx.author and reaction.message.id == msg.id:
                         ctx.user_object.is_ironman = False
                         ctx.user_object.save()
                         ironman_role = discord.utils.get(ctx.guild.roles, name="Ironman")
@@ -904,8 +905,8 @@ class Miniscape():
     async def leaderboard(self, ctx, *args):
         """Allows users to easily compare each others' stats."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            name = " ".join(args)
-            self.print_leaderboard(ctx, name)
+            name = " ".join(args) if len(args) > 0 else None
+            await self.print_leaderboard(ctx, name)
 
     async def print_leaderboard(self, ctx, name):
         """Prints the leaderboard and provides an interface for showing various leaderboards."""
@@ -913,38 +914,40 @@ class Miniscape():
         for key in users.LEADERBOARD_TITLES.keys():
             leaderboards[key] = users.get_values_by_account(key)
 
-        msg = await ctx.send("test")
+        msg = await ctx.send("Loading leaderboards...")
 
         leaderboard_messages = {}
         for key in users.LEADERBOARD_TITLES.keys():
             leaderboard = leaderboards[key]
 
             try:
-                lower, upper = self.get_leaderboard_range(ctx, name, leaderboard)
+                lower, upper = await self.get_leaderboard_range(ctx, name, leaderboard)
             except ValueError:
                 continue
 
-            out = users.LEADERBOARD_HEADER.replace("$KEY", users.LEADERBOARD_TITLES[key])
-
+            out = users.LEADERBOARD_HEADER.replace("$KEY", users.LEADERBOARD_TITLES[key].title())
+            out = out.replace("$EMOJI", users.LEADERBOARD_EMOJI[key])
+            
             try:
                 for i in range(lower, upper):
-                    user_id, amount = leaderboards[key]
+                    user_id, amount = leaderboard[i]
                     amount_formatted = '{:,}'.format(amount)
                     member = ctx.message.guild.get_member(user_id)
                     if member is not None:
-                        name = get_display_name(member)
+                        username = get_display_name(member)
                     else:
-                        name = f'User {user_id}'
-                    out_user = f'**({1 + i}) {name}**: {amount_formatted} {users.LEADERBOARD_QUANTIFIERS[key]}\n'
-                    if key == 'total':
-                        out_user.replace("$LEVEL", users.xp_to_level(amount))
+                        username = f'User {user_id}'
+                    out_user = f'**({1 + i}) {username}**: {amount_formatted} {users.LEADERBOARD_QUANTIFIERS[key]}\n'
+                    # if key == 'total':
+                    #     out_user = out_user.replace("$LEVEL", f"{users.xp_to_level(amount)}")
                     out += out_user
             except IndexError:
                 pass
 
             leaderboard_messages[key] = out
-            msg.add_reaction(users.LEADERBOARD_EMOJI[key])
-
+            await msg.add_reaction(users.LEADERBOARD_EMOJI[key])
+        await msg.edit(content=leaderboard_messages['total'])
+        
         while True:
             reaction, user = await self.bot.wait_for('reaction_add')
             if user == ctx.author and reaction.message.id == msg.id:
@@ -952,7 +955,6 @@ class Miniscape():
                     if str(reaction.emoji) == users.LEADERBOARD_EMOJI[key]:
                         await msg.edit(content=None)
                         await msg.edit(content=leaderboard_messages[key])
-
 
     async def get_leaderboard_range(self, ctx, name, leaderboard):
         """Gets the lower and upper bounds of a leaderboard and returns them as a tuple."""
@@ -975,6 +977,9 @@ class Miniscape():
                     upper = len(leaderboard)
                     lower = len(leaderboard) - 10
                 leaderboard_range = (lower, upper)
+            except NameError:
+                print(name)
+                pass
             except ValueError:
                 raise ValueError
         return leaderboard_range
@@ -988,24 +993,21 @@ class Miniscape():
         current_page = 0
         out = messages[current_page]
         msg = await ctx.send(out)
-        await msg.add_reaction('⬅')
-        await msg.add_reaction('➡')
+        await msg.add_reaction(ARROW_LEFT_EMOJI)
+        await msg.add_reaction(ARROW_RIGHT_EMOJI)
 
         while True:
             reaction, user = await self.bot.wait_for('reaction_add')
             if user == ctx.author and reaction.message.id == msg.id:
-                # await msg.clear_reactions()
-                # await msg.add_reaction('⬅')
-                # await msg.add_reaction('➡')
 
-                if str(reaction.emoji) == '⬅':
+                if str(reaction.emoji) == ARROW_LEFT_EMOJI:
                     if current_page > 0:
                         current_page -= 1
                         out = messages[current_page]
                         out += f"\n{current_page + 1}/{len(messages)}"
                         await msg.edit(content=None)
                         await msg.edit(content=out)
-                elif str(reaction.emoji) == '➡':
+                elif str(reaction.emoji) == ARROW_RIGHT_EMOJI:
                     if current_page < len(messages) - 1:
                         current_page += 1
                         out = messages[current_page] 

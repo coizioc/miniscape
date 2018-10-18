@@ -6,9 +6,6 @@ from collections import Counter
 from cogs.helper import items
 from cogs.helper import prayer
 from cogs.helper import users
-from config import RECIPE_JSON, XP_FACTOR
-
-
 
 with open(RECIPE_JSON, 'r') as f:
     RECIPES = ujson.load(f)
@@ -47,18 +44,6 @@ def get_attr(recipeid, key=INPUTS_KEY):
             return RECIPES[recipeid][key]
     else:
         raise KeyError
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
