@@ -346,9 +346,10 @@ def craft(user: User, recipe, n=1):
                f'higher than your artisan level ({artisan_level}).'
 
     inputs = recipe.get_requirements()
+    negative_loot = {}
     for rr in list(inputs):
         if user.has_item_amount_by_item(rr.item, rr.amount*n):
-            negative_loot = {rr.item: rr.amount}
+            negative_loot[rr.item] = rr.amount * n
         else:
             return f'Error: you do not have enough items to make {recipe.creates.pluralize(n)} ' \
                    f'({rr.item.pluralize(rr.amount * n)}).'
@@ -363,6 +364,7 @@ def craft(user: User, recipe, n=1):
     user.update_inventory({recipe.creates: n + bonus})
     xp = XP_FACTOR * goldsmith_bonus * n * recipe.creates.xp
     user.artisan_xp += xp
+    user.save()
     level_after = user.artisan_level
 
     xp_formatted = '{:,}'.format(xp)
