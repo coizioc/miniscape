@@ -358,7 +358,7 @@ class User(models.Model):
         # Validate prayer level
         if self.prayer_level >= prayer.level_required:
             # Validate quest req
-            if not prayer.quest_req or prayer.quest_req in self.userquest_set.all():
+            if not prayer.quest_req or prayer.quest_req in self.completed_quests_list:
                 return True
 
         # Default
@@ -606,7 +606,7 @@ class User(models.Model):
         for equip in self.equipment_slots:
             if equip:
                 factor += equip.luck_modifier
-        return factor
+        return min(1, factor)
 
     def __repr__(self):
         return "User ID %d: %s" % (self.id, self.name)

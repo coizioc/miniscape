@@ -1,3 +1,4 @@
+import config
 from miniscape import clue_helpers
 from miniscape.models import Item, User, UserInventory, MonsterLoot
 from config import ARMOUR_SLOTS_FILE

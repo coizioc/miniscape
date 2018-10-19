@@ -60,7 +60,7 @@ class Item(models.Model):
 
     # TODO: make this actually do something
     def pluralize(self, number):
-        num_formatted = '{:,}'.format(number)
+        num_formatted = '{:,}'.format(int(number))
         return "%s %s" % (num_formatted, self.name)
 
     @classmethod
