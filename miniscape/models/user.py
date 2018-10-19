@@ -600,8 +600,8 @@ class User(models.Model):
 
     @property
     def luck_factor(self) -> float:
-        prayer_luck = self.prayer_slot.luck_modifier if self.prayer_slot else 0
-        ring_luck = self.ring_slot.luck_factor if self.ring_slot else 0
+        prayer_luck = self.prayer_slot.luck_factor if self.prayer_slot else 0
+        ring_luck = self.ring_slot.luck_modifier if self.ring_slot else 0
         return max(1, prayer_luck, ring_luck)
 
     def __repr__(self):
