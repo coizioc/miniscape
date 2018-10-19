@@ -393,7 +393,7 @@ def cook(user: User, food, n=1):
     if not rr:
         return "You cannot cook {name}."
     if user.has_item_amount_by_item(rr.item, rr.amount*n):
-        negative_loot = {rr.item: rr.amount}
+        negative_loot = {rr.item: rr.amount*n}
     else:
         return f'You do not have enough items to make {recipe.item.pluralize(n)} ' \
                f'({rr.item.pluralize(rr.amount * n)}).'
@@ -415,6 +415,7 @@ def cook(user: User, food, n=1):
     user.update_inventory({BURNT_FOOD: n - num_cooked})
     xp = XP_FACTOR * num_cooked * item.xp
     user.cook_xp += xp
+    user.save()
     level_after = user.cook_level
 
     xp_formatted = '{:,}'.format(xp)
