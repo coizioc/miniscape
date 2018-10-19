@@ -241,6 +241,14 @@ def get_task(guildid, channelid, author: User):
                     and (monster.quest_req and monster.quest_req in completed_quests):
                 break
             else:
+                log_str = f"Failed to give task to user\n" \
+                          f"User: {author.name}, Monster: {monster.name}\n" \
+                          f"Conditionals: \n" \
+                          f"  task_length / base_time: {task_length / base_time}\n" \
+                          f"  chance: {chance}\n"\
+                          f"  mon levl / cb lvl: {mon_level / cb_level}\n" \
+                          f"  quest req satisfied: {monster.quest_req and monster.quest_req in completed_quests}\n"
+                logging.getLogger(__name__).info(log_str)
                 continue  # For breakpoints :^)
         else:
             return "Error: gear too low to fight any monsters. Please equip some better gear and try again. " \

@@ -244,7 +244,7 @@ class User(models.Model):
     def get_item_count(self, item=None, itemid=None, itemname=None):
         """ Returns the number of items in user inventory by either object, name, or ID"""
         if item:
-            ui = self.get_items_by_obj(item)
+            ui = self.get_items_by_obj(item)[0]
         elif itemid:
             ui = self.get_item_by_id(itemid)
         elif itemname:
@@ -606,7 +606,7 @@ class User(models.Model):
         for equip in self.equipment_slots:
             if equip:
                 factor += equip.luck_modifier
-        return min(1, factor)
+        return max(1, factor)
 
     def __repr__(self):
         return "User ID %d: %s" % (self.id, self.name)

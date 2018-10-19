@@ -16,7 +16,7 @@ def calc_chance(user, quest, remove_food=False):
 
     monster_base = 1
     if quest.has_dragon and not(user.has_item_by_item(DFS)
-                                or user.has_item_item(ANTI_DRAGON_SHIELD)):
+                                or user.has_item_by_item(ANTI_DRAGON_SHIELD)):
             monster_base = 100
 
     c = 1 + monster_combat / 200
@@ -54,7 +54,7 @@ def calc_length(user, quest):
     monster_base = 1
 
     if quest.has_dragon and not (user.has_item_by_item(DFS)
-                                 or user.has_item_item(ANTI_DRAGON_SHIELD)):
+                                 or user.has_item_by_item(ANTI_DRAGON_SHIELD)):
         monster_base = 100
 
     c = combat_level
@@ -85,7 +85,7 @@ def print_details(user, questid):
     out += f'**{quest.id}: {quest.name}**\n'
     out += f'*{quest.description}*\n\n'
 
-    out += f'**Base Time**: {quest.time*60} minutes.\n'
+    out += f'**Base Time**: {quest.time} minutes.\n'
 
     if user.has_completed_quest(quest):
         out += f'\n*{quest.success}*\n'

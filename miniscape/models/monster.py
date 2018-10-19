@@ -86,6 +86,7 @@ class Monster(models.Model):
         """Generates a Counter from a number of killed monsters"""
         loot_table = self.loot_table
         loot = Counter()
+        logging.getLogger(__name__).info(f"Generating loot for {num} {self.name}. Luck factor: {luck_factor}")
 
         # Assign our always loots
         for ml in loot_table.filter(rarity=1):

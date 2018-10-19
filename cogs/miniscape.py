@@ -663,7 +663,7 @@ class Miniscape():
                 return
             except ValueError:
                 if args[0] == 'start':
-                    messages = quest_helpers.start_quest(ctx.guild.id, ctx.channel.id, ctx.user_object, questid)
+                    messages = quest_helpers.start_quest(ctx.guild.id, ctx.channel.id, ctx.user_object, args[1])
                 elif args[0] == 'incomplete':
                     messages = quest_helpers.print_list(ctx.user_object, args[0] == 'incomplete')
             except IndexError:
@@ -1092,6 +1092,7 @@ class Miniscape():
                     6: craft_helpers.get_runecraft
                 }
                 try:
+                    logging.getLogger(__name__).info(f"About  to call function for adventure {adventureid}")
                     out = adventures[adventureid](person, task[5:])
                     await bot_self.send(out)
                 except Exception as e:
