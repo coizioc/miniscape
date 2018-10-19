@@ -91,14 +91,13 @@ class Monster(models.Model):
             loot[ml.item] += num
 
         # Generate our loots
-        possible_loots = loot_table.filter(rarity__gte=2)
+        possible_loots = loot_table.filter(rarity__gt=1)
         possible_loots = list(possible_loots)
-        for _ in range(int(num)):
-            for _ in range(round(8 * luck_factor)):
-                ml = random.sample(possible_loots, 1)[0]
-                item_chance = ml.rarity
-                if random.randint(1, item_chance) == 1 and item_chance > 1:
-                    loot[ml.item] += random.randint(ml.min_amount, ml.max_amount)
+        for _ in range(round(int(num) * 8 * luck_factor)):
+            ml = random.sample(possible_loots, 1)[0]
+            item_chance = ml.rarity
+            if random.randint(1, item_chance) == 1 and item_chance > 1:
+                loot[ml.item] += random.randint(ml.min_amount, ml.max_amount)
 
         return loot
 

@@ -515,6 +515,7 @@ def get_reaper_task(guildid, channelid, userid):
             task_length *= 0.7
             cb_perk = True
 
+        task_length=0
         task = adv.format_line(5, userid, adv.get_finish_time(task_length), guildid, channelid, monster.id,
                                monster.name, num_to_kill, chance)
         adv.write(task)
