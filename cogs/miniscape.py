@@ -4,6 +4,8 @@ import datetime
 import random
 from collections import Counter
 import traceback
+import logging
+import sys
 
 import discord
 from discord.ext import commands
@@ -30,6 +32,7 @@ import miniscape.quest_helpers as quest_helpers
 
 
 MAX_PER_ACTION = 10000
+REAPER_TOKEN = Item.objects.get(name__iexact="reaper token")
 
 
 class AmbiguousInputError(Exception):
@@ -120,7 +123,8 @@ class Miniscape():
         self.bot = bot
         self.bot.loop.create_task(self.check_adventures())
         self.bot.loop.create_task(self.reset_dailies())
- 
+
+
     # @commands.command()
     # async def commands(self, ctx):
     #     """Sends the user a message listing the bot's commands."""
@@ -382,6 +386,7 @@ class Miniscape():
     async def cancel(self, ctx):
         """Cancels your current action."""
         from miniscape import adventures as adv
+        author: User = ctx.user_object
 
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             try:
@@ -389,8 +394,8 @@ class Miniscape():
 
                 adventureid = task[0]
                 if adventureid == '0':
-                    if users.item_in_inventory(ctx.author.id, '291'):
-                        users.update_inventory(ctx.author.id, ['291'], remove=True)
+                    if author.has_item_by_item(REAPER_TOKEN):
+                        author.update_inventory(REAPER_TOKEN, remove=True)
                         adv.remove(ctx.author.id)
                         out = 'Slayer task cancelled!'
                     else:

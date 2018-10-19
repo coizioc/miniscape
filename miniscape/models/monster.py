@@ -1,3 +1,4 @@
+import logging
 import random
 from collections import Counter
 
@@ -97,7 +98,13 @@ class Monster(models.Model):
             ml = random.sample(possible_loots, 1)[0]
             item_chance = ml.rarity
             if random.randint(1, item_chance) == 1 and item_chance > 1:
-                loot[ml.item] += random.randint(ml.min_amount, ml.max_amount)
+                amount = random.randint(ml.min_amount, ml.max_amount)
+                log_str = "Awarded %d %s as part of loot generation for %d %s" % (amount,
+                                                                                  ml.item.name,
+                                                                                  int(num),
+                                                                                  self.name)
+                logging.getLogger(__name__).info(log_str)
+                loot[ml.item] += amount
 
         return loot
 

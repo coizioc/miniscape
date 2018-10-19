@@ -1,3 +1,5 @@
+import logging
+
 from discord import Member
 
 from miniscape.item_helpers import get_loot_value
@@ -448,7 +450,10 @@ def get_reaper_result(person, *args):
     xp_factor = 1 if is_success else factor
 
     # Give player their loot
+    logging.getLogger(__name__).info("Generating loot for reaper task: %d %s" % (num_to_kill,
+                                                                                  monster.name))
     loot = monster.generate_loot(num_to_kill, factor)
+    logging.getLogger(__name__).info("Generated loot for reaper task: %s" % loot)
     loot[Item.objects.get(id=291)] += 1
     user.update_inventory(loot)
     out += print_loot(loot, person, monster, num_to_kill)
