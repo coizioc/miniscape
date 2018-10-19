@@ -3,12 +3,13 @@ import asyncio
 import datetime
 import random
 from collections import Counter
+import traceback
 
 import discord
 from discord.ext import commands
 from django.db.models import Q
 
-from config import ARROW_LEFT_EMOJI, ARROW_RIGHT_EMOJI, THUMBS_UP_EMOJI
+from config import ARROW_LEFT_EMOJI, ARROW_RIGHT_EMOJI, THUMBS_UP_EMOJI, TICK_SECONDS
 from cogs.helper import channel_permissions as cp
 from cogs.helper import clues
 from miniscape import adventures as adv, item_helpers, craft_helpers
@@ -1048,7 +1049,15 @@ class Miniscape():
         while not self.bot.is_closed():
             with open('./resources/debug.txt', 'a+') as f:
                 f.write(f'Bot check at {datetime.datetime.now()}:\n')
-            finished_tasks = adv.get_finished()
+            try:
+                finished_tasks = adv.get_finished()
+            except Exception as e:
+                traceback.print_exc()
+                traceback.print_exception(e)
+                with open('./resources/debug.txt', 'a+') as f:
+                    f.write(f'{e}\n')
+                print(e)
+
             for task in finished_tasks:
                 print(task)
                 with open('./resources/debug.txt', 'a+') as f:
@@ -1077,14 +1086,13 @@ class Miniscape():
                     out = adventures[adventureid](person, task[5:])
                     await bot_self.send(out)
                 except Exception as e:
-                    import traceback
                     traceback.print_exc()
                     traceback.print_exception(e)
                     with open('./resources/debug.txt', 'a+') as f:
                         f.write(f'{e}\n')
                     print(e)
                 print('done')
-            await asyncio.sleep(60)
+            await asyncio.sleep(TICK_SECONDS)
 
 
 def setup(bot):

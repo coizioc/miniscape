@@ -515,6 +515,7 @@ def get_reaper_task(guildid, channelid, userid):
             task_length *= 0.7
             cb_perk = True
 
+        task_length=0
         task = adv.format_line(5, userid, adv.get_finish_time(task_length), guildid, channelid, monster.id,
                                monster.name, num_to_kill, chance)
         adv.write(task)
@@ -594,7 +595,9 @@ def print_chance(userid, monsterid, monster_dam=-1, monster_acc=-1, monster_arm=
 
 def print_reaper_status(userid, time_left, *args):
     monsterid, monster_name, num_to_kill, chance = args[0]
-    chance = calc_chance(userid, monsterid, num_to_kill)
+    user = User.objects.get(id=userid)
+    monster = Monster.objects.get(id=monsterid)
+    chance = calc_chance(user, monster, num_to_kill)
     monster = Monster.objects.get(id=monsterid)
     out = f'{SLAYER_HEADER}' \
           f'You are currently on a reaper task of {monster.pluralize(num_to_kill, with_zero=True)}. ' \

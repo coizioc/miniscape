@@ -65,6 +65,9 @@ def get_finished():
     current_time = datetime.datetime.now()
     out = ''
     for adventure in adventures:
+        # Sometimes there's an empty new line at the beginning of the file. It's weird
+        if not adventure:
+            continue
         adventure_args = adventure.split(';')
         time = adventure_args[2]
         finish_time = datetime.datetime.strptime(time, '%Y-%m-%d %H:%M:%S.%f')
