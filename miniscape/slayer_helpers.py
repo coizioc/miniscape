@@ -15,7 +15,7 @@ SLAYER_HEADER = ':skull_crossbones: __**SLAYER**__ :skull_crossbones:\n'
 
 
 def calc_chance(user: User, monster: Monster, number: int, remove_food=False):
-    """Calculates the chance of success of a task."""
+    """Calculates the chance of success of a task."""  
     equipment = user.equipment_slots
     player_arm = user.armour
     monster_acc = monster.accuracy
@@ -598,7 +598,6 @@ def print_reaper_status(userid, time_left, *args):
     user = User.objects.get(id=userid)
     monster = Monster.objects.get(id=monsterid)
     chance = calc_chance(user, monster, num_to_kill)
-    monster = Monster.objects.get(id=monsterid)
     out = f'{SLAYER_HEADER}' \
           f'You are currently on a reaper task of {monster.pluralize(num_to_kill, with_zero=True)}. ' \
           f'You can see the results of this slayer task {time_left}. ' \
