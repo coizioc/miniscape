@@ -227,6 +227,7 @@ def print_item_stats(itemname: str):
         out += f'**Combat Requirement**: {level}\n'
     if item.is_gatherable:
         xp = item.xp
+        level = item.level if item.level else 1
         out += f'**Gather Requirement**: {level}\n'
         out += f'**xp**: {xp}\n'
 
