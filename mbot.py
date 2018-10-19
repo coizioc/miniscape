@@ -1,6 +1,7 @@
 #! /usr/bin/env python3
 """Runs bots for a Discord server."""
 # These lines allow us to use Django models
+import logging
 import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "mathbot.settings")
 import django
@@ -81,6 +82,18 @@ class MathBot(commands.Bot):
                 print(f'Failed to load submodule {submodule}.', file=sys.stderr)
                 traceback.print_exc()
 
+        self.setup_logging()
+
+    def setup_logging(self):
+        root = logging.getLogger()
+        ch = logging.StreamHandler(sys.stdout)
+        ch.setLevel(logging.DEBUG)
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        ch.setFormatter(formatter)
+        root.addHandler(ch)
+        logging.getLogger(__name__).info("Logging initialized")
+        pass
+
     def initialize_managers(self):
         self.trade_manager = tm.TradeManager()
 
@@ -103,6 +116,14 @@ class MathBot(commands.Bot):
     @asyncio.coroutine
     def process_commands(self, message):
         ctx = yield from self.get_context(message, cls=MathBotContext)
+        try:
+            if ctx.command is not None:
+                log_str = f'{ctx.author.name} ({ctx.author.id}) issued command ' \
+                          f'"{ctx.message.clean_content}" ' \
+                          f'on guild {ctx.message.guild} ({ctx.message.guild.id})'
+                logging.getLogger(__name__).info(log_str)
+        except Exception as e:
+            pass
         yield from self.invoke(ctx)
 
     def run(self):

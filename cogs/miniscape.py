@@ -4,6 +4,8 @@ import datetime
 import random
 from collections import Counter
 import traceback
+import logging
+import sys
 
 import discord
 from discord.ext import commands
@@ -121,7 +123,8 @@ class Miniscape():
         self.bot = bot
         self.bot.loop.create_task(self.check_adventures())
         self.bot.loop.create_task(self.reset_dailies())
- 
+
+
     # @commands.command()
     # async def commands(self, ctx):
     #     """Sends the user a message listing the bot's commands."""
