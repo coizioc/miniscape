@@ -361,7 +361,7 @@ class Miniscape():
                 messages = mon.print_monster(monster)
             await self.paginate(ctx, messages)
 
-    @commands.command()
+    #@commands.command()
     async def chance(self, ctx, monsterid, dam=-1, acc=-1, arm=-1, cb=-1, xp=-1, num=100, dfire=False):
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             out = slayer.print_chance(ctx.author.id, monsterid, monster_dam=int(dam), monster_acc=int(acc),
@@ -812,7 +812,7 @@ class Miniscape():
             author.is_vis_complete = True
             author.save()
 
-            out = f"{craft_helpers.GATHER_HEADER}With the runes {runes}, you received {num_vis} vis wax per " \
+            out = f"{craft_helpers.GATHER_HEADER}You use the runes {runes}. With this, you received {num_vis} vis wax per " \
                   f"slot, respectively, for a total of {sum(num_vis)} vis wax. You have made {author.vis_attempts} " \
                   f"attempts today, meaning that you used {vis.calc_num(author.vis_attempts)} " \
                   f"of each rune to craft the vis wax."

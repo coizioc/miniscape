@@ -389,12 +389,13 @@ def cook(user: User, food, n=1):
     if cooking_level < cooking_req:
         return f'{name} has a cooking requirement ({cooking_req}) higher than your cooking level ({cooking_level}).'
 
-
     rr = RecipeRequirement.objects.filter(recipe__creates=item)
+    if not rr:
+        return "You cannot cook {name}."
     if user.has_item_amount_by_item(rr.item, rr.amount*n):
         negative_loot = {rr.item: rr.amount}
     else:
-        return f'Error: you do not have enough items to make {recipe.item.pluralize(n)} ' \
+        return f'You do not have enough items to make {recipe.item.pluralize(n)} ' \
                f'({rr.item.pluralize(rr.amount * n)}).'
 
     burn_chance = calc_burn(user, item)
@@ -407,9 +408,7 @@ def cook(user: User, food, n=1):
             if random.randint(1, 100) > burn_chance:
                 num_cooked += 1
     if cooking_level == 99:
-        for _ in range(n):
-            if random.randint(1, 20) == 1:
-                bonus += 1
+        bonus = random.randint(0, n / 20)
 
     user.update_inventory(negative_loot, remove=True)
     user.update_inventory({item: num_cooked})
