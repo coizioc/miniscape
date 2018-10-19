@@ -523,13 +523,13 @@ def load_prayers():
 
 
 if __name__ == '__main__':
-    # load_items()
-    # load_quests()
-    # load_items(quests_unlocks=True)
-    # load_monsters()
-    # load_clue_loot()
-    # load_prayers()
-    # load_recipes()
+    load_items()
+    load_quests()
+    load_items(quests_unlocks=True)
+    load_monsters()
+    load_clue_loot()
+    load_prayers()
+    load_recipes()
     load_users()
 
     pass

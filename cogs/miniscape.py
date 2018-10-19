@@ -989,6 +989,10 @@ class Miniscape():
 
     async def paginate(self, ctx, messages):
         """Provides an interface for printing a paginated set of messages."""
+        if type(messages) == str:
+            print(messages)
+            await ctx.send(messages)
+            return
         if len(messages) == 1:
             await ctx.send(messages[0])
             return

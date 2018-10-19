@@ -43,7 +43,7 @@ def print_info(prayer):
     out = PRAYER_HEADER
     out += f'**Name**: {prayer.name}\n'
     aliases = prayer.nickname_str_list
-    if aliases > 0:
+    if len(aliases) > 0:
         out += f"**Aliases**: {', '.join(aliases)}\n"
     out += f'**Prayer**: {prayer.level_required}\n'
     out += f'**Drain Rate**: {prayer.drain}\n'
