@@ -57,14 +57,16 @@ class Item(models.Model):
     clue_loot = models.ManyToManyField('Item',
                                        through='ClueLoot',
                                        through_fields=('clue_item', 'loot_item'))
-
-    # TODO: make this actually do something
+    
     def pluralize(self, number):
+        return f'{number} {self.name}'
         num_formatted = '{:,}'.format(int(number))
-        name = self.name
-        for char in self.plural:
-            name = name[:-1] if char == '_' else name + char
-        return "%s %s" % (num_formatted, name)
+        name = str(self.name)
+        if number != 1:
+            for char in str(self.plural):
+                name = name[:-1] if char == '_' else name + char
+        
+        return "%s %s" % (num_formatted, self.name)
 
     @classmethod
     def all_pets(cls):
@@ -80,7 +82,10 @@ class Item(models.Model):
             if nick:
                 return nick[0].real_item
             else:
-                return None
+                if name.endswith('s'):
+                    return Item.find_by_name_or_nick(name[:-1])
+                else:
+                    return None
 
     @classmethod
     def all_food(cls):

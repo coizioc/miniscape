@@ -600,13 +600,9 @@ class User(models.Model):
 
     @property
     def luck_factor(self) -> float:
-        factor = 0
-        if self.prayer_slot:
-            factor += self.prayer_slot.luck_factor
-        for equip in self.equipment_slots:
-            if equip:
-                factor += equip.luck_modifier
-        return max(1, factor)
+        prayer_luck = self.prayer_slot.luck_modifier if self.prayer_slot else 0
+        ring_luck = self.ring_slot.luck_factor if self.ring_slot else 0
+        return max(1, prayer_luck, ring_luck)
 
     def __repr__(self):
         return "User ID %d: %s" % (self.id, self.name)

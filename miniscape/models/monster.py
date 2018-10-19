@@ -63,7 +63,10 @@ class Monster(models.Model):
             if nick:
                 return nick[0].real_monster
             else:
-                return None
+                if name.endswith('s'):
+                    return Monster.find_by_name_or_nick(name[:-1])
+                else:
+                    return None
 
     @property
     def rares(self):
