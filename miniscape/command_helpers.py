@@ -109,7 +109,7 @@ def equip_item(author: User, item: str):
         return f'Error: {found_item.name} not in inventory.'
 
     if not found_item.is_equippable:
-        return f'Error: {item_name} cannot be equipped.'
+        return f'Error: {item} cannot be equipped.'
 
     if found_item.is_max_only and not author.is_maxed:
         return f"You cannot equip this item since you do not have {author.max_possible_level} skill total."
