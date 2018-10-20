@@ -73,10 +73,13 @@ def calc_chance(user: User, monster: Monster, number: int, remove_food=False):
             num_food = user.get_item_by_item(user.active_food)
             if num_food:
                 num_food = num_food[0].amount
-            chance += food_bonus if num_food >= number else int(food_bonus * num_food / number)
-            amount = number if num_food >= number else num_food
-            if remove_food:
-                user.update_inventory({user.active_food.id: amount}, remove=True)
+                chance += food_bonus if num_food >= number else int(food_bonus * num_food / number)
+                amount = number if num_food >= number else num_food
+                if remove_food:
+                    user.update_inventory({user.active_food.id: amount}, remove=True)
+            else:
+                user.active_food = None
+                user.save()
 
     chance += prayer_chance
 
