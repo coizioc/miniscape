@@ -273,11 +273,11 @@ def get_task(guildid, channelid, author: User):
     return out
 
 
-def get_kill(guildid, channelid, userid, monster, length=-1, number=-1):
+def get_kill(guildid, channelid, userid, monstername, length=-1, number=-1):
     """Lets the user start killing monsters.."""
     out = f'{SLAYER_HEADER}'
     user = User.objects.get(id=userid)
-    monster = Monster.find_by_name_or_nick(monster)
+    monster = Monster.find_by_name_or_nick(monstername)
 
     if not monster:
         return f'Error: {monster} is not a monster.'

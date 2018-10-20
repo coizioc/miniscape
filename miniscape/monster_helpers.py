@@ -92,7 +92,7 @@ def print_monster(monstername):
     monster: Monster
     monster = Monster.find_by_name_or_nick(monstername.lower())
     if not monster:
-        return [f'Error: {monster} is not a monster.']
+        return [f'Error: {monstername} is not a monster.']
 
     messages = []
     aliases = ', '.join(monster.alias_strings)
