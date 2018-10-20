@@ -280,7 +280,7 @@ def get_kill(guildid, channelid, userid, monstername, length=-1, number=-1):
     monster = Monster.find_by_name_or_nick(monstername)
 
     if not monster:
-        return f'Error: {monster} is not a monster.'
+        return f'Error: {monstername} is not a monster.'
 
     completed_quests = set(user.completed_quests.all())
     if monster.quest_req and monster.quest_req not in completed_quests:
