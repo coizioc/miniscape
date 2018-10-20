@@ -573,7 +573,7 @@ class Miniscape():
             msg = await ctx.send(out)
             await msg.add_reaction(THUMBS_UP_EMOJI)
 
-            if self.confirm(ctx, msg, out, timeout=60):
+            if await self.confirm(ctx, msg, out, timeout=60):
                 price = {"0": offer}
                 users.update_inventory(name_member.id, price, remove=True)
                 users.update_inventory(ctx.author.id, price)
@@ -597,12 +597,12 @@ class Miniscape():
                   'You will be unable to trade with other players or gamble. ' \
                   'In return, you will be able to proudly display your status as an ironman, by the way.'
             msg = await ctx.send(out)
-            if self.confirm(ctx, msg, out):
+            if await self.confirm(ctx, msg, out):
                 ctx.user_object.reset_account()
                 ctx.user_object.is_ironman = True
                 ctx.user_object.save()
-                ironman_role = discord.utils.get(ctx.guild.roles, name="Ironman")
-                await ctx.author.add_roles(ironman_role, reason='Wanted to become an ironmeme.')
+                # ironman_role = discord.utils.get(ctx.guild.roles, name="Ironman")
+                # await ctx.author.add_roles(ironman_role, reason='Wanted to become an ironmeme.')
                 name = get_display_name(ctx.author)
                 await msg.edit(content=f':tools: __**IRONMAN**__ :tools:\nCongratulations, {name}, you are now '
                                        'an ironman!')
@@ -617,11 +617,11 @@ class Miniscape():
                   'others. If you want to re-ironman, you can type `~ironman`, but you will have to reset your account.'
             msg = await ctx.send(out)
             await msg.add_reaction('\N{THUMBS UP SIGN}')
-            if self.confirm(ctx, msg, out):
+            if await self.confirm(ctx, msg, out):
                 ctx.user_object.is_ironman = False
                 ctx.user_object.save()
-                ironman_role = discord.utils.get(ctx.guild.roles, name="Ironman")
-                await ctx.author.remove_roles(ironman_role, reason="No longer wants to be ironmeme.")
+                # ironman_role = discord.utils.get(ctx.guild.roles, name="Ironman")
+                # await ctx.author.remove_roles(ironman_role, reason="No longer wants to be ironmeme.")
                 name = get_display_name(ctx.author)
                 await msg.edit(content=f':tools: __**IRONMAN**__ :tools:\nCongratulations, {name}, you are now '
                                         'a normal user!')
