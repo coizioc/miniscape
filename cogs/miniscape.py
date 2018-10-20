@@ -573,31 +573,22 @@ class Miniscape():
             msg = await ctx.send(out)
             await msg.add_reaction(THUMBS_UP_EMOJI)
 
-            x = True
-            while x:
-                try:
-                    reaction, user = await self.bot.wait_for('reaction_add', timeout=60)
-                    if str(reaction.emoji) == THUMBS_UP_EMOJI and user == name_member and reaction.message.id == msg.id:
-                        price = {"0": offer}
-                        users.update_inventory(name_member.id, price, remove=True)
-                        users.update_inventory(ctx.author.id, price)
-                        loot = {itemid: number}
-                        users.update_inventory(ctx.author.id, loot, remove=True)
-                        users.update_inventory(name_member.id, loot)
+            if self.confirm(ctx, msg, out, timeout=60):
+                price = {"0": offer}
+                users.update_inventory(name_member.id, price, remove=True)
+                users.update_inventory(ctx.author.id, price)
+                loot = {itemid: number}
+                users.update_inventory(ctx.author.id, loot, remove=True)
+                users.update_inventory(name_member.id, loot)
 
-                        buyer_name = get_display_name(name_member)
-                        await ctx.send(f'{items.SHOP_HEADER}{name.title()} successfully sold '
-                                       f'{items.add_plural(number, itemid)} to {buyer_name} for '
-                                       f'{offer_formatted} coins!')
-                        x = False
-                except asyncio.TimeoutError:
-                    await msg.edit(content=f'One minute has passed and your offer has been cancelled.')
-                    x = False
-            else:
-                ctx.bot.trade_manager.reset_trade(trade, ctx.author.id, name_member.id)
+                buyer_name = get_display_name(name_member)
+                await ctx.send(f'{items.SHOP_HEADER}{name.title()} successfully sold '
+                               f'{items.add_plural(number, itemid)} to {buyer_name} for '
+                               f'{offer_formatted} coins!')
+            ctx.bot.trade_manager.reset_trade(trade, ctx.author.id, name_member.id)
 
-    @commands.command()
-    async def ironmemememe(self, ctx):
+    @commands.command(aliases=['ironmeme', 'btwman'])
+    async def ironman(self, ctx):
         """Lets a user become an ironman, by the way."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             out = ':tools: __**IRONMAN**__ :tools:\n' \
@@ -606,26 +597,17 @@ class Miniscape():
                   'You will be unable to trade with other players or gamble. ' \
                   'In return, you will be able to proudly display your status as an ironman, by the way.'
             msg = await ctx.send(out)
-            await msg.add_reaction('\N{THUMBS UP SIGN}')
-
-            while True:
-                try:
-                    reaction, user = await self.bot.wait_for('reaction_add', timeout=60)
-                    if str(reaction.emoji) == THUMBS_UP_EMOJI and user == ctx.author and reaction.message.id == msg.id:
-                        ctx.user_object.reset_account()
-                        ctx.user_object.is_ironman = True
-                        ctx.user_object.save()
-                        ironman_role = discord.utils.get(ctx.guild.roles, name="Ironman")
-                        await ctx.author.add_roles(ironman_role, reason='Wanted to become an ironmeme.')
-                        name = get_display_name(ctx.author)
-                        await msg.edit(content=f':tools: __**IRONMAN**__ :tools:\nCongratulations, {name}, you are now '
+            if self.confirm(ctx, msg, out):
+                ctx.user_object.reset_account()
+                ctx.user_object.is_ironman = True
+                ctx.user_object.save()
+                ironman_role = discord.utils.get(ctx.guild.roles, name="Ironman")
+                await ctx.author.add_roles(ironman_role, reason='Wanted to become an ironmeme.')
+                name = get_display_name(ctx.author)
+                await msg.edit(content=f':tools: __**IRONMAN**__ :tools:\nCongratulations, {name}, you are now '
                                        'an ironman!')
-                        return
-                except asyncio.TimeoutError:
-                    await msg.edit(content=f'Your request has timed out. Please retype the command to try again.')
-                    return
 
-    @commands.command()
+    @commands.command(aliases=['imaloser', 'makemelame'])
     async def deironman(self, ctx):
         """Lets a user become an normal user."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
@@ -635,22 +617,14 @@ class Miniscape():
                   'others. If you want to re-ironman, you can type `~ironman`, but you will have to reset your account.'
             msg = await ctx.send(out)
             await msg.add_reaction('\N{THUMBS UP SIGN}')
-
-            while True:
-                try:
-                    reaction, user = await self.bot.wait_for('reaction_add', timeout=60)
-                    if str(reaction.emoji) == THUMBS_UP_EMOJI and user == ctx.author and reaction.message.id == msg.id:
-                        ctx.user_object.is_ironman = False
-                        ctx.user_object.save()
-                        ironman_role = discord.utils.get(ctx.guild.roles, name="Ironman")
-                        await ctx.author.remove_roles(ironman_role, reason="No longer wants to be ironmeme.")
-                        name = get_display_name(ctx.author)
-                        await msg.edit(content=f':tools: __**IRONMAN**__ :tools:\nCongratulations, {name}, you are now '
-                                               'a normal user!')
-                        return
-                except asyncio.TimeoutError:
-                    await msg.edit(content=f'Your request has timed out. Please retype the command to try again.')
-                    return
+            if self.confirm(ctx, msg, out):
+                ctx.user_object.is_ironman = False
+                ctx.user_object.save()
+                ironman_role = discord.utils.get(ctx.guild.roles, name="Ironman")
+                await ctx.author.remove_roles(ironman_role, reason="No longer wants to be ironmeme.")
+                name = get_display_name(ctx.author)
+                await msg.edit(content=f':tools: __**IRONMAN**__ :tools:\nCongratulations, {name}, you are now '
+                                        'a normal user!')
 
     @commands.group(invoke_without_command=True, aliases=['quest'])
     async def quests(self, ctx, *args, questid=None):
@@ -913,6 +887,19 @@ class Miniscape():
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             name = " ".join(args) if len(args) > 0 else None
             await self.print_leaderboard(ctx, name)
+
+    async def confirm(self, ctx, msg, content, timeout=300):
+        """Asks the user to confirm an action, and returns whether they confirmed or not."""
+        await msg.add_reaction('\N{THUMBS UP SIGN}')
+
+        while True:
+            try:
+                reaction, user = await self.bot.wait_for('reaction_add', timeout=timeout)
+                if str(reaction.emoji) == THUMBS_UP_EMOJI and user == ctx.author and reaction.message.id == msg.id:
+                    return True
+            except asyncio.TimeoutError:
+                await msg.edit(content=f'Your request has timed out. Please retype the command to try again.')
+                return False
 
     async def print_leaderboard(self, ctx, name):
         """Prints the leaderboard and provides an interface for showing various leaderboards."""
