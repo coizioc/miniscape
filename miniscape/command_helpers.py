@@ -312,3 +312,13 @@ def save_preset(user: User, name: str):
         return f'New preset called "{name}" saved!'
     else:
         return f'Updated preset "{name}"'
+
+
+def delete_preset(user: User, name: str):
+    presets = user.presets.filter(name__iexact=name)
+    if not presets:
+        return f'No preset by name"{name}" found for user {user.plain_name}'
+
+    presets[0].delete()
+    return f'Deleted preset "{name}" belonging to {user.plain_name}'
+

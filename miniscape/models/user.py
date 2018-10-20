@@ -2,12 +2,12 @@ from collections import Counter
 
 from django.db import models
 
+from .preset import Preset
 from .quest import Quest
 from .prayer import Prayer
 from .monster import Monster
 from .userinventory import UserInventory
 from .item import Item, ItemNickname
-from django.core.exceptions import ObjectDoesNotExist
 from .playermonsterkills import PlayerMonsterKills
 from cogs.helper.users import xp_to_level
 
@@ -170,6 +170,7 @@ class User(models.Model):
     is_vis_complete = models.BooleanField(default=False)
 
     # Misc
+    num_presets_unlocked = models.PositiveIntegerField(default=1)
     vis_attempts = models.PositiveIntegerField(default=0)
 
     items = models.ManyToManyField('Item',
@@ -611,6 +612,10 @@ class User(models.Model):
             if equip:
                 factor += equip.luck_modifier
         return max(1, factor)
+
+    @property
+    def presets(self):
+        return self.preset_set.all()
 
     def __repr__(self):
         return "User ID %d: %s" % (self.id, self.name)

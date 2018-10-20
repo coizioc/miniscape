@@ -924,17 +924,46 @@ class Miniscape():
     @presets.command(name='help')
     async def _presets_help(self, ctx):
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            pass
+            await ctx.send("Preset help:\n"
+                           "Aliases: `~preset`\n"
+                           "`~presets`: List all user saved presets\n"
+                           "`~presets help`: This message\n"
+                           "`~presets save \"preset name\"`: Save your current equipment as a preset named \"preset name\"\n"
+                           "`~presets use \"preset name\"`: Equip preset named \"preset name\"\n"
+                           "    Alias: `~presets equip`\n"
+                           "`~presets buy`: Buy another preset slot\n"
+                           "`~presets delete \"preset name\"`: Deletes preset named \"preset name\". Does not make you re-purchase the slot it was using\n ")
 
     @presets.command(name='save')
     async def _presets_save(self, ctx, *args):
+
+        # Make sure they supplied us a name
         if not args:
             await ctx.send("You must supply a name for this preset")
+
+        # Make sure the supplied name isn't a reserved word
         name = ' '.join(args)
+        if name == "all":
+            await ctx.send("Cannot use \"all\" as preset name.")
+
+        # Save the preset
         try:
             await ctx.send(ch.save_preset(ctx.user_object, name))
         except AlreadyExistsException as e:
             await ctx.send(f"Preset named {name} already exists for user {ctx.user_object.name}")
+
+    @presets.command(name='delete')
+    async def _presets_delete(self, ctx, *args):
+        if not args:
+            await ctx.send("You must provide a preset to delete!")
+        else:
+            preset_name = ' '.join(args)
+            await ctx.send(ch.delete_preset(ctx.user_object, preset_name))
+
+    @presets.command(name='buy')
+    async def _presets_buy(self, ctx):
+        # For coiz TODO :)
+        pass
 
     async def print_leaderboard(self, ctx, name):
         """Prints the leaderboard and provides an interface for showing various leaderboards."""

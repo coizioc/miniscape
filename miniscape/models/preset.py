@@ -31,3 +31,9 @@ class Preset(models.Model):
     potion_slot = models.ForeignKey('Item', on_delete=models.SET_NULL, null=True, related_name="preset_potion")
     prayer_slot = models.ForeignKey('Prayer', on_delete=models.SET_NULL, null=True)
     active_food = models.ForeignKey('Item', on_delete=models.SET_NULL, null=True, related_name="preset_food")
+
+    def __repr__(self):
+        return f'Preset {self.name} for user {user.plain_name} (ID: {user.id})'
+
+    def __str__(self):
+        return self.__repr__()
