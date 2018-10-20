@@ -103,7 +103,6 @@ LEADERBOARD_QUANTIFIERS = {
 
 LEADERBOARD_LENGTH = 10
 
-CHARACTER_HEADER = f'{config.COMBAT_EMOJI} __**$NAME**__ {config.COMBAT_EMOJI}\n'
 LEADERBOARD_HEADER = f'$EMOJI __**$KEY LEADERBOARD**__ $EMOJI\n'
 
 
@@ -368,48 +367,6 @@ def print_account(author, printequipment=True):
 
     if printequipment:
         out += print_equipment(author)
-
-    return out
-
-
-def print_equipment(author, name=None, with_header=False):
-    """Writes a string showing the stats of a user's equipment."""
-
-    armour_print_order = ['Head', 'Back', 'Neck', 'Ammunition', 'Main-Hand', 'Torso', 'Off-Hand',
-                          'Legs', 'Hands', 'Feet', 'Ring', 'Pocket', 'Hatchet', 'Pickaxe', 'Potion']
-
-    if with_header and name is not None:
-        out = f"{CHARACTER_HEADER.replace('$NAME', name.upper())}"
-    else:
-        out = ''
-    equipment = author.all_armour
-    damage, accuracy, armour, prayer = author.equipment_stats
-    out += f'**Damage**: {damage}\n' \
-           f'**Accuracy**: {accuracy}\n' \
-           f'**Armour**: {armour}\n' \
-           f'**Prayer Bonus**: {prayer}\n'
-
-    if author.prayer_slot:
-        out += f'**Active Prayer**: {author.prayer_slot.name}\n'
-    else:
-        out += f'**Active Prayer**: none\n'
-
-    if author.active_food:
-        out += f'**Active Food**: {author.active_food.name}\n\n'
-    else:
-        out += f'**Active Food**: none\n\n'
-
-    for slot in armour_print_order:
-        item = equipment[slot]
-        out += f'**{slot.title()}**: '
-        if item is not None:
-            out += f'{item.name} '
-            out += f'*(dam: {item.damage}, ' \
-                       f'acc: {item.accuracy}, ' \
-                       f'arm: {item.armour}, ' \
-                       f'pray: {item.prayer})*\n'
-        else:
-            out += 'none *(dam: 0, acc: 0, arm: 0, pray: 0)*\n'
 
     return out
 

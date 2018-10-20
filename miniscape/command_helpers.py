@@ -1,6 +1,7 @@
 import config
-from miniscape import clue_helpers
-from miniscape.models import Item, User, UserInventory, MonsterLoot
+from miniscape import clue_helpers, user_helpers
+from miniscape.exceptions import AlreadyExistsException
+from miniscape.models import Item, User, UserInventory, MonsterLoot, Preset
 import config
 from config import ARMOUR_SLOTS_FILE
 
@@ -206,7 +207,6 @@ def print_item_stats(itemname: str):
     value = '{:,}'.format(item.value)
     aliases = ', '.join(item.alias_strings)
 
-
     out = f'__**:moneybag: ITEMS :moneybag:**__\n'
     out += f'**Name**: {name}\n'
     if len(aliases) > 0:
@@ -247,4 +247,68 @@ def print_item_stats(itemname: str):
     return out
 
 
+def print_presets(user: User):
+    presets = Preset.objects.filter(user=user)
+    messages = []
 
+    for i, preset in enumerate(presets):
+        out = f'**PRESET #1  "{preset.name}"**:\n'
+        dummy_user = dummy_user_from_preset(preset)
+        out += user_helpers.print_equipment(dummy_user)
+        messages.append(out)
+    if messages:
+        return messages
+    else:
+        return [f"No presets found for user {user.plain_name}"]
+
+
+def dummy_user_from_preset(preset: Preset):
+    ret = User(head_slot=preset.head_slot,
+               back_slot=preset.back_slot,
+               neck_slot=preset.neck_slot,
+               ammo_slot=preset.ammo_slot,
+               mainhand_slot=preset.mainhand_slot,
+               torso_slot=preset.torso_slot,
+               offhand_slot=preset.offhand_slot,
+               legs_slot=preset.legs_slot,
+               hands_slot=preset.hands_slot,
+               feet_slot=preset.feet_slot,
+               ring_slot=preset.ring_slot,
+               pocket_slot=preset.pocket_slot,
+               hatchet_slot=preset.hatchet_slot,
+               pickaxe_slot=preset.pickaxe_slot,
+               active_food=preset.active_food,
+               prayer_slot=preset.prayer_slot,
+               potion_slot=preset.potion_slot)
+
+    return ret
+
+
+def save_preset(user: User, name: str):
+    preset = Preset.objects.get_or_create(user=user, name=name)
+    is_new = preset[1]
+    preset = preset[0]
+
+    preset.head_slot = user.head_slot
+    preset.back_slot = user.back_slot
+    preset.neck_slot = user.neck_slot
+    preset.ammo_slot = user.ammo_slot
+    preset.mainhand_slot = user.mainhand_slot
+    preset.torso_slot = user.torso_slot
+    preset.offhand_slot = user.offhand_slot
+    preset.legs_slot = user.legs_slot
+    preset.hands_slot = user.hands_slot
+    preset.feet_slot = user.feet_slot
+    preset.ring_slot = user.ring_slot
+    preset.pocket_slot = user.pocket_slot
+    preset.hatchet_slot = user.hatchet_slot
+    preset.pickaxe_slot = user.pickaxe_slot
+    preset.prayer_slot = user.prayer_slot
+    preset.active_food = user.active_food
+    preset.potion_slot = user.potion_slot
+
+    preset.save()
+    if is_new:
+        return f'New preset called "{name}" saved!'
+    else:
+        return f'Updated preset "{name}"'

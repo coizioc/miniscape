@@ -109,6 +109,10 @@ class User(models.Model):
                                                           'pickaxe_slot',
                                                           'potion_slot']
 
+        self.all_armour_print_order = ['Head', 'Back', 'Neck', 'Ammunition', 'Main-Hand',
+                                       'Torso', 'Off-Hand', 'Legs', 'Hands', 'Feet',
+                                       'Ring', 'Pocket', 'Hatchet', 'Pickaxe', 'Potion']
+
 
     # TODO:
     # - test inventory (including locked items)

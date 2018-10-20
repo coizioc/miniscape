@@ -112,6 +112,16 @@ class Item(models.Model):
         return self.name.lower() in ["Dragonfire Shield".lower(),
                                      "anti-dragon shield".lower()]
 
+    @property
+    def formatted_item_stats(self):
+        out = ''
+        out += f'{self.name} '
+        out += f'*(dam: {self.damage}, ' \
+               f'acc: {self.accuracy}, ' \
+               f'arm: {self.armour}, ' \
+               f'pray: {self.prayer})*\n'
+        return out
+
     def __repr__(self):
         return "Item ID %d: %s" % (self.id, self.name)
 

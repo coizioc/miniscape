@@ -14,7 +14,7 @@ from django.db.models import Q
 from config import ARROW_LEFT_EMOJI, ARROW_RIGHT_EMOJI, THUMBS_UP_EMOJI, TICK_SECONDS
 from cogs.helper import channel_permissions as cp
 from cogs.helper import clues
-from miniscape import adventures as adv, item_helpers, craft_helpers
+from miniscape import adventures as adv, item_helpers, craft_helpers, user_helpers
 from cogs.helper import craft
 from cogs.helper import items
 from cogs.helper import quests
@@ -22,6 +22,7 @@ from cogs.helper import slayer
 from cogs.helper import users
 from cogs.helper import vis
 from cogs.errors.trade_error import TradeError
+from miniscape.exceptions import AlreadyExistsException
 from miniscape.models import User, Item
 import miniscape.command_helpers as ch
 import miniscape.slayer_helpers as sh
@@ -147,7 +148,7 @@ class Miniscape():
     @me.group(name='equipment', aliases=['armour', 'armor'])
     async def _me_equipment(self, ctx):
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            await ctx.send(users.print_equipment(ctx.user_object, with_header=True))
+            await ctx.send(user_helpers.print_equipment(ctx.user_object, with_header=True))
 
     @me.group(name='monsters')
     async def _me_monsters(self, ctx, *args):
@@ -906,13 +907,34 @@ class Miniscape():
                     amount = '{:,}'.format(user.get_item_by_item(item)[0].amount)
                     await ctx.send(f'{user.plain_name} has {amount} coins')
 
-
     @commands.command(aliases=['leaderboards'])
     async def leaderboard(self, ctx, *args):
         """Allows users to easily compare each others' stats."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             name = " ".join(args) if len(args) > 0 else None
             await self.print_leaderboard(ctx, name)
+
+    @commands.group(invoke_without_command=True, aliases=['preset'])
+    async def presets(self, ctx):
+        """ Allows user to see list of presets"""
+        if has_post_permission(ctx.guild.id, ctx.channel.id):
+            messages = ch.print_presets(ctx.user_object)
+            await self.paginate(ctx, messages)
+
+    @presets.command(name='help')
+    async def _presets_help(self, ctx):
+        if has_post_permission(ctx.guild.id, ctx.channel.id):
+            pass
+
+    @presets.command(name='save')
+    async def _presets_save(self, ctx, *args):
+        if not args:
+            await ctx.send("You must supply a name for this preset")
+        name = ' '.join(args)
+        try:
+            await ctx.send(ch.save_preset(ctx.user_object, name))
+        except AlreadyExistsException as e:
+            await ctx.send(f"Preset named {name} already exists for user {ctx.user_object.name}")
 
     async def print_leaderboard(self, ctx, name):
         """Prints the leaderboard and provides an interface for showing various leaderboards."""
