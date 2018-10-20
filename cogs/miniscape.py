@@ -571,7 +571,6 @@ class Miniscape():
                   f'{items.add_plural(number, itemid)} for {offer_formatted} coins. To accept this offer, reply ' \
                   f'to this post with a :thumbsup:. Otherwise, this offer will expire in one minute.'
             msg = await ctx.send(out)
-            await msg.add_reaction(THUMBS_UP_EMOJI)
 
             if await self.confirm(ctx, msg, out, timeout=60):
                 price = {"0": offer}
@@ -597,6 +596,7 @@ class Miniscape():
                   'You will be unable to trade with other players or gamble. ' \
                   'In return, you will be able to proudly display your status as an ironman, by the way.'
             msg = await ctx.send(out)
+
             if await self.confirm(ctx, msg, out):
                 ctx.user_object.reset_account()
                 ctx.user_object.is_ironman = True
@@ -616,7 +616,7 @@ class Miniscape():
                   'This will keep your account the same as it is right now, but you will be able to trade with ' \
                   'others. If you want to re-ironman, you can type `~ironman`, but you will have to reset your account.'
             msg = await ctx.send(out)
-            await msg.add_reaction('\N{THUMBS UP SIGN}')
+
             if await self.confirm(ctx, msg, out):
                 ctx.user_object.is_ironman = False
                 ctx.user_object.save()
@@ -1027,8 +1027,7 @@ class Miniscape():
                 last_check_time = datetime.datetime.now()
             except Exception as e:
                  print(e)
-            
-            print(f"{last_check_time.date()} {datetime.datetime.now().date()}")
+
             if last_check_time.date() < datetime.datetime.now().date():
                 try:
                     users.reset_dailies()
