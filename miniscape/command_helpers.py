@@ -4,17 +4,28 @@ from miniscape.exceptions import AlreadyExistsException
 from miniscape.models import Item, User, UserInventory, MonsterLoot, Preset
 import config
 from config import ARMOUR_SLOTS_FILE
-
+from miniscape import adventures as adv
 
 PRAYER_HEADER = f':pray: __**PRAYER**__ :pray:\n'
 
 
-SLOTS = {}
-with open(ARMOUR_SLOTS_FILE, 'r') as f:
-    for line in f.read().splitlines()[1:]:
-        line_split = line.split(';')
-        SLOTS[line_split[0]] = line_split[1]
-
+SLOTS = {'-1': 'none',
+         '0': 'none',
+         '1': 'head',
+         '2': 'back',
+         '3': 'neck',
+         '4': 'ammunition',
+         '5': 'main-hand',
+         '6': 'torso',
+         '7': 'off-hand',
+         '8': 'legs',
+         '9': 'hands',
+         '10': 'feet',
+         '11': 'ring',
+         '12': 'pocket',
+         '13': 'hatchet',
+         '14': 'pickaxe',
+         '15': 'potion'}
 
 def print_inventory(person, search):
     """Prints a list of a user's inventory into discord message-sized chunks."""
@@ -90,49 +101,6 @@ def eat(author, item):
         return f'You are now eating {item.name}'
     else:
         return f'You cannot eat {item.name}.'
-
-
-def equip_item(author: User, item: str):
-    """Takes an item out of a user's inventory and places it into their equipment."""
-    found_item = Item.find_by_name_or_nick(item)
-    if found_item is None:
-        return f'Error: {item} does not exist.'
-
-    item_level = found_item.level
-    user_cb_level = author.combat_level
-
-    # Error checking/verification
-    if user_cb_level < item_level:
-        return f'Error: Insufficient level to equip item ({found_item.level}). \
-                Your current combat level is {user_cb_level}.'
-
-    if not author.has_item_by_item(found_item):
-        return f'Error: {found_item.name} not in inventory.'
-
-    if not found_item.is_equippable:
-        return f'Error: {item} cannot be equipped.'
-
-    if found_item.is_max_only and not author.is_maxed:
-        return f"You cannot equip this item since you do not have {author.max_possible_level} skill total."
-
-    slot = found_item.slot - 1  # I blame coiz for starting this at slot 1 :ANGERY:
-    curr_equip = author.equipment_slots[slot]
-
-    # if found_item == curr_equip:
-    #     return f"You already have {found_item.name} equipped!"
-
-    item_name = found_item.name
-    slot_name = author.equipment_slot_strs[slot]
-
-    # Set the equipment slot
-    setattr(author, slot_name, found_item)
-
-    # Update the inventories
-    author.update_inventory(curr_equip)
-    author.update_inventory(found_item, remove=True)
-
-    author.save()
-    return f'{item_name} equipped to {SLOTS[str(slot+1)]}!'
 
 
 def unequip_item(author: User, item: str):
@@ -285,6 +253,10 @@ def dummy_user_from_preset(preset: Preset):
 
 
 def save_preset(user: User, name: str):
+    if len(user.presets) >= user.num_presets_unlocked:
+        return "You have used all your preset slots. Please delete an existing " \
+               "preset or buy more with `~presets buy`"
+
     preset = Preset.objects.get_or_create(user=user, name=name)
     is_new = preset[1]
     preset = preset[0]
@@ -322,3 +294,11 @@ def delete_preset(user: User, name: str):
     presets[0].delete()
     return f'Deleted preset "{name}" belonging to {user.plain_name}'
 
+def equip_preset(user: User, name: str):
+    # Get the preset
+    presets = user.presets.filter(name__iexact=name)
+    if not presets:
+        return f'No preset by name"{name}" found for user {user.plain_name}'
+
+    is_adventure = adv.is_on_adventure(user.id)
+    user.apply_preset(presets[0], is_on_adv=is_adventure)

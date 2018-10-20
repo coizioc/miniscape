@@ -216,8 +216,8 @@ class Miniscape():
         """Equips an item from a user's inventory."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             item = ' '.join(args)
-            out = ch.equip_item(ctx.user_object, item.lower())
-            await ctx.send(out)
+            msg, success = ctx.user_object.equip_item(item.lower())
+            await ctx.send(msg)
 
     @commands.command()
     async def unequip(self, ctx, *args):

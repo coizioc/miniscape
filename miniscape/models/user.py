@@ -2,6 +2,7 @@ from collections import Counter
 
 from django.db import models
 
+from miniscape import command_helpers
 from .preset import Preset
 from .quest import Quest
 from .prayer import Prayer
@@ -463,6 +464,58 @@ class User(models.Model):
             return self.has_item_amount_by_counter(quest_items)
         else:
             return True
+
+    def apply_preset(self, preset: Preset, is_on_adv=True):
+        # Apply a preset to current items
+
+        # TODO: Use the equip item thing
+        pass
+
+    def equip_item(self, item: str, item_obj=None):
+        """Takes an item out of a user's inventory and places it into their equipment."""
+        SLOTS = command_helpers.SLOTS
+        if not item_obj:
+            found_item = Item.find_by_name_or_nick(item)
+            if found_item is None:
+                return f'Error: {item} does not exist.', False
+        else:
+            found_item = item_obj
+
+        item_level = found_item.level
+        user_cb_level = self.combat_level
+
+        # Error checking/verification
+        if user_cb_level < item_level:
+            return f'Error: Insufficient level to equip item ({found_item.level}). \
+                    Your current combat level is {user_cb_level}.', False
+
+        if not self.has_item_by_item(found_item):
+            return f'Error: {found_item.name} not in inventory.', False
+
+        if not found_item.is_equippable:
+            return f'Error: {item} cannot be equipped.', False
+
+        if found_item.is_max_only and not self.is_maxed:
+            return f"You cannot equip this item since you do not have {self.max_possible_level} skill total.", False
+
+        slot = found_item.slot - 1  # I blame coiz for starting this at slot 1 :ANGERY:
+        curr_equip = self.equipment_slots[slot]
+
+        # if found_item == curr_equip:
+        #     return f"You already have {found_item.name} equipped!"
+
+        item_name = found_item.name
+        slot_name = self.equipment_slot_strs[slot]
+
+        # Set the equipment slot
+        setattr(self, slot_name, found_item)
+
+        # Update the inventories
+        self.update_inventory(curr_equip)
+        self.update_inventory(found_item, remove=True)
+
+        self.save()
+        return f'{item_name} equipped to {SLOTS[str(slot+1)]}!', True
 
     @property
     def usable_prayers(self):
