@@ -1,4 +1,4 @@
-#Commands
+# Commands
 
 These commands are organised by category.
 
@@ -12,9 +12,15 @@ Adventure commands:
 * `~quests [quest number]` shows information related to a specific quest.
 * `~quests start [quest number]` starts a particular quest.
 * `~rc [number] [rune]` starts a runecrafting session.
+* `~reaper` gives a reaper task. Can only be done once a day.
 * `~slayer` gives a slayer task.
 * `~starter` gives new players a set of bronze armour to start off.
 * `~status` shows you what you are currently doing, if you are in the middle of doing something.
+* `~vis [rune1] [rune2] [rune3]` lets you guess the day's vis wax combination.
+* `~vis use [rune1] [rune2] [rune3]` uses that combination of runes to get vis wax.
+* `~vis third` shows you what the third vis wax rune is for that day if you have 99 runecrafting.
+* `~vis store` shows you the Vis store.
+* `~vis buy [number] [item]` buys a given number of an item from the Vis store.
 
 Bank Commands: 
 * `~balance [user]` shows a user's balance. It shows your own if you do not give an argument.
