@@ -43,12 +43,12 @@ def calc_chance(user: User, monster: Monster, number: int, remove_food=False):
                 prayer_chance = user.prayer_slot.chance
 
     if monster.is_dragon:
-        if equipment[6].id in ['266', '293']:
+        if equipment[6].id in [266, 293]:
             monster_base = 1
         else:
             monster_base = 100
-    elif monster.id == '87':
-        if equipment[4].id == '578':
+    elif monster.id == 87:
+        if equipment[4].id == 578:
             monster_base = 1
         else:
             monster_base = 100
@@ -110,12 +110,12 @@ def calc_length(user: User, monster: Monster, number):
         player_dam, player_acc, player_arm = prayer.calc_pray_bonus(user)
 
     if monster.is_dragon:
-        if equipment[6].id in ['266', '293']:
+        if equipment[6].id in [266, 293]:
             monster_base = 1
         else:
             monster_base = 100
-    elif monster.id == '87':
-        if equipment[4].id == '578':
+    elif monster.id == 87:
+        if equipment[4].id == 578:
             monster_base = 1
         else:
             monster_base = 100
