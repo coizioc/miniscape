@@ -17,56 +17,23 @@ SLAYER_HEADER = ':skull_crossbones: __**SLAYER**__ :skull_crossbones:\n'
 
 
 def calc_chance(user: User, monster: Monster, number: int, remove_food=False):
-    """Calculates the chance of success of a task."""  
-    equipment = user.equipment_slots
-    player_arm = user.armour
-    monster_acc = monster.accuracy
-    monster_dam = monster.damage
-    monster_combat = monster.level
-    player_combat = user.combat_level
+    """Calculates the chance of success of a task."""
     number = int(number)
-    monsters_fought = user.monster_kills(monster.name)
 
-    if monsters_fought:
-        monsters_fought = monsters_fought[0]
-        chance_bonus = 20 * min(monsters_fought.amount / 5000, 1)
-    else:
-        chance_bonus = 0
+    player_dam, player_acc, player_arm, dam_multiplier, monster_base, chance_bonus = calc_task_vars(user, monster)
 
     prayer_chance = 0
     if user.prayer_slot is not None:
-        player_dam, player_acc, player_arm = prayer.calc_pray_bonus(user)
-        if 10 <= int(user.prayer_slot.id) <= 12:
+        if 10 <= user.prayer_slot.id <= 12:   # if user is using protect from mage/range/melee
             monster_affinity = monster.affinity
-            if monster_affinity == 0 and user.prayer_slot.id == '12' or monster_affinity == 1 and user.prayer_slot.id == '11' \
-                    or monster_affinity == 2 and user.prayer_slot.id == '10':
+            if monster_affinity == 0 and user.prayer_slot.id == 12\
+                    or monster_affinity == 1 and user.prayer_slot.id == 11 \
+                    or monster_affinity == 2 and user.prayer_slot.id == 10:
                 prayer_chance = user.prayer_slot.chance
 
-    if monster.is_dragon:
-        if equipment[6].id in [266, 293]:
-            monster_base = 1
-        else:
-            monster_base = 100
-    elif monster.id == 87:
-        if equipment[4].id == 578:
-            monster_base = 1
-        else:
-            monster_base = 100
-    else:
-        monster_base = 1
+    chance = (200 * (1 + user.combat_level / 99) * player_arm) /\
+             (number / 50 * monster.damage * dam_multiplier + (1 + monster.level / 200)) + chance_bonus
 
-    player_potion = equipment[14]
-    if player_potion is not None:
-        player_potion = player_potion.id
-        if player_potion == '429' or player_potion == '430':
-            player_arm = player_arm * 1.1 + 3
-        if player_potion == '433' or player_potion == '434':
-            player_arm = player_arm * 1.15 + 5
-
-    c = 1 + monster_combat / 200
-    d = 1 + player_combat / 99
-    dam_multiplier = monster_base + monster_acc / 200
-    chance = (200 * d * player_arm) / (number / 50 * monster_dam * dam_multiplier + c) + chance_bonus
     if user.is_eating:
         food_bonus = user.active_food.food_value
         if food_bonus > 0:
@@ -90,30 +57,28 @@ def calc_chance(user: User, monster: Monster, number: int, remove_food=False):
     return round(chance)
 
 
-# TODO: calc_length and calc_chance (and also calc_number) use a fuckton of the same code. can we DRY this up?
 def calc_length(user: User, monster: Monster, number):
     """Calculates the length of a task."""
-    user_prayer = user.prayer_slot
-    combat_level = user.combat_level
+    player_dam, player_acc, player_arm, dam_multiplier, monster_base, time_bonus = calc_task_vars(user, monster)
+
+    base_time = math.floor(number * monster.xp / 10) * time_bonus
+    time = round(base_time * monster.armour * monster_base / (player_dam * dam_multiplier + user.combat_level))
+
+    if time < 0:
+        time = 0
+    return base_time, time
+
+
+def calc_monster_base(user: User, monster: Monster):
+    """Calculates the monster_base for a given user and monster."""
     equipment = user.equipment_slots
-    player_dam, player_acc, player_arm, player_pray = user.equipment_stats
-    monster_arm = monster.armour
-    monster_xp = monster.xp
-    monsters_fought = user.monster_kills(monster.name)
-    if monsters_fought:
-        monsters_fought = monsters_fought[0]
-        time_bonus = 1 - 0.2 * min(monsters_fought.amount / 5000, 1)
-    else:
-        time_bonus = 1
-
-    if user_prayer is not None:
-        player_dam, player_acc, player_arm = prayer.calc_pray_bonus(user)
-
+    # If off-hand is anti-dragon shield or dragonfire shield.
     if monster.is_dragon:
         if equipment[6].id in [266, 293]:
             monster_base = 1
         else:
             monster_base = 100
+    # if monster is a vampyre whether the user is wielding an Ivandis flail.
     elif monster.id == 87:
         if equipment[4].id == 578:
             monster_base = 1
@@ -121,77 +86,55 @@ def calc_length(user: User, monster: Monster, number):
             monster_base = 100
     else:
         monster_base = 1
-
-    player_potion = equipment[14]
-    if player_potion:
-        player_potion = player_potion.id
-        if player_potion == '427' or player_potion == '430':
-            player_acc = player_acc * 1.1 + 3
-        if player_potion == '428' or player_potion == '430':
-            player_dam = player_dam * 1.1 + 3
-        if player_potion == '429' or player_potion == '430':
-            player_arm = player_arm * 1.1 + 3
-        if player_potion == '431' or player_potion == '434':
-            player_acc = player_acc * 1.15 + 5
-        if player_potion == '432' or player_potion == '434':
-            player_dam = player_dam * 1.15 + 5
-        if player_potion == '433' or player_potion == '434':
-            player_arm = player_arm * 1.15 + 5
-
-    dam_multiplier = 1 + player_acc / 200
-    base_time = math.floor(number * monster_xp / 10) * time_bonus
-    time = round(base_time * monster_arm * monster_base / (player_dam * dam_multiplier + combat_level))
-
-    return base_time, time
+    return monster_base
 
 
 def calc_number(user: User, monster: Monster, time):
     """Calculates the number of monsters that can be killed in a given time period."""
-    combat_level = user.combat_level
+    player_dam, player_acc, player_arm, dam_multiplier, monster_base, time_bonus = calc_task_vars(user, monster)
+
+    number = math.floor((10 * time * (player_dam * dam_multiplier + user.combat_level)) /
+                        (monster.armour * monster_base * monster.xp))
+    if number < 0:
+        number = 0
+    return number
+
+
+def calc_task_vars(user: User, monster: Monster):
+    """Calculates the variables required to calculate a task's length/number."""
+    user_prayer = user.prayer_slot
     equipment = user.equipment_slots
     player_dam, player_acc, player_arm, player_pray = user.equipment_stats
-    monster_arm = monster.armour
-    monster_xp = monster.xp
+    monsters_fought = user.monster_kills(monster.name)
+    if monsters_fought:
+        monsters_fought = monsters_fought[0]
+        monster_num_bonus = 1 - 0.2 * min(monsters_fought.amount / 5000, 1)
+    else:
+        monster_num_bonus = 1
 
-    if user.prayer_slot is not None:
+    if user_prayer is not None:
         player_dam, player_acc, player_arm = prayer.calc_pray_bonus(user)
 
-    if monster.is_dragon:
-        if equipment[6].id in ['266', '293']:
-            monster_base = 1
-        else:
-            monster_base = 100
-    elif monster.id == '87':  # Vampyre
-        if equipment[4].id == '578':
-            monster_base = 1
-        else:
-            monster_base = 100
-    else:
-        monster_base = 1
+    monster_base = calc_monster_base(user, monster)
 
     player_potion = equipment[14]
     if player_potion:
         player_potion = player_potion.id
-        if player_potion == '427' or player_potion == '430':
+        if player_potion == 427 or player_potion == 430:
             player_acc = player_acc * 1.1 + 3
-        if player_potion == '428' or player_potion == '430':
+        if player_potion == 428 or player_potion == 430:
             player_dam = player_dam * 1.1 + 3
-        if player_potion == '429' or player_potion == '430':
+        if player_potion == 429 or player_potion == 430:
             player_arm = player_arm * 1.1 + 3
-        if player_potion == '431' or player_potion == '434':
+        if player_potion == 431 or player_potion == 434:
             player_acc = player_acc * 1.15 + 5
-        if player_potion == '432' or player_potion == '434':
+        if player_potion == 432 or player_potion == 434:
             player_dam = player_dam * 1.15 + 5
-        if player_potion == '433' or player_potion == '434':
+        if player_potion == 433 or player_potion == 434:
             player_arm = player_arm * 1.15 + 5
 
     dam_multiplier = 1 + player_acc / 200
-
-    number = math.floor((10 * time * (player_dam * dam_multiplier + combat_level)) /
-                        (monster_arm * monster_base * monster_xp))
-    if number < 0:
-        number = 0
-    return number
+    return tuple((player_dam, player_acc, player_arm, dam_multiplier, monster_base, monster_num_bonus))
 
 
 def get_task_info(userid):
