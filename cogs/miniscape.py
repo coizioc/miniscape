@@ -10,16 +10,16 @@ from django.db.models import Q
 
 from config import ARROW_LEFT_EMOJI, ARROW_RIGHT_EMOJI, THUMBS_UP_EMOJI, TICK_SECONDS
 from cogs.helper import channel_permissions as cp, clues
-from utils import adventures as adv, item_helpers, craft_helpers
+from miniscape import adventures as adv, item_helpers, craft_helpers
 from cogs.helper import craft, items, quests, slayer, users, vis
 from cogs.errors.trade_error import TradeError
-from utils.models import User, Item
-import utils.command_helpers as ch
-import utils.slayer_helpers as sh
-import utils.clue_helpers as clue_helpers
-import utils.prayer_helpers as prayer
-import utils.monster_helpers as mon
-import utils.quest_helpers as quest_helpers
+from miniscape.models import User, Item
+import miniscape.command_helpers as ch
+import miniscape.slayer_helpers as sh
+import miniscape.clue_helpers as clue_helpers
+import miniscape.prayer_helpers as prayer
+import miniscape.monster_helpers as mon
+import miniscape.quest_helpers as quest_helpers
 
 MAX_PER_ACTION = 10000
 REAPER_TOKEN = Item.objects.get(name__iexact="reaper token")
@@ -1030,49 +1030,52 @@ class Miniscape():
         await self.bot.wait_until_ready()
         while not self.bot.is_closed():
             try:
-                with open('./resources/last_check.txt', 'r') as f:
-                    last_check_string = f.read().splitlines()
-                last_check_time = datetime.datetime.strptime(last_check_string[0], '%Y-%m-%d %H:%M:%S.%f')
-            except FileNotFoundError as e:
-                print(e)
-                with open('./resources/last_check.txt', 'w+') as f:
-                    f.write(f"{datetime.datetime.now()}\n")
+                with open('./resources/last_check.txt', 'r') as check_file:
+                    last_check_string = check_file.read().splitlines()
+                last_check_time = datetime.datetime.strptime(
+                    last_check_string[0], '%Y-%m-%d %H:%M:%S.%f')
+            except FileNotFoundError as daily_exception:
+                print(daily_exception)
+                with open('./resources/last_check.txt', 'w+') as check_file:
+                    check_file.write(f"{datetime.datetime.now()}\n")
                 last_check_time = datetime.datetime.now()
-            except Exception as e:
-                 print(e)
+            except Exception as daily_exception:
+                print(daily_exception)
 
             if last_check_time.date() < datetime.datetime.now().date():
                 try:
                     users.reset_dailies()
                     vis.update_vis()
-                    with open('./resources/last_check.txt', 'w+') as f:
-                        f.write(f"{datetime.datetime.now()}\n")
-                except Exception as e:
-                    print(e)
+                    with open('./resources/last_check.txt', 'w+') as check_file:
+                        check_file.write(f"{datetime.datetime.now()}\n")
+                except Exception as daily_exception:
+                    print(daily_exception)
             await asyncio.sleep(60)
 
     async def check_adventures(self):
         """Check if any actions are complete and notifies the user if they are done."""
         await self.bot.wait_until_ready()
         while not self.bot.is_closed():
-            with open('./resources/debug.txt', 'a+') as f:
-                f.write(f'Bot check at {datetime.datetime.now()}:\n')
+            with open('./resources/debug.txt', 'a+') as debug_file:
+                debug_file.write(f'Bot check at {datetime.datetime.now()}:\n')
             try:
                 finished_tasks = adv.get_finished()
-            except Exception as e:
+            except Exception as adv_exception:
                 traceback.print_exc()
-                traceback.print_exception(e)
-                with open('./resources/debug.txt', 'a+') as f:
-                    f.write(f'{e}\n')
-                print(e)
+                with open('./resources/debug.txt', 'a+') as debug_file:
+                    debug_file.write(f'{adv_exception}\n')
+                print(adv_exception)
 
             for task in finished_tasks:
                 print(task)
-                with open('./resources/debug.txt', 'a+') as f:
-                    f.write(';'.join(task) + '\n')
-                with open('./resources/finished_tasks.txt', 'a+') as f:
-                    f.write(';'.join(task) + '\n')
-                adventureid, userid, guildid, channelid = int(task[0]), int(task[1]), int(task[3]), int(task[4])
+                with open('./resources/debug.txt', 'a+') as debug_file:
+                    debug_file.write(';'.join(task) + '\n')
+                with open('./resources/finished_tasks.txt', 'a+') as task_file:
+                    task_file.write(';'.join(task) + '\n')
+                adventureid = int(task[0])
+                userid = int(task[1])
+                guildid = int(task[3])
+                channelid = int(task[4])
                 bot_guild = self.bot.get_guild(guildid)
                 try:
                     announcement_channel = cp.get_channel(guildid, cp.ANNOUNCEMENT_KEY)
@@ -1080,7 +1083,7 @@ class Miniscape():
                 except KeyError:
                     bot_self = bot_guild.get_channel(channelid)
                 person = bot_guild.get_member(int(userid))
-                
+
                 adventures = {
                     0: sh.get_result,
                     1: sh.get_kill_result,
@@ -1091,14 +1094,14 @@ class Miniscape():
                     6: craft_helpers.get_runecraft
                 }
                 try:
-                    logging.getLogger(__name__).info(f"About  to call function for adventure {adventureid}")
+                    logging.getLogger(__name__).info(f"About to call function for adventure "
+                                                     f"{adventureid}")
                     out = adventures[adventureid](person, task[5:])
                     await bot_self.send(out)
-                except Exception as e:
+                except Exception as miniscape_exception:
                     traceback.print_exc()
-                    traceback.print_exception(e)
-                    with open('./resources/debug.txt', 'a+') as f:
-                        f.write(f'{e}\n')
+                    with open('./resources/debug.txt', 'a+') as debug_file:
+                        debug_file.write(f'{miniscape_exception}\n')
                     print(e)
                 print('done')
             await asyncio.sleep(TICK_SECONDS)
