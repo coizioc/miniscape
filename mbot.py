@@ -3,20 +3,16 @@
 # These lines allow us to use Django models
 import logging
 import os
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "miniscapebot.settings")
-import django
-django.setup()
-
-from django.core.exceptions import ObjectDoesNotExist
-
 import sys
 import asyncio
 import traceback
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "miniscapebot.settings")
+import django
+django.setup()
+from django.core.exceptions import ObjectDoesNotExist
+from discord.ext import commands
 import cogs.managers.trade_manager as tm
 from miniscape.models import User
-
-from discord.ext import commands
-
 import config
 
 def extensions_generator():
