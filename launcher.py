@@ -2,7 +2,7 @@
 """Provides a launcher that sets up logging for the bot."""
 import logging
 import contextlib
-from mbot import MathBot
+from mbot import MiniscapeBot
 
 @contextlib.contextmanager
 def setup_logging():
@@ -14,7 +14,7 @@ def setup_logging():
 
         log = logging.getLogger()
         log.setLevel(logging.INFO)
-        handler = logging.FileHandler(filename='./logs/mathbot.log', encoding='utf-8', mode='w')
+        handler = logging.FileHandler(filename='./logs/miniscapebot.log', encoding='utf-8', mode='w')
         dt_fmt = '%Y-%m-%d %H:%M:%S'
         fmt = logging.Formatter('[{asctime}] [{levelname:<7}] {name}: {message}', dt_fmt, style='{')
         handler.setFormatter(fmt)
@@ -32,7 +32,7 @@ def run_bot():
     """Initializes the logger and the bot class."""
     log = logging.getLogger()
 
-    bot = MathBot()
+    bot = MiniscapeBot()
     bot.run()
 
 def main():

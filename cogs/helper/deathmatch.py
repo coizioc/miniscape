@@ -1,4 +1,4 @@
-"""Implements methods related to the deathmatch commands of mathbot.cogs.gastercoin."""
+"""Implements methods related to the deathmatch commands of miniscapebot.cogs.gastercoin."""
 import random
 
 from config import DEATHMATCH_FILE
