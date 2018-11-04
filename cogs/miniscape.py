@@ -5,68 +5,56 @@ import random
 from collections import Counter
 import traceback
 import logging
-import sys
-
-import discord
 from discord.ext import commands
 from django.db.models import Q
 
 from config import ARROW_LEFT_EMOJI, ARROW_RIGHT_EMOJI, THUMBS_UP_EMOJI, TICK_SECONDS
-from cogs.helper import channel_permissions as cp
-from cogs.helper import clues
-from miniscape import adventures as adv, item_helpers, craft_helpers
-from cogs.helper import craft
-from cogs.helper import items
-from cogs.helper import quests
-from cogs.helper import slayer
-from cogs.helper import users
-from cogs.helper import vis
+from cogs.helper import channel_permissions as cp, clues
+from utils import adventures as adv, item_helpers, craft_helpers
+from cogs.helper import craft, items, quests, slayer, users, vis
 from cogs.errors.trade_error import TradeError
-from miniscape.models import User, Item
-import miniscape.command_helpers as ch
-import miniscape.slayer_helpers as sh
-import miniscape.clue_helpers as clue_helpers
-import miniscape.prayer_helpers as prayer
-import miniscape.monster_helpers as mon
-import miniscape.quest_helpers as quest_helpers
-
+from utils.models import User, Item
+import utils.command_helpers as ch
+import utils.slayer_helpers as sh
+import utils.clue_helpers as clue_helpers
+import utils.prayer_helpers as prayer
+import utils.monster_helpers as mon
+import utils.quest_helpers as quest_helpers
 
 MAX_PER_ACTION = 10000
 REAPER_TOKEN = Item.objects.get(name__iexact="reaper token")
-
 
 class AmbiguousInputError(Exception):
     """Error raised for input that refers to multiple users"""
     def __init__(self, output):
         self.output = output
 
-
 def get_member_from_guild(guild_members, username):
-    """From a str username and a list of all guild members returns the member whose name contains username."""
+    """From a str username and a list of all guild members returns the member
+    whose name contains username."""
     username = username.lower()
     if username == 'rand':
         return random.choice(guild_members)
-    else:
-        members = []
-        for member in guild_members:
-            if member.nick is not None:
-                if username == member.nick.replace(' ', '').lower():
-                    return member
-                elif username in member.nick.replace(' ', '').lower():
-                    members.append(member)
-            elif username == member.name.replace(' ', '').lower():
+    members = []
+    for member in guild_members:
+        lower_name = member.name.replace(' ', '').lower()
+        if member.nick is not None:
+            lower_nick = member.nick.replace(' ', '').lower()
+            if username == lower_nick:
                 return member
-            elif username in member.name.replace(' ', '').lower():
+            if username in lower_nick:
                 members.append(member)
+        elif username == lower_name:
+            return member
+        elif username in lower_name:
+            members.append(member)
 
-        members_len = len(members)
-        if members_len == 0:
-            raise NameError(username)
-        elif members_len == 1:
-            return members[0]
-        else:
-            raise AmbiguousInputError([member.name for member in members])
-
+    if not members:
+        raise NameError(username)
+    elif len(members) == 1:
+        return members[0]
+    else:
+        raise AmbiguousInputError([member.name for member in members])
 
 def get_display_name(member):
     """Gets the displayed name of a user."""
@@ -78,7 +66,6 @@ def get_display_name(member):
         name += ' (IM)'
     return name
 
-
 def parse_name(guild, username):
     """Gets the username of a user from a string and guild."""
     if '@' in username:
@@ -89,12 +76,10 @@ def parse_name(guild, username):
     else:
         return get_member_from_guild(guild.members, username)
 
-
 def has_post_permission(guildid, channelid):
     """Checks whether the bot can post in that channel."""
     # if cp.in_panic():
     #     return channelid == TEST_CHANNEL
-
     guild_perms = cp.get_guild(guildid)
     try:
         for blacklist_channel in guild_perms[cp.BLACKLIST_KEY]:
@@ -104,7 +89,7 @@ def has_post_permission(guildid, channelid):
         pass
 
     if cp.WHITELIST_KEY in guild_perms.keys():
-        if len(guild_perms[cp.WHITELIST_KEY]) > 0:
+        if guild_perms[cp.WHITELIST_KEY]:
             try:
                 for whitelist_channel in guild_perms[cp.WHITELIST_KEY]:
                     if channelid == whitelist_channel:
@@ -115,7 +100,6 @@ def has_post_permission(guildid, channelid):
                 pass
     return True
 
-
 class Miniscape():
     """Defines Miniscape commands."""
 
@@ -123,7 +107,6 @@ class Miniscape():
         self.bot = bot
         self.bot.loop.create_task(self.check_adventures())
         self.bot.loop.create_task(self.reset_dailies())
-
 
     # @commands.command()
     # async def commands(self, ctx):
@@ -178,16 +161,15 @@ class Miniscape():
             for member in ctx.guild.members:
                 if member.nick is not None:
                     if search_string in member.nick.lower():
-                        name = member.nick
+                        target = User.objects.get(id=member.id)
                         break
                 if search_string in member.name.lower():
-                    name = member.name
+                    target = User.objects.get(id=member.id)
                     break
             else:
                 await ctx.send(f'Could not find {search_string} in server.')
                 return
 
-            target = User.objects.get(id=member.id)
             await ctx.send(users.print_account(target))
 
     @commands.command()
@@ -243,8 +225,9 @@ class Miniscape():
 
     @commands.command(aliases=['pray', 'prayers'])
     async def prayer(self, ctx, *args):
+        """TODO: docstring"""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            if len(args) == 0:
+            if not args:
                 messages = prayer.print_list(ctx.author.id)
                 await self.paginate(ctx, messages)
             else:
@@ -276,7 +259,8 @@ class Miniscape():
             if ctx.user_object.lock_item(item):
                 out = f'{item.title()} has been locked!'
             else:
-                out = f'{item.title()} does not exist in your inventory. You must have it present to lock it'
+                out = (f'{item.title()} does not exist in your inventory. You must have it '
+                       'present to lock it.')
             await ctx.send(out)
 
     @items.command(name='unlock')
@@ -286,7 +270,8 @@ class Miniscape():
             if ctx.user_object.unlock_item(item):
                 out = f'{item.title()} has been unlocked!'
             else:
-                out = f'{item.title()} does not exist in your inventory. You must have it present to unlock it'
+                out = (f'{item.title()} does not exist in your inventory. You must have it '
+                       'present to unlock it.')
             await ctx.send(out)
 
     @commands.command()
@@ -305,26 +290,28 @@ class Miniscape():
 
     @commands.group(invoke_without_command=True, aliases=['grind', 'fring', 'dab', 'yeet'])
     async def kill(self, ctx, *args):
-        from miniscape import adventures as adv
         """Lets the user kill monsters for a certain number or a certain amount of time."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            if len(args) > 0:
+            if args:
                 monster = ''
                 try:
                     number = users.parse_int(args[0])
                     monster = ' '.join(args[1:])
-                    out = sh.get_kill(ctx.guild.id, ctx.channel.id, ctx.author.id, monster, number=number)
+                    out = sh.get_kill(
+                        ctx.guild.id, ctx.channel.id, ctx.author.id, monster, number=number)
                 except ValueError:
                     try:
                         length = users.parse_int(args[-1])
                         monster = ' '.join(args[:-1])
-                        out = sh.get_kill(ctx.guild.id, ctx.channel.id, ctx.author.id, monster, length=length)
+                        out = sh.get_kill(
+                            ctx.guild.id, ctx.channel.id, ctx.author.id, monster, length=length)
                     except ValueError:
                         monster = ' '.join(args)
                         if monster == 'myself':
-                            with open('./resources/hotlines.txt', 'r') as f:
-                                lines = f.read().splitlines()
-                            out = '**If you need help, please call one of the following numbers**:\n'
+                            with open('./resources/hotlines.txt', 'r') as hotlines_file:
+                                lines = hotlines_file.read().splitlines()
+                            out = ('**If you need help, please call one of the following '
+                                   'numbers**:\n')
                             for line in lines:
                                 out += f'{line}\n'
                         else:
@@ -333,7 +320,8 @@ class Miniscape():
                 if adv.is_on_adventure(ctx.author.id):
                     out = slayer.get_kill(ctx.guild.id, ctx.channel.id, ctx.author.id, 'GET_UPDATE')
                 else:
-                    out = 'args not valid. Please put in the form `[number] [monster name] [length]`'
+                    out = ('args not valid. Please put in the form `[number] '
+                           '[monster name] [length]`')
             await ctx.send(out)
 
     @commands.command(aliases=['starter'])
@@ -344,11 +332,14 @@ class Miniscape():
             if author.combat_xp == 0:
                 author.update_inventory(Counter([63, 66, 69, 70, 64, 72]))
 
-                await ctx.send(f'Bronze set given to {author.plain_name}! You can see your items by typing `~inventory` in #bank '
-                               f'and equip them by typing `~equip [item]`. You can see your current stats by typing '
-                               f'`~me`. If you need help with commands, feel free to look at #welcome or ask around!')
+                await ctx.send(f'Bronze set given to {author.plain_name}! You can see your items '
+                               f'by typing `~inventory` in #bank and equip them by typing `~equip '
+                               f'[item]`. You can see your current stats by typing `~me`. '
+                               f'If you need help with commands, feel free to look at #welcome '
+                               f'or ask around!')
             else:
-                await ctx.send(f'You are too experienced to get the starter gear, {name}.')
+                await ctx.send(
+                    f'You are too experienced to get the starter gear, {ctx.author.name}.')
 
     @commands.command(aliases=['bes', 'monsters'])
     async def bestiary(self, ctx, *args):
@@ -364,13 +355,15 @@ class Miniscape():
     #@commands.command()
     async def chance(self, ctx, monsterid, dam=-1, acc=-1, arm=-1, cb=-1, xp=-1, num=100, dfire=False):
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            out = slayer.print_chance(ctx.author.id, monsterid, monster_dam=int(dam), monster_acc=int(acc),
-                                      monster_arm=int(arm), monster_combat=int(cb), xp=int(xp), number=int(num),
-                                      dragonfire=bool(dfire))
+            out = slayer.print_chance(ctx.author.id, monsterid,
+                                      monster_dam=int(dam), monster_acc=int(acc),
+                                      monster_arm=int(arm), monster_combat=int(cb),
+                                      xp=int(xp), number=int(num), dragonfire=bool(dfire))
             await ctx.send(out)
 
     #@commands.command()
     async def claim(self, ctx, *args):
+        """TODO: Add docstring."""
         # TODO: Come back to this. Honestly maybe leave it as is but adjust for user.update_inv?
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             try:
@@ -385,7 +378,6 @@ class Miniscape():
     @commands.command(aliases=['cancle'])
     async def cancel(self, ctx):
         """Cancels your current action."""
-        from miniscape import adventures as adv
         author: User = ctx.user_object
 
         if has_post_permission(ctx.guild.id, ctx.channel.id):
@@ -457,15 +449,14 @@ class Miniscape():
                 if difficulty not in set(difficulty_names.keys()):
                     await ctx.send(f'Error: {difficulty} not valid clue scroll difficulty.')
                     return
-                else:
-                    parsed_difficulty = difficulty_names[difficulty]
+                parsed_difficulty = difficulty_names[difficulty]
             else:
-                if not (0 < int(difficulty) < 6):
+                if not 0 < int(difficulty) < 6:
                     await ctx.send(f'Error: {difficulty} not valid clue scroll difficulty.')
                     return
-                else:
-                    parsed_difficulty = int(difficulty)
-            out = clue_helpers.start_clue(ctx.guild.id, ctx.channel.id, ctx.author.id, parsed_difficulty)
+                parsed_difficulty = int(difficulty)
+            out = clue_helpers.start_clue(ctx.guild.id, ctx.channel.id, ctx.author.id,
+                                          parsed_difficulty)
             await ctx.send(out)
 
     @commands.command(aliases=['drank', 'chug', 'suckle'])
@@ -490,7 +481,7 @@ class Miniscape():
     async def buy(self, ctx, *args):
         """Buys something from the shop."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            if len(args) > 0:
+            if args:
                 try:
                     number = int(args[0])
                     item = ' '.join(args[1:])
@@ -541,7 +532,8 @@ class Miniscape():
         """Trades to a person a number of a given object for a given price."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             if len(args) < 4:
-                await ctx.send('Arguments missing. Syntax is `~trade [name] [number] [item] [offer]`.')
+                await ctx.send('Arguments missing. '
+                               'Syntax is `~trade [name] [number] [item] [offer]`.')
                 return
 
             try:
@@ -567,9 +559,10 @@ class Miniscape():
             itemid = items.find_by_name(' '.join(args[2:-1]))
             name = get_display_name(ctx.author)
             offer_formatted = '{:,}'.format(offer)
-            out = f'{items.SHOP_HEADER}{name.title()} wants to sell {name_member.mention} ' \
-                  f'{items.add_plural(number, itemid)} for {offer_formatted} coins. To accept this offer, reply ' \
-                  f'to this post with a :thumbsup:. Otherwise, this offer will expire in one minute.'
+            out = (f'{items.SHOP_HEADER}{name.title()} wants to sell {name_member.mention} '
+                   f'{items.add_plural(number, itemid)} for {offer_formatted} coins. '
+                   f'To accept this offer, reply to this post with a :thumbsup:. '
+                   f'Otherwise, this offer will expire in one minute.')
             msg = await ctx.send(out)
 
             if await self.confirm(ctx, msg, out, timeout=60):
@@ -590,11 +583,12 @@ class Miniscape():
     async def ironman(self, ctx):
         """Lets a user become an ironman, by the way."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            out = ':tools: __**IRONMAN**__ :tools:\n' \
-                  'If you want to become an ironman, please react to this post with a :thumbsup:. ' \
-                  'This will **RESET** your account and give you the ironman role. ' \
-                  'You will be unable to trade with other players or gamble. ' \
-                  'In return, you will be able to proudly display your status as an ironman, by the way.'
+            out = (':tools: __**IRONMAN**__ :tools:\n' \
+                   'If you want to become an ironman, please react to this post with a :thumbsup:. '
+                   'This will **RESET** your account and give you the ironman role. '
+                   'You will be unable to trade with other players or gamble. '
+                   'In return, you will be able to proudly display your status as an ironman, '
+                   'by the way.')
             msg = await ctx.send(out)
 
             if await self.confirm(ctx, msg, out):
@@ -604,31 +598,35 @@ class Miniscape():
                 # ironman_role = discord.utils.get(ctx.guild.roles, name="Ironman")
                 # await ctx.author.add_roles(ironman_role, reason='Wanted to become an ironmeme.')
                 name = get_display_name(ctx.author)
-                await msg.edit(content=f':tools: __**IRONMAN**__ :tools:\nCongratulations, {name}, you are now '
+                await msg.edit(content=f':tools: __**IRONMAN**__ :tools:\n'
+                                       f'Congratulations, {name}, you are now '
                                        'an ironman!')
 
     @commands.command(aliases=['imaloser', 'makemelame'])
     async def deironman(self, ctx):
         """Lets a user become an normal user."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            out = ':tools: __**IRONMAN**__ :tools:\n' \
-                  'If you want to remove your ironman status, please react to this post with a :thumbsup:. ' \
-                  'This will keep your account the same as it is right now, but you will be able to trade with ' \
-                  'others. If you want to re-ironman, you can type `~ironman`, but you will have to reset your account.'
+            out = (':tools: __**IRONMAN**__ :tools:\n'
+                   'If you want to remove your ironman status, please react to this post with a '
+                   ':thumbsup:. This will keep your account the same as it is right now, but you '
+                   'will be able to trade with others. If you want to re-ironman, you can type '
+                   '`~ironman`, but you will have to reset your account.')
             msg = await ctx.send(out)
 
             if await self.confirm(ctx, msg, out):
                 ctx.user_object.is_ironman = False
                 ctx.user_object.save()
                 # ironman_role = discord.utils.get(ctx.guild.roles, name="Ironman")
-                # await ctx.author.remove_roles(ironman_role, reason="No longer wants to be ironmeme.")
+                # await ctx.author.remove_roles(
+                #     ironman_role, reason="No longer wants to be ironmeme.")
                 name = get_display_name(ctx.author)
-                await msg.edit(content=f':tools: __**IRONMAN**__ :tools:\nCongratulations, {name}, you are now '
-                                        'a normal user!')
+                await msg.edit(
+                    content=f':tools: __**IRONMAN**__ :tools:\n'
+                            f'Congratulations, {name}, you are now a normal user!')
 
     @commands.group(invoke_without_command=True, aliases=['quest'])
     async def quests(self, ctx, *args, questid=None):
-
+        """TODO: Add docstring."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             try:
                 qid = int(args[0])
@@ -637,7 +635,8 @@ class Miniscape():
                 return
             except ValueError:
                 if args[0] == 'start':
-                    messages = quest_helpers.start_quest(ctx.guild.id, ctx.channel.id, ctx.user_object, args[1])
+                    messages = quest_helpers.start_quest(
+                        ctx.guild.id, ctx.channel.id, ctx.user_object, args[1])
                 elif args[0] == 'incomplete':
                     messages = quest_helpers.print_list(ctx.user_object, args[0] == 'incomplete')
             except IndexError:
@@ -649,16 +648,18 @@ class Miniscape():
     async def gather(self, ctx, *args):
         """Gathers items."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            if len(args) > 0:
+            if args:
                 try:
                     number = users.parse_int(args[0])
                     item = ' '.join(args[1:])
-                    out = craft_helpers.start_gather(ctx.guild.id, ctx.channel.id, ctx.user_object, item, number=number)
+                    out = craft_helpers.start_gather(
+                        ctx.guild.id, ctx.channel.id, ctx.user_object, item, number=number)
                 except ValueError:
                     try:
                         length = users.parse_int(args[-1])
                         item = ' '.join(args[:-1])
-                        out = craft_helpers.start_gather(ctx.guild.id, ctx.channel.id, ctx.user_object, item, length=length)
+                        out = craft_helpers.start_gather(
+                            ctx.guild.id, ctx.channel.id, ctx.user_object, item, length=length)
                     except ValueError:
                         out = 'Error: there must be a number or length of gathering in args.'
                 await ctx.send(out)
@@ -678,7 +679,8 @@ class Miniscape():
             except ValueError:
                 number = 1
                 rune = ' '.join(args)
-            out = craft_helpers.start_runecraft(ctx.guild.id, ctx.channel.id, ctx.user_object, rune, number)
+            out = craft_helpers.start_runecraft(
+                ctx.guild.id, ctx.channel.id, ctx.user_object, rune, number)
             await ctx.send(out)
 
     @runecraft.command(aliases=['pure'])
@@ -686,14 +688,15 @@ class Miniscape():
         """Starts a runecrafting session with pure essence."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             try:
-                number = parse_name(args[0])
+                number = parse_name(ctx.message.guild, args[0])
                 if number >= MAX_PER_ACTION:
                     number = MAX_PER_ACTION
                 rune = ' '.join(args[1:])
             except ValueError:
                 number = 1
                 rune = ' '.join(args)
-            out = craft_helpers.start_runecraft(ctx.guild.id, ctx.channel.id, ctx.user_object, rune, number, pure=1)
+            out = craft_helpers.start_runecraft(
+                ctx.guild.id, ctx.channel.id, ctx.user_object, rune, number, pure=1)
             await ctx.send(out)
 
     @commands.group(invoke_without_command=True)
@@ -702,11 +705,13 @@ class Miniscape():
         author = ctx.user_object
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             if author.is_vis_complete:
-                await ctx.send("You have already received vis wax today. Please wait until tomorrow to try again.")
+                await ctx.send("You have already received vis wax today. "
+                               "Please wait until tomorrow to try again.")
                 return
 
             if author.rc_level < 75:
-                await ctx.send("You do not have a high enough runecrafting level to know how to use this machine.")
+                await ctx.send("You do not have a high enough runecrafting level to know how to "
+                               "use this machine.")
 
             runes = []
             if len(args) == 3:
@@ -721,7 +726,7 @@ class Miniscape():
                 return
 
             num_vis = vis.calc(ctx.author.id, runes)
-            if type(num_vis) == str:
+            if isinstance(num_vis) == str:
                 await ctx.send(num_vis)
                 return
 
@@ -729,29 +734,34 @@ class Miniscape():
             author.vis_attempts += 1
             author.save()
             users.update_user(ctx.author.id, num_attempts + 1, key=users.VIS_ATTEMPTS_KEY)
-            out = f"{craft_helpers.GATHER_HEADER}With the runes {runes}, you can receive {num_vis} vis wax per " \
-                  f"slot, respectively, for a total of {sum(num_vis)} vis wax. You have made {num_attempts + 1} " \
-                  f"attempts today, meaning that you require {vis.calc_num(num_attempts + 1)} of each rune to make this many vis wax."
+            out = (f"{craft_helpers.GATHER_HEADER}With the runes {runes}, you can receive {num_vis}"
+                   f" vis wax per slot, respectively, for a total of {sum(num_vis)} vis wax. "
+                   f"You have made {num_attempts + 1} attempts today, meaning that you require "
+                   f"{vis.calc_num(num_attempts + 1)} of each rune to make this many vis wax.")
             await ctx.send(out)
 
     @vis.command(name='third')
     async def _vis_third(self, ctx):
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             if users.rc_level < 99:
-                await ctx.send("You do not have a high enough runecrafting level to use this command")
+                await ctx.send("You do not have a high enough runecrafting level to use "
+                               "this command.")
             else:
-                await ctx.send(f"Your third vis wax slot rune for today is {items.get_attr(vis.RUNEIDS[vis.calc_third_rune(ctx.author.id)])}.")
+                third_rune = items.get_attr(vis.RUNEIDS[vis.calc_third_rune(ctx.author.id)])
+                await ctx.send(f"Your third vis wax slot rune for today is: {third_rune}.")
 
     @vis.command(name='use')
     async def _vis_use(self, ctx, *args):
         author = ctx.user_object
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             if author.is_vis_complete:
-                await ctx.send("You have already received vis wax today. Please wait until tomorrow to try again.")
+                await ctx.send("You have already received vis wax today. "
+                               "Please wait until tomorrow to try again.")
                 return
 
             if author.rc_level < 75:
-                await ctx.send("You do not have a high enough runecrafting level to know how to use this machine.")
+                await ctx.send("You do not have a high enough runecrafting level to know "
+                               "how to use this machine.")
 
             runes = []
             if len(args) == 3:
@@ -766,10 +776,10 @@ class Miniscape():
                 return
 
             num_vis = vis.calc(ctx.author.id, runes)
-            if type(num_vis) == str:
+            if isinstance(num_vis) == str:
                 await ctx.send(num_vis)
                 return
-            
+
             num_runes = vis.calc_num(author.vis_attempts)
             loot = {}
             for rune in runes:
@@ -786,10 +796,11 @@ class Miniscape():
             author.is_vis_complete = True
             author.save()
 
-            out = f"{craft_helpers.GATHER_HEADER}You use the runes {runes}. With this, you received {num_vis} vis wax per " \
-                  f"slot, respectively, for a total of {sum(num_vis)} vis wax. You have made {author.vis_attempts} " \
-                  f"attempts today, meaning that you used {vis.calc_num(author.vis_attempts)} " \
-                  f"of each rune to craft the vis wax."
+            out = (f"{craft_helpers.GATHER_HEADER}You use the runes {runes}. "
+                   f"With this, you received {num_vis} vis wax per slot, respectively, for a "
+                   f"total of {sum(num_vis)} vis wax. You have made {author.vis_attempts} "
+                   f"attempts today, meaning that you used {vis.calc_num(author.vis_attempts)} "
+                   f"of each rune to craft the vis wax.")
             await ctx.send(out)
 
     @vis.command(name='shop')
@@ -874,7 +885,7 @@ class Miniscape():
                 if not user:
                     await ctx.send(f'Name {name} not found in server.')
                 elif len(user) > 1:
-                    await ctx.send(f'Input {name} can refer to multiple people ({members})')
+                    await ctx.send(f'Input {name} can refer to multiple people.')#({members})')
                 else:
                     user = user[0]
                     amount = '{:,}'.format(user.get_item_by_item(item)[0].amount)
@@ -885,7 +896,7 @@ class Miniscape():
     async def leaderboard(self, ctx, *args):
         """Allows users to easily compare each others' stats."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            name = " ".join(args) if len(args) > 0 else None
+            name = " ".join(args) if args else None
             await self.print_leaderboard(ctx, name)
 
     async def confirm(self, ctx, msg, content, timeout=300):
@@ -895,10 +906,12 @@ class Miniscape():
         while True:
             try:
                 reaction, user = await self.bot.wait_for('reaction_add', timeout=timeout)
-                if str(reaction.emoji) == THUMBS_UP_EMOJI and user == ctx.author and reaction.message.id == msg.id:
+                if (str(reaction.emoji) == THUMBS_UP_EMOJI and user == ctx.author and
+                        reaction.message.id == msg.id):
                     return True
             except asyncio.TimeoutError:
-                await msg.edit(content=f'Your request has timed out. Please retype the command to try again.')
+                await msg.edit(content=f'Your request has timed out. Please retype the command '
+                                       'to try again.')
                 return False
 
     async def print_leaderboard(self, ctx, name):
@@ -920,7 +933,7 @@ class Miniscape():
 
             out = users.LEADERBOARD_HEADER.replace("$KEY", users.LEADERBOARD_TITLES[key].title())
             out = out.replace("$EMOJI", users.LEADERBOARD_EMOJI[key])
-            
+
             try:
                 for i in range(lower, upper):
                     user_id, amount = leaderboard[i]
@@ -930,7 +943,8 @@ class Miniscape():
                         username = get_display_name(member)
                     else:
                         username = f'User {user_id}'
-                    out_user = f'**({1 + i}) {username}**: {amount_formatted} {users.LEADERBOARD_QUANTIFIERS[key]}\n'
+                    out_user = (f'**({1 + i}) {username}**: {amount_formatted} '
+                                f'{users.LEADERBOARD_QUANTIFIERS[key]}\n')
                     # if key == 'total':
                     #     out_user = out_user.replace("$LEVEL", f"{users.xp_to_level(amount)}")
                     out += out_user
@@ -940,7 +954,7 @@ class Miniscape():
             leaderboard_messages[key] = out
             await msg.add_reaction(users.LEADERBOARD_EMOJI[key])
         await msg.edit(content=leaderboard_messages['total'])
-        
+
         while True:
             reaction, user = await self.bot.wait_for('reaction_add')
             if user == ctx.author and reaction.message.id == msg.id:
@@ -972,14 +986,13 @@ class Miniscape():
                 leaderboard_range = (lower, upper)
             except NameError:
                 print(name)
-                pass
             except ValueError:
                 raise ValueError
         return leaderboard_range
 
     async def paginate(self, ctx, messages):
         """Provides an interface for printing a paginated set of messages."""
-        if type(messages) == str:
+        if isinstance(messages) == str:
             print(messages)
             await ctx.send(messages)
             return
@@ -1007,7 +1020,7 @@ class Miniscape():
                 elif str(reaction.emoji) == ARROW_RIGHT_EMOJI:
                     if current_page < len(messages) - 1:
                         current_page += 1
-                        out = messages[current_page] 
+                        out = messages[current_page]
                         out += f"\n{current_page + 1}/{len(messages)}"
                         await msg.edit(content=None)
                         await msg.edit(content=out)
@@ -1015,7 +1028,7 @@ class Miniscape():
     async def reset_dailies(self):
         """Checks if the current time is a different day and resets everyone's daily progress."""
         await self.bot.wait_until_ready()
-        while not self.bot.is_closed(): 
+        while not self.bot.is_closed():
             try:
                 with open('./resources/last_check.txt', 'r') as f:
                     last_check_string = f.read().splitlines()
