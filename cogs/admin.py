@@ -1,13 +1,6 @@
 """Implements commands related to administrating a freemium-style text-based RPG."""
-import asyncio
-import datetime
-import random
-
-import discord
 from discord.ext import commands
 from discord.ext.commands import has_permissions
-
-import config
 from cogs.helper import channel_permissions as cp
 
 class Admin():
@@ -26,9 +19,10 @@ class Admin():
     @commands.command()
     @has_permissions(manage_guild=True)
     async def addblacklist(self, ctx):
+        """Adds a guild to the blacklist."""
         channel_mentions = ctx.message.channel_mentions
 
-        if len(channel_mentions) > 0:
+        if channel_mentions:
             out = ''
             for channel in channel_mentions:
                 cp.add_channel(ctx.guild.id, channel.id, cp.BLACKLIST_KEY)
@@ -38,9 +32,10 @@ class Admin():
     @commands.command()
     @has_permissions(manage_guild=True)
     async def addwhitelist(self, ctx):
+        """Adds a guild to the whitelist."""
         channel_mentions = ctx.message.channel_mentions
 
-        if len(channel_mentions) > 0:
+        if channel_mentions:
             out = ''
             for channel in channel_mentions:
                 cp.add_channel(ctx.guild.id, channel.id, cp.WHITELIST_KEY)
@@ -50,15 +45,17 @@ class Admin():
     @commands.command(aliases=['removeac'])
     @has_permissions(manage_guild=True)
     async def removeannoucement(self, ctx):
+        """Removes an announcements channel."""
         cp.clear_channel(ctx.guild.id, cp.ANNOUNCEMENT_KEY)
         await ctx.send(f"Removed annoucements channel!")
 
     @commands.command()
     @has_permissions(manage_guild=True)
     async def removeblacklist(self, ctx):
+        """Removes a blacklisted channel."""
         channel_mentions = ctx.message.channel_mentions
 
-        if len(channel_mentions) > 0:
+        if channel_mentions:
             out = ''
             for channel in channel_mentions:
                 try:
@@ -73,9 +70,10 @@ class Admin():
     @commands.command()
     @has_permissions(manage_guild=True)
     async def removewhitelist(self, ctx):
+        """Removes a whitelisted guild."""
         channel_mentions = ctx.message.channel_mentions
 
-        if len(channel_mentions) > 0:
+        if channel_mentions:
             out = ''
             for channel in channel_mentions:
                 try:
@@ -90,13 +88,13 @@ class Admin():
     @commands.command(aliases=['setac'])
     @has_permissions(manage_guild=True)
     async def setannouncement(self, ctx):
+        """Sets the default announcements channel."""
         channel_mentions = ctx.message.channel_mentions
 
-        if len(channel_mentions) > 0:
+        if channel_mentions:
             announcement_channel = channel_mentions[0]
             cp.set_channel(ctx.guild.id, announcement_channel.id, cp.ANNOUNCEMENT_KEY)
             await ctx.send(f"{announcement_channel.name} set as announcements channel!")
-
 
 def setup(bot):
     """Adds the cog to the bot."""
