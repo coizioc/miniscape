@@ -1,4 +1,4 @@
-"""Implements methods related to the quiz commands of mathbot.cogs.miniscape."""
+"""Implements methods related to the quiz commands of miniscapebot.cogs.miniscape."""
 import os
 import random
 import ujson

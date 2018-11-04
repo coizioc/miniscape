@@ -3,7 +3,7 @@
 # These lines allow us to use Django models
 import logging
 import os
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "mathbot.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "miniscapebot.settings")
 import django
 django.setup()
 
@@ -19,45 +19,20 @@ from discord.ext import commands
 
 import config
 
-
 def extensions_generator():
     """Returns a generator for all cog files that aren't in do_not_use."""
     cog_path = "./cogs"
-    do_not_use = ["__init__.py", "__pycache__", 'cap.py', 'pet.py', 'reddit.py', 'rs.py',
-                  'solver.py', 'stats.py', 'telos.py', "memers.py", 'resources']
-    do_use = ['miniscape.py', 'other.py', 'admin.py']
+    do_use = ["miniscape.py", "other.py", "admin.py"]
     for cog in os.listdir(cog_path):
         if cog in do_use:
             yield f"cogs.{cog[:-3]}"
-    # use = ["stats.py"]
-    # for cog in os.listdir(cog_path):
-    #     if cog in use:
-    #         yield f"cogs.{cog[:-3]}"
-
-def submodules_generator():
-    """Returns a generator for all submodule add-ons."""
-    sub_path = "./subs"
-    do_not_use = ["solver.py", 'ping.py', 'pokemon.py', 'gastercoin.py']
-    for item in os.listdir(sub_path):
-        path = os.path.join(sub_path, item)
-        if item not in do_not_use:
-            for sub in os.listdir(path):
-                if sub == f"{item}.py" and sub not in do_not_use:
-                    yield f"subs.{item}.{sub[:-3]}"
-    # use = []
-    # for item in os.listdir(sub_path):
-    #     path = os.path.join(sub_path, item)
-    #     if item in use:
-    #         for sub in os.listdir(path):
-    #             if sub == f"{item}.py" and sub in use:
-    #                 yield f"subs.{item}.{sub[:-3]}"
 
 DESCRIPTION = "A bot that runs a basic role-playing game."
 
 # log = logging.getLogger(__name__)
 
-class MathBot(commands.Bot):
-    """Defines the mathbot class and functions."""
+class MiniscapeBot(commands.Bot):
+    """Defines the miniscapebot class and functions."""
 
     def __init__(self):
         super().__init__(command_prefix=["~", "%"], description=DESCRIPTION)
@@ -72,14 +47,6 @@ class MathBot(commands.Bot):
                 print(f"Successfully loaded extension {extension}.")
             except Exception:
                 print(f'Failed to load extension {extension}.', file=sys.stderr)
-                traceback.print_exc()
-
-        for submodule in submodules_generator():
-            try:
-                self.load_extension(submodule)
-                print(f"Successfully loaded submodule {submodule}.")
-            except Exception:
-                print(f'Failed to load submodule {submodule}.', file=sys.stderr)
                 traceback.print_exc()
 
         self.setup_logging()
@@ -115,7 +82,7 @@ class MathBot(commands.Bot):
 
     @asyncio.coroutine
     def process_commands(self, message):
-        ctx = yield from self.get_context(message, cls=MathBotContext)
+        ctx = yield from self.get_context(message, cls=MiniscapeBotContext)
         try:
             if ctx.command is not None:
                 log_str = f'{ctx.author.name} ({ctx.author.id}) issued command ' \
@@ -145,8 +112,7 @@ class MathBot(commands.Bot):
             await ctx.send(f'Failed to load extension {extension}.', file=sys.stderr)
             traceback.print_exc()
 
-
-class MathBotContext(commands.Context):
+class MiniscapeBotContext(commands.Context):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -170,6 +136,3 @@ class MathBotContext(commands.Context):
             self.user_object.nick = self.author.nick if self.author.nick is not None else ''
             self.user_object.name = self.author.name + '#' + self.author.discriminator
             self.user_object.save()
-
-
-

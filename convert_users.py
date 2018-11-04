@@ -3,7 +3,7 @@
 import os
 
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE","mathbot.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE","miniscapebot.settings")
 import django
 django.setup()
 
