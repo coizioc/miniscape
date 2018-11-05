@@ -726,7 +726,7 @@ class Miniscape():
                 return
 
             num_vis = vis.calc(ctx.author.id, runes)
-            if isinstance(num_vis) == str:
+            if isinstance(num_vis, str):
                 await ctx.send(num_vis)
                 return
 
@@ -776,7 +776,7 @@ class Miniscape():
                 return
 
             num_vis = vis.calc(ctx.author.id, runes)
-            if isinstance(num_vis) == str:
+            if isinstance(num_vis, str):
                 await ctx.send(num_vis)
                 return
 
@@ -992,7 +992,7 @@ class Miniscape():
 
     async def paginate(self, ctx, messages):
         """Provides an interface for printing a paginated set of messages."""
-        if isinstance(messages) == str:
+        if isinstance(messages, str):
             print(messages)
             await ctx.send(messages)
             return
