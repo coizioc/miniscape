@@ -52,7 +52,7 @@ class User(models.Model):
                           self.gather_xp,
                           self.artisan_xp,
                           self.cook_xp,
-                          self.pray_xp,
+                          self.prayer_xp,
                           self.rc_xp]
 
         self.skill_xp_mapping = {'combat': self.combat_xp,
@@ -64,8 +64,8 @@ class User(models.Model):
                                  'craft': self.artisan_xp,
                                  'cook': self.cook_xp,
                                  'cooking': self.cook_xp,
-                                 'pray': self.pray_xp,
-                                 'prayer':  self.pray_xp,
+                                 'pray': self.prayer_xp,
+                                 'prayer':  self.prayer_xp,
                                  'rc': self.rc_xp,
                                  'runecrafting': self.rc_xp}
 
@@ -109,11 +109,6 @@ class User(models.Model):
                                                           'pickaxe_slot',
                                                           'potion_slot']
 
-
-    # TODO:
-    # - test inventory (including locked items)
-    # - Implement Equipment
-
     id = models.PositiveIntegerField(primary_key=True)
     name = models.CharField(max_length=200,
                             blank=True,
@@ -129,7 +124,7 @@ class User(models.Model):
     gather_xp = models.BigIntegerField(default=0)
     artisan_xp = models.BigIntegerField(default=0)
     cook_xp = models.BigIntegerField(default=0)
-    pray_xp = models.BigIntegerField(default=0)
+    prayer_xp = models.BigIntegerField(default=0)
     rc_xp = models.BigIntegerField(default=0)
 
     # Armour
@@ -161,6 +156,7 @@ class User(models.Model):
     master_clues = models.PositiveIntegerField(default=0)
 
     # Flags
+    is_mod = models.BooleanField(default=False)
     is_ironman = models.BooleanField(default=False)
     is_reaper_complete = models.BooleanField(default=False)
     is_vis_complete = models.BooleanField(default=False)
@@ -391,6 +387,7 @@ class User(models.Model):
         self.clear_monster_kills()
         self.clear_boosts()
         self.clear_clues()
+        self.clear_dailies()
         self.clear_flags()
         self.save()
 
@@ -433,11 +430,14 @@ class User(models.Model):
         self.master_clues = 0
         self.save()
 
-    def clear_flags(self):
-        self.is_ironman = False
+    def clear_dailies(self):
         self.is_reaper_complete = False
         self.is_vis_complete = False
         self.vis_attempts = 0
+        self.save()
+
+    def clear_flags(self):
+        self.is_ironman = False
         self.save()
 
     def has_quest_req_for_quest(self, quest: Quest, cached=None):
@@ -568,7 +568,7 @@ class User(models.Model):
 
     @property
     def prayer_level(self):
-        return self._calc_level(self.pray_xp)
+        return self._calc_level(self.prayer_xp)
 
     @property
     def rc_level(self):
