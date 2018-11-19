@@ -73,7 +73,7 @@ class MiniscapeBot(commands.Bot):
             return
         if message.content.startswith('~help') or message.content.startswith('%help'):
             await message.channel.send('A tutorial and a list of commands can be found at '
-                                       'https://github.com/coizioc/math-bot/blob/master/README.md')
+                                       'https://github.com/coizioc/miniscape/blob/master/README.md')
         await self.process_commands(message)
 
     @asyncio.coroutine
@@ -132,3 +132,4 @@ class MiniscapeBotContext(commands.Context):
             self.user_object.nick = self.author.nick if self.author.nick is not None else ''
             self.user_object.name = self.author.name + '#' + self.author.discriminator
             self.user_object.save()
+
