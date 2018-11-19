@@ -1,6 +1,7 @@
 #! /usr/bin/env python3
 """Provides a launcher that sets up logging for the bot."""
 import logging
+import argparse
 import contextlib
 from mbot import MiniscapeBot
 
@@ -9,8 +10,8 @@ def setup_logging():
     """Sets up the bot logging."""
     try:
         # __enter__
-        logging.getLogger('discord').setLevel(logging.INFO)
-        logging.getLogger('discord.http').setLevel(logging.WARNING)
+        logging.getLogger('discord').setLevel(logging.WARN)
+        logging.getLogger('discord.http').setLevel(logging.WARN)
 
         log = logging.getLogger()
         log.setLevel(logging.INFO)
@@ -28,8 +29,9 @@ def setup_logging():
             hdlr.close()
             log.removeHandler(hdlr)
 
-def run_bot():
+def run_bot(db_reinit):
     """Initializes the logger and the bot class."""
+    loop = asyncio.get_event_loop()
     log = logging.getLogger()
 
     bot = MiniscapeBot()
@@ -37,8 +39,13 @@ def run_bot():
 
 def main():
     """Instantiates the bot using setup_logging as a context."""
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-r", "--reinitialize", default=False, action="store_true")
+    args = parser.parse_args()
+    db_reinit = args.reinitialize
+
     with setup_logging():
-        run_bot()
+        run_bot(db_reinit)
 
 if __name__ == "__main__":
     main()
