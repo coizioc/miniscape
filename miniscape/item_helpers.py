@@ -4,11 +4,13 @@ from collections import Counter
 
 SHOP_HEADER = '__**:moneybag: SHOP :moneybag:**__\n'
 
+
 def get_loot_value(loot: Counter):
     amt = 0
     for item, amount in loot.items():
         amt += amount * item.value
     return amt
+
 
 def compare(item1, item2):
     """Prints a string comparing the stats of two given items."""
@@ -27,6 +29,7 @@ def compare(item1, item2):
           f'**Armour**: {i1.armour} vs {i2.armour} *({i1.armour - i2.armour})*\n' \
           f'**Prayer Bonus**: {i1.prayer} vs {i2.prayer} *({i1.prayer - i2.prayer})*'
     return out
+
 
 def print_shop(userid):
     """Prints the shop."""
@@ -57,6 +60,7 @@ def print_shop(userid):
             out = SHOP_HEADER
     messages.append(out)
     return messages
+
 
 def item_in_shop(itemid):
     """Checks if an item is in the shop."""

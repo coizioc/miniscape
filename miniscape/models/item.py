@@ -117,6 +117,10 @@ class Item(models.Model):
         return self.name.lower() in ["Dragonfire Shield".lower(),
                                      "anti-dragon shield".lower()]
 
+    @property
+    def is_tippable(self):
+        return self.name.lower() in ["fedora".lower()]
+
     def __repr__(self):
         return "Item ID %d: %s" % (self.id, self.name)
 
