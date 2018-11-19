@@ -20,6 +20,7 @@ import miniscape.clue_helpers as clue_helpers
 import miniscape.prayer_helpers as prayer
 import miniscape.monster_helpers as mon
 import miniscape.quest_helpers as quest_helpers
+import miniscape.leaderboard_helpers as lb_helpers
 
 MAX_PER_ACTION = 10000
 REAPER_TOKEN = Item.objects.get(name__iexact="reaper token")
@@ -207,6 +208,15 @@ class Miniscape():
             item = ' '.join(args)
             out = ch.unequip_item(ctx.user_object, item.lower())
             await ctx.send(out)
+
+    @commands.command()
+    async def tip(self, ctx, *args):
+        """Posts a funny message if the user is wearing a certain item."""
+        if has_post_permission(ctx.guild.id, ctx.channel.id) and ' '.join(args).lower() == 'fedora':
+            user = User.objects.filter(Q(name__icontains=ctx.author.name) | Q(nick__icontains=ctx.author.name))
+            if user:
+                if user[0].equipment_slots[1] == 519:
+                    await ctx.send(f'*{ctx.author.name} tips their fedora.*')
 
     @commands.command()
     async def bury(self, ctx, *args):
@@ -493,7 +503,7 @@ class Miniscape():
 
     @commands.command()
     async def sell(self, ctx, *args):
-        """Sells the player's inventory for GasterCoin."""
+        """Sells the player's inventory for gold pieces."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             try:
                 number = users.parse_int(args[0])
@@ -506,7 +516,7 @@ class Miniscape():
 
     #@commands.command()
     async def sellall(self, ctx, maxvalue=None):
-        """Sells all items in the player's inventory (below a certain value) for GasterCoin."""
+        """Sells all items in the player's inventory (below a certain value) for gold pieces."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             name = get_display_name(ctx.author)
             if maxvalue is not None:
@@ -891,7 +901,6 @@ class Miniscape():
                     amount = '{:,}'.format(user.get_item_by_item(item)[0].amount)
                     await ctx.send(f'{user.plain_name} has {amount} coins')
 
-
     @commands.command(aliases=['leaderboards'])
     async def leaderboard(self, ctx, *args):
         """Allows users to easily compare each others' stats."""
@@ -916,79 +925,17 @@ class Miniscape():
 
     async def print_leaderboard(self, ctx, name):
         """Prints the leaderboard and provides an interface for showing various leaderboards."""
-        leaderboards = {}
-        for key in users.LEADERBOARD_TITLES.keys():
-            leaderboards[key] = users.get_values_by_account(key)
-
-        msg = await ctx.send("Loading leaderboards...")
-
-        leaderboard_messages = {}
-        for key in users.LEADERBOARD_TITLES.keys():
-            leaderboard = leaderboards[key]
-
-            try:
-                lower, upper = await self.get_leaderboard_range(ctx, name, leaderboard)
-            except ValueError:
-                continue
-
-            out = users.LEADERBOARD_HEADER.replace("$KEY", users.LEADERBOARD_TITLES[key].title())
-            out = out.replace("$EMOJI", users.LEADERBOARD_EMOJI[key])
-
-            try:
-                for i in range(lower, upper):
-                    user_id, amount = leaderboard[i]
-                    amount_formatted = '{:,}'.format(amount)
-                    member = ctx.message.guild.get_member(user_id)
-                    if member is not None:
-                        username = get_display_name(member)
-                    else:
-                        username = f'User {user_id}'
-                    out_user = (f'**({1 + i}) {username}**: {amount_formatted} '
-                                f'{users.LEADERBOARD_QUANTIFIERS[key]}\n')
-                    # if key == 'total':
-                    #     out_user = out_user.replace("$LEVEL", f"{users.xp_to_level(amount)}")
-                    out += out_user
-            except IndexError:
-                pass
-
-            leaderboard_messages[key] = out
-            await msg.add_reaction(users.LEADERBOARD_EMOJI[key])
-        await msg.edit(content=leaderboard_messages['total'])
+        msg = await ctx.send("Select an emoji to load a leaderboard.")
+        for emoji in lb_helpers.EMOJI.values():
+            await msg.add_reaction(emoji)
 
         while True:
             reaction, user = await self.bot.wait_for('reaction_add')
             if user == ctx.author and reaction.message.id == msg.id:
-                for key in users.LEADERBOARD_EMOJI.keys():
-                    if str(reaction.emoji) == users.LEADERBOARD_EMOJI[key]:
+                for key in lb_helpers.EMOJI.keys():
+                    if str(reaction.emoji) == lb_helpers.EMOJI[key]:
                         await msg.edit(content=None)
-                        await msg.edit(content=leaderboard_messages[key])
-
-    async def get_leaderboard_range(self, ctx, name, leaderboard):
-        """Gets the lower and upper bounds of a leaderboard and returns them as a tuple."""
-        if name is None:
-            leaderboard_range = (0, users.LEADERBOARD_LENGTH)
-        elif name == 'bottom':
-            leaderboard_range = (len(leaderboard) - users.LEADERBOARD_LENGTH, len(leaderboard))
-        else:
-            try:
-                name_list = [x[0] for x in leaderboard]
-                name_member = parse_name(ctx.message.guild, name)
-                name_index = name_list.index(name_member.id)
-                if name_index < 5:
-                    lower = 0
-                    upper = 10
-                else:
-                    lower = name_index - 5
-                    upper = name_index + 5
-                if name_index + 5 > len(leaderboard):
-                    upper = len(leaderboard)
-                    lower = len(leaderboard) - 10
-                leaderboard_range = (lower, upper)
-            except NameError:
-                print(name)
-            except ValueError:
-                raise ValueError
-        return leaderboard_range
+                        await msg.edit(content=lb_helpers.get_leaderboard(key, name))
 
     async def paginate(self, ctx, messages):
         """Provides an interface for printing a paginated set of messages."""
@@ -1102,7 +1049,7 @@ class Miniscape():
                     traceback.print_exc()
                     with open('./resources/debug.txt', 'a+') as debug_file:
                         debug_file.write(f'{miniscape_exception}\n')
-                    print(e)
+                    print(miniscape_exception)
                 print('done')
             await asyncio.sleep(TICK_SECONDS)
 
