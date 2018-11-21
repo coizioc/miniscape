@@ -2,6 +2,7 @@ from miniscape.models import Item
 
 ANCIENT_EFFIGY = Item.objects.get(name__iexact='ancient effigy')
 DIAMOND = Item.objects.get(name__iexact='diamond')
+EFFY = Item.objects.get(name__iexact='effy')
 EMERALD = Item.objects.get(name__iexact='emerald')
 FEDORA = Item.objects.get(name__iexact='fedora')
 GEM_ROCK = Item.objects.get(name__iexact='gem rock')
