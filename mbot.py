@@ -18,9 +18,9 @@ import config
 def extensions_generator():
     """Returns a generator for all cog files that aren't in do_not_use."""
     cog_path = "./cogs"
-    do_use = ["miniscape.py", "other.py", "admin.py"]
+    do_not_use = ['errors', 'helper', 'managers', '__pycache__']
     for cog in os.listdir(cog_path):
-        if cog in do_use:
+        if cog not in do_not_use:
             yield f"cogs.{cog[:-3]}"
 
 DESCRIPTION = "A bot that runs a basic role-playing game."

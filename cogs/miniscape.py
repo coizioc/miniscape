@@ -8,12 +8,13 @@ import logging
 from discord.ext import commands
 from django.db.models import Q
 
-from config import ARROW_LEFT_EMOJI, ARROW_RIGHT_EMOJI, THUMBS_UP_EMOJI, TICK_SECONDS
+from config import ARROW_LEFT_EMOJI, ARROW_RIGHT_EMOJI, THUMBS_UP_EMOJI, TICK_SECONDS, MAX_PER_ACTION
 from cogs.helper import channel_permissions as cp, clues
 from miniscape import adventures as adv, item_helpers, craft_helpers
 from cogs.helper import craft, items, quests, slayer, users, vis
 from cogs.errors.trade_error import TradeError
 from miniscape.models import User, Item
+from miniscape.itemconsts import REAPER_TOKEN, FEDORA
 import miniscape.command_helpers as ch
 import miniscape.slayer_helpers as sh
 import miniscape.clue_helpers as clue_helpers
@@ -22,8 +23,6 @@ import miniscape.monster_helpers as mon
 import miniscape.quest_helpers as quest_helpers
 import miniscape.leaderboard_helpers as lb_helpers
 
-MAX_PER_ACTION = 10000
-REAPER_TOKEN = Item.objects.get(name__iexact="reaper token")
 
 class AmbiguousInputError(Exception):
     """Error raised for input that refers to multiple users"""
@@ -215,27 +214,21 @@ class Miniscape():
         if has_post_permission(ctx.guild.id, ctx.channel.id) and ' '.join(args).lower() == 'fedora':
             user = User.objects.filter(Q(name__icontains=ctx.author.name) | Q(nick__icontains=ctx.author.name))
             if user:
-                if user[0].equipment_slots[1] == 519:
+                if user[0].equipment_slots[0] == FEDORA:
                     await ctx.send(f'*{ctx.author.name} tips their fedora.*')
 
     @commands.command()
     async def bury(self, ctx, *args):
         """Buries items for prayer experience."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            try:
-                number = users.parse_int(args[0])
-                if number >= MAX_PER_ACTION:
-                    number = MAX_PER_ACTION
-                item = ' '.join(args[1:])
-            except ValueError:
-                number = 1
-                item = ' '.join(args)
-            out = ch.bury(ctx.user_object, item, number)
-            await ctx.send(out)
+            number, name = ch.parse_number_and_name(args)
+            if number and name:
+                out = ch.bury(ctx.user_object, name, min(number, MAX_PER_ACTION))
+                await ctx.send(out)
 
     @commands.command(aliases=['pray', 'prayers'])
     async def prayer(self, ctx, *args):
-        """TODO: docstring"""
+        """Shows a list of available prayers, or sets a user's prayer."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             if not args:
                 messages = prayer.print_list(ctx.author.id)
@@ -302,36 +295,35 @@ class Miniscape():
     async def kill(self, ctx, *args):
         """Lets the user kill monsters for a certain number or a certain amount of time."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            if args:
-                monster = ''
-                try:
-                    number = users.parse_int(args[0])
-                    monster = ' '.join(args[1:])
+            number, monster, length = ch.parse_number_name_length(args)
+            if monster:
+                if monster == 'myself':
+                    messages = []
+                    with open('./resources/hotlines.txt', 'r') as hotlines_file:
+                        lines = hotlines_file.read().splitlines()
+                    out = '**If you need help, please call one of the following '\
+                          'numbers**:\n'
+                    i = 1
+                    for line in lines:
+                        out += f'{line}\n'
+                        if i % 20 == 0:
+                            messages.append(out)
+                            out = '**If you need help, please call one of the following ' \
+                                  'numbers**:\n'
+                        i += 1
+                    messages.append(out)
+                    await self.paginate(ctx, messages)
+                    return
+                elif number:
                     out = sh.get_kill(
                         ctx.guild.id, ctx.channel.id, ctx.author.id, monster, number=number)
-                except ValueError:
-                    try:
-                        length = users.parse_int(args[-1])
-                        monster = ' '.join(args[:-1])
-                        out = sh.get_kill(
-                            ctx.guild.id, ctx.channel.id, ctx.author.id, monster, length=length)
-                    except ValueError:
-                        monster = ' '.join(args)
-                        if monster == 'myself':
-                            with open('./resources/hotlines.txt', 'r') as hotlines_file:
-                                lines = hotlines_file.read().splitlines()
-                            out = ('**If you need help, please call one of the following '
-                                   'numbers**:\n')
-                            for line in lines:
-                                out += f'{line}\n'
-                        else:
-                            out = 'Error: there must be a number or length of kill in args.'
-            else:
-                if adv.is_on_adventure(ctx.author.id):
-                    out = slayer.get_kill(ctx.guild.id, ctx.channel.id, ctx.author.id, 'GET_UPDATE')
+                elif length:
+                    out = sh.get_kill(
+                        ctx.guild.id, ctx.channel.id, ctx.author.id, monster, length=length)
                 else:
-                    out = ('args not valid. Please put in the form `[number] '
-                           '[monster name] [length]`')
+                    out = 'Error: there must be a number or length of kill in args.'
+            else:
+                out = 'Arguments not valid. Please put in the form `[number] [monster name] [length]`'
             await ctx.send(out)
 
     @commands.command(aliases=['starter'])
@@ -371,18 +363,12 @@ class Miniscape():
                                       xp=int(xp), number=int(num), dragonfire=bool(dfire))
             await ctx.send(out)
 
-    #@commands.command()
+    @commands.command()
     async def claim(self, ctx, *args):
-        """TODO: Add docstring."""
-        # TODO: Come back to this. Honestly maybe leave it as is but adjust for user.update_inv?
+        """Claims xp/items from another item."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            try:
-                number = int(args[0])
-                item = ' '.join(args[1:])
-            except ValueError:
-                number = 1
-                item = ' '.join(args)
-            out = items.claim(ctx.author.id, item, number)
+            number, name = ch.parse_number_and_name(args)
+            out = ch.claim(ctx.user_object, name, number)
             await ctx.send(out)
 
     @commands.command(aliases=['cancle'])
@@ -491,13 +477,8 @@ class Miniscape():
     async def buy(self, ctx, *args):
         """Buys something from the shop."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            if args:
-                try:
-                    number = int(args[0])
-                    item = ' '.join(args[1:])
-                except ValueError:
-                    number = 1
-                    item = ' '.join(args)
+            number, item = ch.parse_number_and_name(args)
+            if number and item:
                 out = item_helpers.buy(ctx.author.id, item, number=number)
                 await ctx.send(out)
 
@@ -505,14 +486,9 @@ class Miniscape():
     async def sell(self, ctx, *args):
         """Sells the player's inventory for gold pieces."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            try:
-                number = users.parse_int(args[0])
-                item = ' '.join(args[1:])
-            except ValueError:
-                number = 1
-                item = ' '.join(args)
-            out = item_helpers.sell(ctx.author.id, item, number=number)
-            await ctx.send(out)
+            number, item = ch.parse_number_and_name(args)
+            if number and item:
+                out = item_helpers.sell(ctx.author.id, item, number=number)
 
     #@commands.command()
     async def sellall(self, ctx, maxvalue=None):
@@ -658,20 +634,16 @@ class Miniscape():
     async def gather(self, ctx, *args):
         """Gathers items."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            if args:
-                try:
-                    number = users.parse_int(args[0])
-                    item = ' '.join(args[1:])
+            number, name, length = ch.parse_number_name_time(args)
+            if name:
+                if number:
                     out = craft_helpers.start_gather(
-                        ctx.guild.id, ctx.channel.id, ctx.user_object, item, number=number)
-                except ValueError:
-                    try:
-                        length = users.parse_int(args[-1])
-                        item = ' '.join(args[:-1])
-                        out = craft_helpers.start_gather(
-                            ctx.guild.id, ctx.channel.id, ctx.user_object, item, length=length)
-                    except ValueError:
-                        out = 'Error: there must be a number or length of gathering in args.'
+                        ctx.guild.id, ctx.channel.id, ctx.user_object, name, number=number)
+                elif length:
+                    out = craft_helpers.start_gather(
+                        ctx.guild.id, ctx.channel.id, ctx.user_object, name, length=length)
+                else:
+                    out = "You must provide either a number or length."
                 await ctx.send(out)
             else:
                 messages = craft_helpers.get_gather_list()
@@ -681,33 +653,21 @@ class Miniscape():
     async def runecraft(self, ctx, *args):
         """Starts a runecrafting session."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            try:
-                number = users.parse_int(args[0])
-                if number >= MAX_PER_ACTION:
-                    number = MAX_PER_ACTION
-                rune = ' '.join(args[1:])
-            except ValueError:
-                number = 1
-                rune = ' '.join(args)
-            out = craft_helpers.start_runecraft(
-                ctx.guild.id, ctx.channel.id, ctx.user_object, rune, number)
-            await ctx.send(out)
+            number, rune = ch.parse_number_and_name(args)
+            if number and rune:
+                out = craft_helpers.start_runecraft(
+                    ctx.guild.id, ctx.channel.id, ctx.user_object, rune, min(number, MAX_PER_ACTION))
+                await ctx.send(out)
 
     @runecraft.command(aliases=['pure'])
     async def _runecraft_pure(self, ctx, *args):
         """Starts a runecrafting session with pure essence."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            try:
-                number = parse_name(ctx.message.guild, args[0])
-                if number >= MAX_PER_ACTION:
-                    number = MAX_PER_ACTION
-                rune = ' '.join(args[1:])
-            except ValueError:
-                number = 1
-                rune = ' '.join(args)
-            out = craft_helpers.start_runecraft(
-                ctx.guild.id, ctx.channel.id, ctx.user_object, rune, number, pure=1)
-            await ctx.send(out)
+            number, rune = ch.parse_number_and_name(args)
+            if number and rune:
+                out = craft_helpers.start_runecraft(
+                    ctx.guild.id, ctx.channel.id, ctx.user_object, rune, min(number, MAX_PER_ACTION), pure=1)
+                await ctx.send(out)
 
     @commands.group(invoke_without_command=True)
     async def vis(self, ctx, *args):
@@ -851,31 +811,19 @@ class Miniscape():
     async def craft(self, ctx, *args):
         """Crafts (a given number of) an item."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            try:
-                number = users.parse_int(args[0])
-                if number >= MAX_PER_ACTION:
-                    number = MAX_PER_ACTION
-                recipe = ' '.join(args[1:])
-            except ValueError:
-                number = 1
-                recipe = ' '.join(args)
-            out = craft_helpers.craft(ctx.user_object, recipe, n=number)
-            await ctx.send(out)
+            number, recipe = ch.parse_number_and_name(args)
+            if number and recipe:
+                out = craft_helpers.craft(ctx.user_object, recipe, n=min(number, MAX_PER_ACTION))
+                await ctx.send(out)
 
     @commands.command(aliases=['cock', 'fry', 'grill', 'saute', 'boil'])
     async def cook(self, ctx, *args):
         """Cooks (a given amount of) an item."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            try:
-                number = users.parse_int(args[0])
-                if number >= MAX_PER_ACTION:
-                    number = MAX_PER_ACTION
-                food = ' '.join(args[1:])
-            except ValueError:
-                number = 1
-                food = ' '.join(args)
-            out = craft_helpers.cook(ctx.user_object, food, n=number)
-            await ctx.send(out)
+            number, food = ch.parse_number_and_name(args)
+            if number and food:
+                out = craft_helpers.cook(ctx.user_object, food, n=min(number, MAX_PER_ACTION))
+                await ctx.send(out)
 
     @commands.command()
     async def balance(self, ctx, name=None):
@@ -906,7 +854,17 @@ class Miniscape():
         """Allows users to easily compare each others' stats."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             name = " ".join(args) if args else None
-            await self.print_leaderboard(ctx, name)
+            msg = await ctx.send("Select an emoji to load a leaderboard.")
+            for emoji in lb_helpers.EMOJI.values():
+                await msg.add_reaction(emoji)
+
+            while True:
+                reaction, user = await self.bot.wait_for('reaction_add')
+                if user == ctx.author and reaction.message.id == msg.id:
+                    for key in lb_helpers.EMOJI.keys():
+                        if str(reaction.emoji) == lb_helpers.EMOJI[key]:
+                            await msg.edit(content=None)
+                            await msg.edit(content=lb_helpers.get_leaderboard(key, name))
 
     async def confirm(self, ctx, msg, content, timeout=300):
         """Asks the user to confirm an action, and returns whether they confirmed or not."""
@@ -922,20 +880,6 @@ class Miniscape():
                 await msg.edit(content=f'Your request has timed out. Please retype the command '
                                        'to try again.')
                 return False
-
-    async def print_leaderboard(self, ctx, name):
-        """Prints the leaderboard and provides an interface for showing various leaderboards."""
-        msg = await ctx.send("Select an emoji to load a leaderboard.")
-        for emoji in lb_helpers.EMOJI.values():
-            await msg.add_reaction(emoji)
-
-        while True:
-            reaction, user = await self.bot.wait_for('reaction_add')
-            if user == ctx.author and reaction.message.id == msg.id:
-                for key in lb_helpers.EMOJI.keys():
-                    if str(reaction.emoji) == lb_helpers.EMOJI[key]:
-                        await msg.edit(content=None)
-                        await msg.edit(content=lb_helpers.get_leaderboard(key, name))
 
     async def paginate(self, ctx, messages):
         """Provides an interface for printing a paginated set of messages."""

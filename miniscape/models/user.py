@@ -74,7 +74,7 @@ class User(models.Model):
                               'gather_xp',
                               'artisan_xp',
                               'cook_xp',
-                              'pray_xp',
+                              'prayer_xp',
                               'rc_xp']
 
         self.equipment_slots = [self.head_slot,
