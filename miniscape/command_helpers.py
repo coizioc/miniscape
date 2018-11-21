@@ -1,8 +1,12 @@
-import config
+import random
+from collections import Counter
+
 from miniscape import clue_helpers
 from miniscape.models import Item, User, UserInventory, MonsterLoot
+from miniscape.itemconsts import SAPPHIRE, EMERALD, RUBY, DIAMOND, LAPIS_LAZULI, QUARTZ, GEM_ROCK,\
+    ANCIENT_EFFIGY, OPENED_ANCIENT_EFFIGY
 import config
-from config import ARMOUR_SLOTS_FILE
+from config import ARMOUR_SLOTS_FILE, XP_PER_EFFIGY
 
 
 PRAYER_HEADER = f':pray: __**PRAYER**__ :pray:\n'
@@ -13,6 +17,73 @@ with open(ARMOUR_SLOTS_FILE, 'r') as f:
     for line in f.read().splitlines()[1:]:
         line_split = line.split(';')
         SLOTS[line_split[0]] = line_split[1]
+
+
+def parse_int(number_as_string):
+    """Converts an string into an int if the string represents a valid integer"""
+    if type(number_as_string) == tuple:
+        number_as_string = number_as_string[0]
+    try:
+        if len(number_as_string) > 1:
+            int(str(number_as_string)[:-1])
+        else:
+            if len(number_as_string) == 0:
+                raise ValueError
+            if len(number_as_string) == 1 and number_as_string.isdigit():
+                return int(number_as_string)
+            else:
+                raise ValueError
+    except ValueError:
+        raise ValueError
+    last_char = str(number_as_string)[-1]
+    if last_char.isdigit():
+        return int(number_as_string)
+    elif last_char == 'k':
+        return int(number_as_string[:-1]) * 1000
+    elif last_char == 'm':
+        return int(number_as_string[:-1]) * 1000000
+    elif last_char == 'b':
+        return int(number_as_string[:-1]) * 1000000000
+    else:
+        raise ValueError
+
+
+def parse_number_and_name(args):
+    """Parses the number and item name from an arbitrary number of arguments."""
+    if len(args) == 0:
+        number = None
+        name = None
+    elif len(args) == 1:
+        number = 1
+        name = args[0]
+    else:
+        try:
+            number = parse_int(args[0])
+            name = ' '.join(args[1:])
+        except ValueError:
+            number = 1
+            name = ' '.join(args)
+    return number, name
+
+
+def parse_number_name_length(args):
+    """Parses arguments of the form [number] [name] [length]."""
+    if args:
+        try:
+            number = parse_int(args[0])
+            name = ' '.join(args[1:])
+            length = None
+        except ValueError:
+            number = None
+            try:
+                name = ' '.join(args[:-1])
+                length = parse_int(args[-1])
+            except ValueError:
+                name = ' '.join(args)
+                length = None
+        return number, name, length
+    else:
+        return None, None, None
 
 
 def print_inventory(person, search):
@@ -68,6 +139,57 @@ def print_pets(person):
     out += f'{len(user_pets)}/{len(all_pets)}'
     messages.append(out)
     return messages
+
+
+def claim(person: User, name, number):
+    """Claims items/xp from an item and returns a message."""
+    item = Item.objects.filter(name__iexact=name)[0]
+    if not item:
+        return f"{name} is not an item."
+
+    if not person.has_item_amount_by_name(name, number):
+        return f'You do not have {item.pluralize(number)} in your inventory.'
+
+    out = ':moneybag: __**CLAIM**__ :moneybag:\n'
+    if item == GEM_ROCK:
+        out += 'You have received:\n'
+        gems = {
+            SAPPHIRE: 4,
+            EMERALD: 16,
+            RUBY: 64,
+            DIAMOND: 128,
+            LAPIS_LAZULI: 256,
+            QUARTZ: 512
+        }
+        loot = Counter()
+        for _ in range(number):
+            while True:
+                gem_type = random.sample(gems.keys(), 1)[0]
+                if random.randint(1, gems[gem_type]) == 1:
+                    loot[gem_type] += 1
+                    break
+        person.update_inventory(loot)
+        for gem in loot.keys():
+            out += f'{gem.pluralize(loot[gem])}\n'
+        out += f'from your {GEM_ROCK.pluralize(number)}.'
+        person.update_inventory({GEM_ROCK: number}, remove=True)
+    elif item == ANCIENT_EFFIGY:
+        skills = Counter()
+        for _ in range(number):
+            skill = random.sample(person.xp_fields_str, 1)[0]
+            skills[skill] += 1
+        person.update_inventory({OPENED_ANCIENT_EFFIGY: number})
+        person.update_inventory({ANCIENT_EFFIGY: number}, remove=True)
+        out += f"You have received the following xp from your {ANCIENT_EFFIGY.pluralize(number)}!\n"
+        for skill in skills.keys():
+            xp_gained = skills[skill] * XP_PER_EFFIGY
+            setattr(person, skill, getattr(person, skill) + xp_gained)
+            xp_gained_formatted = '{:,}'.format(xp_gained)
+            out += f"{xp_gained_formatted} {skill.replace('_', ' ')} xp\n"
+        person.save()
+    else:
+        out += f'{item} is not claimable.'
+    return out
 
 
 def eat(author, item):
