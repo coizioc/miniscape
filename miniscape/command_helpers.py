@@ -4,7 +4,7 @@ from collections import Counter
 from miniscape import clue_helpers
 from miniscape.models import Item, User, UserInventory, MonsterLoot
 from miniscape.itemconsts import SAPPHIRE, EMERALD, RUBY, DIAMOND, LAPIS_LAZULI, QUARTZ, GEM_ROCK,\
-    ANCIENT_EFFIGY, OPENED_ANCIENT_EFFIGY
+    ANCIENT_EFFIGY, OPENED_ANCIENT_EFFIGY, EFFY
 import config
 from config import ARMOUR_SLOTS_FILE, XP_PER_EFFIGY
 
@@ -180,12 +180,18 @@ def claim(person: User, name, number):
             skills[skill] += 1
         person.update_inventory({OPENED_ANCIENT_EFFIGY: number})
         person.update_inventory({ANCIENT_EFFIGY: number}, remove=True)
+        got_pet = False
+        if random.randint(1, 100) == 1:
+            got_pet = True
+            person.update_inventory({EFFY: 1})
         out += f"You have received the following xp from your {ANCIENT_EFFIGY.pluralize(number)}!\n"
         for skill in skills.keys():
             xp_gained = skills[skill] * XP_PER_EFFIGY
             setattr(person, skill, getattr(person, skill) + xp_gained)
             xp_gained_formatted = '{:,}'.format(xp_gained)
-            out += f"{xp_gained_formatted} {skill.replace('_', ' ')} xp\n"
+            out += f"{xp_gained_formatted} {skill.replace('_', ' ')}\n"
+        if got_pet:
+            out += 'You have also recieved Effy, the Effigy Pet!'
         person.save()
     else:
         out += f'{item} is not claimable.'
