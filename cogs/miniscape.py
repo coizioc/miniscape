@@ -634,7 +634,7 @@ class Miniscape():
     async def gather(self, ctx, *args):
         """Gathers items."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            number, name, length = ch.parse_number_name_time(args)
+            number, name, length = ch.parse_number_name_length(args)
             if name:
                 if number:
                     out = craft_helpers.start_gather(
