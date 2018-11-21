@@ -128,7 +128,7 @@ def print_pets(person):
     out = pets_header
     for pet in all_pets:
         if pet in user_pets:
-            out +=  f"**{pet.name.title()}**\n"
+            out += f"**{pet.name.title()}**\n"
         else:
             out += f'{pet.name.title()}\n'
 
@@ -181,9 +181,13 @@ def claim(person: User, name, number):
         person.update_inventory({OPENED_ANCIENT_EFFIGY: number})
         person.update_inventory({ANCIENT_EFFIGY: number}, remove=True)
         got_pet = False
-        if random.randint(1, 100) == 1:
-            got_pet = True
-            person.update_inventory({EFFY: 1})
+        if not person.has_item_amount_by_item(EFFY, 1):
+            for _ in range(number):
+                if random.randint(1, 100) == 1:
+                    got_pet = True
+                    person.update_inventory({EFFY: 1})
+                    break
+
         out += f"You have received the following xp from your {ANCIENT_EFFIGY.pluralize(number)}!\n"
         for skill in skills.keys():
             xp_gained = skills[skill] * XP_PER_EFFIGY
