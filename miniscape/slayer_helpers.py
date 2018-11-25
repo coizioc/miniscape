@@ -3,6 +3,7 @@ import logging
 from discord import Member
 
 from miniscape.item_helpers import get_loot_value
+# from miniscape.itemconsts import SLAYER_HELMET
 from miniscape.models import User, Monster, PlayerMonsterKills, Item
 from miniscape import adventures as adv
 from config import XP_FACTOR
@@ -203,6 +204,8 @@ def get_task(guildid, channelid, author: User):
         if author.combat_level == 99 and random.randint(1, 20) == 1:
             task_length *= 0.7
             cb_perk = True
+        if author.equipment_slots[0] == SLAYER_HELMET:
+            chance = min(round(chance * 1.125), 100)
 
         task = adv.format_line(0, author.id, adv.get_finish_time(task_length), guildid, channelid, monster.id,
                                monster.name, num_to_kill, chance)
@@ -429,7 +432,6 @@ def get_reaper_result(person, *args):
         out += f'\nYou have also gained {slayer_xp_formatted} slayer xp and {combat_xp_formatted} combat xp. '
 
     else:
-
         out += f'\nYou have received lower loot and experience because you have died.' \
                f'\nYou have received {slayer_xp_formatted} slayer xp and {combat_xp_formatted} combat xp. '
 
@@ -474,7 +476,6 @@ def get_reaper_task(guildid, channelid, userid):
             task_length *= 0.7
             cb_perk = True
 
-        task_length=0
         task = adv.format_line(5, userid, adv.get_finish_time(task_length), guildid, channelid, monster.id,
                                monster.name, num_to_kill, chance)
         adv.write(task)

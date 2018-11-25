@@ -182,7 +182,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name='user',
-            name='pray_xp',
+            name='prayer_xp',
             field=models.BigIntegerField(default=0),
         ),
         migrations.AddField(

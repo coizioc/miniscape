@@ -1,6 +1,7 @@
 from miniscape.models import Item
 
 ANCIENT_EFFIGY = Item.objects.get(name__iexact='ancient effigy')
+COINS = Item.objects.get(name__iexact='coins')
 DIAMOND = Item.objects.get(name__iexact='diamond')
 EFFY = Item.objects.get(name__iexact='effy')
 EMERALD = Item.objects.get(name__iexact='emerald')
@@ -12,3 +13,5 @@ QUARTZ = Item.objects.get(name__iexact='quartz')
 REAPER_TOKEN = Item.objects.get(name__iexact='reaper token')
 RUBY = Item.objects.get(name__iexact='ruby')
 SAPPHIRE = Item.objects.get(name__iexact='sapphire')
+# SLAYER_HELMET = Item.objects.get(name__iexact='slayer helmet')
+VIS_WAX = Item.objects.get(name__iexact='vis wax')

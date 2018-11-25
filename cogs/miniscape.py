@@ -14,7 +14,7 @@ from miniscape import adventures as adv, item_helpers, craft_helpers
 from cogs.helper import craft, items, quests, slayer, users, vis
 from cogs.errors.trade_error import TradeError
 from miniscape.models import User, Item
-from miniscape.itemconsts import REAPER_TOKEN, FEDORA
+from miniscape.itemconsts import REAPER_TOKEN, FEDORA, COINS
 import miniscape.command_helpers as ch
 import miniscape.slayer_helpers as sh
 import miniscape.clue_helpers as clue_helpers
@@ -22,7 +22,8 @@ import miniscape.prayer_helpers as prayer
 import miniscape.monster_helpers as mon
 import miniscape.quest_helpers as quest_helpers
 import miniscape.leaderboard_helpers as lb_helpers
-
+import miniscape.periodicchecker_helpers as pc_helpers
+import miniscape.vis_helpers as vis_helpers
 
 class AmbiguousInputError(Exception):
     """Error raised for input that refers to multiple users"""
@@ -489,6 +490,7 @@ class Miniscape():
             number, item = ch.parse_number_and_name(args)
             if number and item:
                 out = item_helpers.sell(ctx.author.id, item, number=number)
+                await ctx.send(out)
 
     #@commands.command()
     async def sellall(self, ctx, maxvalue=None):
@@ -672,124 +674,59 @@ class Miniscape():
     @commands.group(invoke_without_command=True)
     async def vis(self, ctx, *args):
         """Lets the user guess the current vis combination."""
-        author = ctx.user_object
         if has_post_permission(ctx.guild.id, ctx.channel.id):
+            author = ctx.user_object
             if author.is_vis_complete:
                 await ctx.send("You have already received vis wax today. "
                                "Please wait until tomorrow to try again.")
                 return
-
             if author.rc_level < 75:
                 await ctx.send("You do not have a high enough runecrafting level to know how to "
                                "use this machine.")
-
-            runes = []
-            if len(args) == 3:
-                for rune in args:
-                    runes.append(rune + " rune")
-            elif len(args) == 6:
-                runes.append(' '.join(args[0:1]))
-                runes.append(' '.join(args[2:3]))
-                runes.append(' '.join(args[4:5]))
-            else:
-                await ctx.send("Invalid number of arguments. Please enter the name of three runes.")
                 return
 
-            num_vis = vis.calc(ctx.author.id, runes)
-            if isinstance(num_vis, str):
-                await ctx.send(num_vis)
-                return
-
-            num_attempts = author.vis_attempts
-            author.vis_attempts += 1
-            author.save()
-            users.update_user(ctx.author.id, num_attempts + 1, key=users.VIS_ATTEMPTS_KEY)
-            out = (f"{craft_helpers.GATHER_HEADER}With the runes {runes}, you can receive {num_vis}"
-                   f" vis wax per slot, respectively, for a total of {sum(num_vis)} vis wax. "
-                   f"You have made {num_attempts + 1} attempts today, meaning that you require "
-                   f"{vis.calc_num(num_attempts + 1)} of each rune to make this many vis wax.")
+            out = vis_helpers.print_vis_result(author, args)
             await ctx.send(out)
 
     @vis.command(name='third')
     async def _vis_third(self, ctx):
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            if users.rc_level < 99:
+            if ctx.user_object.rc_level < 99:
                 await ctx.send("You do not have a high enough runecrafting level to use "
                                "this command.")
             else:
-                third_rune = items.get_attr(vis.RUNEIDS[vis.calc_third_rune(ctx.author.id)])
-                await ctx.send(f"Your third vis wax slot rune for today is: {third_rune}.")
+                third_rune = vis_helpers.get_vis_runes(ctx.user_object)[2][0]
+                await ctx.send(f"Your third vis wax slot rune for today is: {third_rune.rune.name}.")
 
     @vis.command(name='use')
     async def _vis_use(self, ctx, *args):
-        author = ctx.user_object
         if has_post_permission(ctx.guild.id, ctx.channel.id):
+            author = ctx.user_object
             if author.is_vis_complete:
                 await ctx.send("You have already received vis wax today. "
                                "Please wait until tomorrow to try again.")
                 return
-
             if author.rc_level < 75:
-                await ctx.send("You do not have a high enough runecrafting level to know "
-                               "how to use this machine.")
-
-            runes = []
-            if len(args) == 3:
-                for rune in args:
-                    runes.append(rune + " rune")
-            elif len(args) == 6:
-                runes.append(' '.join(args[0:1]))
-                runes.append(' '.join(args[2:3]))
-                runes.append(' '.join(args[4:5]))
-            else:
-                await ctx.send("Invalid number of arguments. Please enter the name of three runes.")
+                await ctx.send("You do not have a high enough runecrafting level to know how to "
+                               "use this machine.")
                 return
 
-            num_vis = vis.calc(ctx.author.id, runes)
-            if isinstance(num_vis, str):
-                await ctx.send(num_vis)
-                return
-
-            num_runes = vis.calc_num(author.vis_attempts)
-            loot = {}
-            for rune in runes:
-                itemid = items.find_by_name(rune)
-                if users.item_in_inventory(ctx.author.id, itemid, num_runes):
-                    loot[itemid] = num_runes
-                else:
-                    await ctx.send(f"You do not have enough runes to use this vis wax combination "
-                                   f"({items.add_plural(num_runes, items.find_by_name(rune))})")
-                    return
-
-            author.update_inventory(loot, remove=True)
-            author.update_inventory({'579' : round(sum(num_vis))})
-            author.is_vis_complete = True
-            author.save()
-
-            out = (f"{craft_helpers.GATHER_HEADER}You use the runes {runes}. "
-                   f"With this, you received {num_vis} vis wax per slot, respectively, for a "
-                   f"total of {sum(num_vis)} vis wax. You have made {author.vis_attempts} "
-                   f"attempts today, meaning that you used {vis.calc_num(author.vis_attempts)} "
-                   f"of each rune to craft the vis wax.")
+            out = vis_helpers.print_vis_result(author, args, use=True)
             await ctx.send(out)
 
     @vis.command(name='shop')
     async def _vis_shop(self, ctx):
         """Prints the vis wax shop."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            await ctx.send(vis.shop_print())
+            await ctx.send(vis_helpers.shop_print())
 
     @vis.command(name='buy')
     async def _vis_buy(self, ctx, *args):
         """Buys an item from the vis wax shop."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            try:
-                number = users.parse_int(args[0])
-                item = ' '.join(args[1:])
-            except ValueError:
-                number = 1
-                item = ' '.join(args)
-            await ctx.send(vis.shop_buy(ctx.author.id, item, number))
+            number, item = ch.parse_number_and_name(args)
+            if item:
+                await ctx.send(vis_helpers.shop_buy(ctx.user_object, item, number))
 
     @commands.group(invoke_without_command=True, aliases=['recipe'])
     async def recipes(self, ctx, *args):
@@ -833,7 +770,7 @@ class Miniscape():
             item = Item.objects.get(name="coins")
 
             if name is None:
-                amount = '{:,}'.format(user.get_item_by_item(item)[0].amount)
+                amount = '{:,}'.format(user.get_item_by_item(COINS).amount)
                 name = get_display_name(ctx.author)
                 await ctx.send(f'{name} has {amount} coins')
             elif name == 'universe':
@@ -846,7 +783,7 @@ class Miniscape():
                     await ctx.send(f'Input {name} can refer to multiple people.')#({members})')
                 else:
                     user = user[0]
-                    amount = '{:,}'.format(user.get_item_by_item(item)[0].amount)
+                    amount = '{:,}'.format(user.get_item_by_item(COINS).amount)
                     await ctx.send(f'{user.plain_name} has {amount} coins')
 
     @commands.command(aliases=['leaderboards'])
@@ -920,28 +857,10 @@ class Miniscape():
         """Checks if the current time is a different day and resets everyone's daily progress."""
         await self.bot.wait_until_ready()
         while not self.bot.is_closed():
-            try:
-                with open('./resources/last_check.txt', 'r') as check_file:
-                    last_check_string = check_file.read().splitlines()
-                last_check_time = datetime.datetime.strptime(
-                    last_check_string[0], '%Y-%m-%d %H:%M:%S.%f')
-            except FileNotFoundError as daily_exception:
-                print(daily_exception)
-                with open('./resources/last_check.txt', 'w+') as check_file:
-                    check_file.write(f"{datetime.datetime.now()}\n")
-                last_check_time = datetime.datetime.now()
-            except Exception as daily_exception:
-                print(daily_exception)
-
-            if last_check_time.date() < datetime.datetime.now().date():
-                try:
-                    users.reset_dailies()
-                    vis.update_vis()
-                    with open('./resources/last_check.txt', 'w+') as check_file:
-                        check_file.write(f"{datetime.datetime.now()}\n")
-                except Exception as daily_exception:
-                    print(daily_exception)
-            await asyncio.sleep(60)
+            if pc_helpers.is_next_day():
+                pc_helpers.reset_dailies()
+                print('dailies updated successfully')
+            await asyncio.sleep(TICK_SECONDS)
 
     async def check_adventures(self):
         """Check if any actions are complete and notifies the user if they are done."""

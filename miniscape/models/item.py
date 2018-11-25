@@ -137,3 +137,14 @@ class ItemNickname(models.Model):
 
     def __str__(self):
         return self.__repr__()
+
+
+class VisRunes(models.Model):
+    id = models.PositiveIntegerField(primary_key=True)
+    rune = models.ForeignKey(Item, on_delete=models.CASCADE)
+
+    def __repr__(self):
+        return "Vis ID for Rune (%s): %s" % (str(self.rune), self.id)
+
+    def __str__(self):
+        return self.__repr__()

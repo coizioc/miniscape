@@ -1,5 +1,6 @@
 from config import SHOP_FILE
 from miniscape.models import Item, User, Quest
+from miniscape.itemconsts import COINS
 from collections import Counter
 
 SHOP_HEADER = '__**:moneybag: SHOP :moneybag:**__\n'
@@ -93,8 +94,7 @@ def sell(userid, item, number):
     item_name = item.name
     if user.has_item_amount_by_item(item, number):
         value = item.value
-        coin = Item.objects.get(name="coins")
-        user.update_inventory(Counter({coin: value*number}))
+        user.update_inventory(Counter({COINS: value*number}))
         user.update_inventory(Counter({item: number}), remove=True)
 
         value_formatted = '{:,}'.format(value * number)
@@ -127,9 +127,8 @@ def buy(userid, item, number):
         if not quest_id or user.has_completed_quest(quest_req):
             value = item.value
             cost = 4 * number * value
-            coin = Item.objects.get(name="coins")
-            if user.has_item_amount_by_item(coin, cost):
-                user.update_inventory(Counter({coin: cost}), remove=True)
+            if user.has_item_amount_by_item(COINS, cost):
+                user.update_inventory(Counter({COINS: cost}), remove=True)
                 user.update_inventory(Counter({item: number}))
                 value_formatted = '{:,}'.format(4 * value * number)
                 return f'{number} {item_name} bought for {value_formatted} coins!'

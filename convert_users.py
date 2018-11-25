@@ -86,7 +86,7 @@ def load_users():
             user.artisan_xp = u['artisan']
             user.cook_xp = u['cook']
             user.gather_xp = u['gather']
-            user.pray_xp = u['prayer']
+            user.prayer_xp = u['prayer']
             user.rc_xp = u['runecrafting']
 
             user.is_ironman = u['ironman'] if u['ironman']  else False
