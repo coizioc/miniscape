@@ -3,7 +3,7 @@ import logging
 from discord import Member
 
 from miniscape.item_helpers import get_loot_value
-# from miniscape.itemconsts import SLAYER_HELMET
+from miniscape.itemconsts import SLAYER_HELMET
 from miniscape.models import User, Monster, PlayerMonsterKills, Item
 from miniscape import adventures as adv
 from config import XP_FACTOR
