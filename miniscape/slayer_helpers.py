@@ -35,6 +35,9 @@ def calc_chance(user: User, monster: Monster, number: int, remove_food=False):
     chance = (200 * (1 + user.combat_level / 99) * player_arm) /\
              (number / 50 * monster.damage * dam_multiplier + (1 + monster.level / 200)) + chance_bonus
 
+    if user.equipment_slots[0] == SLAYER_HELMET:
+        chance = min(round(chance * 1.125), 100)
+
     if user.is_eating:
         food_bonus = user.active_food.food_value
         if food_bonus > 0:
@@ -204,8 +207,6 @@ def get_task(guildid, channelid, author: User):
         if author.combat_level == 99 and random.randint(1, 20) == 1:
             task_length *= 0.7
             cb_perk = True
-        if author.equipment_slots[0] == SLAYER_HELMET:
-            chance = min(round(chance * 1.125), 100)
 
         task = adv.format_line(0, author.id, adv.get_finish_time(task_length), guildid, channelid, monster.id,
                                monster.name, num_to_kill, chance)
