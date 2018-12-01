@@ -372,6 +372,19 @@ class Miniscape():
             out = ch.claim(ctx.user_object, name, number)
             await ctx.send(out)
 
+    @commands.command()
+    async def pull(self, ctx, *args):
+        if has_post_permission(ctx.guild.id, ctx.channel.id):
+            number, name = ch.parse_number_and_name(args)
+            other_person = User.objects.filter(Q(name__icontains=name) or Q(nick__icontains=name))[0]
+
+            if other_person:
+                out = ch.claim(ctx.user_object, "christmas cracker", number, other_person=other_person)
+                await ctx.send(out)
+            else:
+                await ctx.send("You need to type the name of someone with whom you want to pull.")
+
+
     @commands.command(aliases=['cancle'])
     async def cancel(self, ctx):
         """Cancels your current action."""

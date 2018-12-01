@@ -1,6 +1,7 @@
 from miniscape.models import Item
 
 ANCIENT_EFFIGY = Item.objects.get(name__iexact='ancient effigy')
+CHRISTMAS_CRACKER = Item.objects.get(name__iexact='christmas cracker')
 COINS = Item.objects.get(name__iexact='coins')
 DIAMOND = Item.objects.get(name__iexact='diamond')
 EFFY = Item.objects.get(name__iexact='effy')

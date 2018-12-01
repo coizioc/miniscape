@@ -4,7 +4,7 @@ from collections import Counter
 from miniscape import clue_helpers
 from miniscape.models import Item, User, UserInventory, MonsterLoot
 from miniscape.itemconsts import SAPPHIRE, EMERALD, RUBY, DIAMOND, LAPIS_LAZULI, QUARTZ, GEM_ROCK,\
-    ANCIENT_EFFIGY, OPENED_ANCIENT_EFFIGY, EFFY
+    ANCIENT_EFFIGY, OPENED_ANCIENT_EFFIGY, EFFY, CHRISTMAS_CRACKER
 import config
 from config import ARMOUR_SLOTS_FILE, XP_PER_EFFIGY
 
@@ -141,7 +141,7 @@ def print_pets(person):
     return messages
 
 
-def claim(person: User, name, number):
+def claim(person: User, name, number, other_person=None):
     """Claims items/xp from an item and returns a message."""
     item = Item.objects.filter(name__iexact=name)[0]
     if not item:
@@ -197,6 +197,21 @@ def claim(person: User, name, number):
         if got_pet:
             out += 'You have also recieved Effy, the Effigy Pet!'
         person.save()
+    elif item == CHRISTMAS_CRACKER:
+        if other_person:
+            loot = Counter(random.choices(Item.objects.filter(name__contains="partyhat"), k=number))
+            other_person_name = other_person.nick if other_person.nick else other_person.plain_name
+            out += f'You and {other_person_name} pull the christmas cracker and '
+            if random.randint(0, 1):
+                out += f'**you** get the bigger end. You have received:\n'
+                person.update_inventory(loot)
+            else:
+                out += f'**{other_person_name}** gets the bigger end. They have received:\n'
+                other_person.update_inventory(loot)
+            for item, value in loot.items():
+                out += f'**{item.pluralize(value)}**\n'
+        else:
+            out += f'You need another person with whom you can pull this Christmas cracker.'
     else:
         out += f'{item} is not claimable.'
     return out
