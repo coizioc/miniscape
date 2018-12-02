@@ -116,7 +116,7 @@ class Other():
             await ctx.send("Please enter a question with the command.")
             return
         total = 0
-        for c in ' '.join(args):
+        for c in ' '.join(args).lower().replace('?', ''):
             total += ord(c)
         with open(EIGHT_BALL_FILE, 'r') as f:
             responses = f.read().splitlines()
