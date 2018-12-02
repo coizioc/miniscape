@@ -25,6 +25,7 @@ GENERAL_CHANNELS = [MINISCAPE_1_CHANNEL, MINISCAPE_2_CHANNEL, TEST_CHANNEL]
 
 class AmbiguousInputError(Exception):
     """Error raised for input that refers to multiple users"""
+
     def __init__(self, output):
         self.output = output
 
@@ -193,85 +194,84 @@ class Other():
     async def deathmatch(self, ctx, opponent='rand', bet=None):
         """Allows users to duke it out in a 1v1 match."""
         author = ctx.user_object
-        if ctx.channel.id == DUEL_CHANNEL or ctx.channel.id in GENERAL_CHANNELS:
-            author_name = author.plain_name
-            if bet is not None:
-                if author.is_ironman:
-                    await ctx.send('Ironmen cannot start staked deathmatches.')
-                    return
-                try:
-                    bet = users.parse_int(bet)
-                except ValueError:
-                    await ctx.send(f'{bet} does not represent a valid number.')
-                bet_formatted = '{:,}'.format(bet)
-                if not author.has_item_amount_by_name('coins', bet):
-                    await ctx.send(f'You do not have {bet_formatted} coins.')
-                    return
-                try:
-                    opponent_member = parse_name(ctx.message.guild, opponent)
-                    opponent_obj = User.objects.get(id=opponent_member.id)
-                    opponent_name = opponent_obj.plain_name
-                except NameError:
-                    await ctx.send(f'{opponent} not found in server.')
-                    return
-                except AmbiguousInputError as members:
-                    await ctx.send(f'Input {opponent} can refer to multiple people ({members})')
-                    return
-                if opponent_obj == author:
-                    await ctx.send('You cannot fight yourself.')
-                    return
-                if opponent_obj.is_ironman:
-                    await ctx.send('You cannot start a staked deathmatch with an ironman.')
-                    return
-                if not opponent_obj.has_item_amount_by_name('coins', bet):
-                    await ctx.send(f'{opponent_name} does not have {bet_formatted} coins.')
-                    return
-                author.update_inventory({'0': bet}, remove=True)
-                out = f'Deathmatch set up between {author_name} and {opponent_member.mention} with bet ' \
-                      f'{bet_formatted} coins! To confirm this match, {opponent_name} must react to ' \
-                      f'this message with a :thumbsup: in the next minute. If a minute passes or if the ' \
-                      f'challenger reacts to this message, the deathmatch will be cancelled and the deposit ' \
-                      f'refunded.'
-                msg = await ctx.send(out)
-                await msg.add_reaction('\N{THUMBS UP SIGN}')
+        author_name = author.plain_name
+        if bet is not None:
+            if author.is_ironman:
+                await ctx.send('Ironmen cannot start staked deathmatches.')
+                return
+            try:
+                bet = users.parse_int(bet)
+            except ValueError:
+                await ctx.send(f'{bet} does not represent a valid number.')
+            bet_formatted = '{:,}'.format(bet)
+            if not author.has_item_amount_by_name('coins', bet):
+                await ctx.send(f'You do not have {bet_formatted} coins.')
+                return
+            try:
+                opponent_member = parse_name(ctx.message.guild, opponent)
+                opponent_obj = User.objects.get(id=opponent_member.id)
+                opponent_name = opponent_obj.plain_name
+            except NameError:
+                await ctx.send(f'{opponent} not found in server.')
+                return
+            except AmbiguousInputError as members:
+                await ctx.send(f'Input {opponent} can refer to multiple people ({members})')
+                return
+            if opponent_obj == author:
+                await ctx.send('You cannot fight yourself.')
+                return
+            if opponent_obj.is_ironman:
+                await ctx.send('You cannot start a staked deathmatch with an ironman.')
+                return
+            if not opponent_obj.has_item_amount_by_name('coins', bet):
+                await ctx.send(f'{opponent_name} does not have {bet_formatted} coins.')
+                return
+            author.update_inventory({'0': bet}, remove=True)
+            out = f'Deathmatch set up between {author_name} and {opponent_member.mention} with bet ' \
+                  f'{bet_formatted} coins! To confirm this match, {opponent_name} must react to ' \
+                  f'this message with a :thumbsup: in the next minute. If a minute passes or if the ' \
+                  f'challenger reacts to this message, the deathmatch will be cancelled and the deposit ' \
+                  f'refunded.'
+            msg = await ctx.send(out)
+            await msg.add_reaction('\N{THUMBS UP SIGN}')
 
-                while True:
-                    try:
-                        reaction, user = await self.bot.wait_for('reaction_add', timeout=60)
-                        if str(reaction.emoji) == '👍' and user == opponent_member:
-                            opponent_obj.update_inventory({'0': bet}, remove=True)
-                            deathmatch_messages, winner = dm.do_deathmatch(author, opponent_obj,
-                                                                           bet=bet_formatted)
-                            for message in deathmatch_messages[:-1]:
-                                await msg.edit(content=message)
-                                await asyncio.sleep(1)
-                            winner.update_inventory({'0': 2 * bet})
-                            return
-                        elif user == ctx.author:
-                            author.update_inventory({'0': bet})
-                            await msg.edit(content=f'{author_name} has declined their challenge and '
-                                                   f'the deposit of {bet_formatted} coins has been returned.')
-                            return
-                    except asyncio.TimeoutError:
-                        author.update_inventory({'0': bet})
-                        await msg.edit(content=f'One minute has passed and the deathmatch has been cancelled. '
-                                               f'The deposit of {bet_formatted} coins has been returned.')
-                        return
-            else:
+            while True:
                 try:
-                    opponent_member = parse_name(ctx.message.guild, opponent)
-                    opponent_obj = User.objects.get(id=opponent_member.id)
-                except NameError:
-                    await ctx.send(f'{opponent} not found in server.')
+                    reaction, user = await self.bot.wait_for('reaction_add', timeout=60)
+                    if str(reaction.emoji) == '👍' and user == opponent_member:
+                        opponent_obj.update_inventory({'0': bet}, remove=True)
+                        deathmatch_messages, winner = dm.do_deathmatch(author, opponent_obj,
+                                                                       bet=bet_formatted)
+                        for message in deathmatch_messages[:-1]:
+                            await msg.edit(content=message)
+                            await asyncio.sleep(1)
+                        winner.update_inventory({'0': 2 * bet})
+                        return
+                    elif user == ctx.author:
+                        author.update_inventory({'0': bet})
+                        await msg.edit(content=f'{author_name} has declined their challenge and '
+                                               f'the deposit of {bet_formatted} coins has been returned.')
+                        return
+                except asyncio.TimeoutError:
+                    author.update_inventory({'0': bet})
+                    await msg.edit(content=f'One minute has passed and the deathmatch has been cancelled. '
+                                           f'The deposit of {bet_formatted} coins has been returned.')
                     return
-                except AmbiguousInputError as members:
-                    await ctx.send(f'Input {opponent} can refer to multiple people ({members})')
-                    return
-                msg = await ctx.send(dm.DEATHMATCH_HEADER)
-                deathmatch_messages, winner = dm.do_deathmatch(author, opponent_obj)
-                for message in deathmatch_messages[:-1]:
-                    await msg.edit(content=message)
-                    await asyncio.sleep(1)
+        else:
+            try:
+                opponent_member = parse_name(ctx.message.guild, opponent)
+                opponent_obj = User.objects.get(id=opponent_member.id)
+            except NameError:
+                await ctx.send(f'{opponent} not found in server.')
+                return
+            except AmbiguousInputError as members:
+                await ctx.send(f'Input {opponent} can refer to multiple people ({members})')
+                return
+            msg = await ctx.send(dm.DEATHMATCH_HEADER)
+            deathmatch_messages, winner = dm.do_deathmatch(author, opponent_obj)
+            for message in deathmatch_messages[:-1]:
+                await msg.edit(content=message)
+                await asyncio.sleep(1)
 
 
 def setup(bot):
