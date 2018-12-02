@@ -6,6 +6,7 @@ import random
 import discord
 from discord.ext import commands
 
+from config import EIGHT_BALL_FILE
 from cogs.helper import deathmatch as dm
 from cogs.helper import users
 from miniscape.models import User
@@ -107,6 +108,19 @@ class Other():
             await ctx.send(f"{name.title()}, you were spared by Thanos.")
         else:
             await ctx.send(f'{name.title()}, you were slain by Thanos, for the good of the Universe.')
+
+    @commands.command(aliases=['8ball'])
+    async def eight_ball(self, ctx, *args):
+        """Answers a question with a response."""
+        if len(args) == 0:
+            await ctx.send("Please enter a question with the command.")
+            return
+        total = 0
+        for c in ' '.join(args):
+            total += ord(c)
+        with open(EIGHT_BALL_FILE, 'r') as f:
+            responses = f.read().splitlines()
+        await ctx.send(responses[total % len(responses)])
 
     @commands.command()
     async def ship(self, ctx, *args):
