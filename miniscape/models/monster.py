@@ -111,15 +111,15 @@ class Monster(models.Model):
                 logging.getLogger(__name__).info(log_str)
                 loot[ml.item] += amount
 
-        # 1% chance to drop christmas cracker per kill for Christmas event.
-        if random.randint(1, 10000) == 1:
-            christmas_cracker = Item.objects.get(name='christmas cracker')
-            log_str = "Awarded %d %s as part of loot generation for %d %s" % (1,
-                                                                              christmas_cracker.name,
-                                                                              int(num),
-                                                                              self.name)
-            logging.getLogger(__name__).info(log_str)
-            loot[christmas_cracker] += 1
+            # Chance to drop christmas cracker per kill for Christmas event.
+            if random.randint(1, 1000000) == 1:
+                christmas_cracker = Item.objects.get(name='christmas cracker')
+                log_str = "Awarded %d %s as part of loot generation for %d %s" % (1,
+                                                                                  christmas_cracker.name,
+                                                                                  int(num),
+                                                                                  self.name)
+                logging.getLogger(__name__).info(log_str)
+                loot[christmas_cracker] += 1
 
         return loot
 
