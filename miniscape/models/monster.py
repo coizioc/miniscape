@@ -113,7 +113,7 @@ class Monster(models.Model):
 
         # 1% chance to drop christmas cracker per kill for Christmas event.
         if random.randint(1, 100) == 1:
-            christmas_cracker = Item.objects.get(name__equal='christmas cracker')
+            christmas_cracker = Item.objects.get(name='christmas cracker')
             log_str = "Awarded %d %s as part of loot generation for %d %s" % (1,
                                                                               christmas_cracker.name,
                                                                               int(num),

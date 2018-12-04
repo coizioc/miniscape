@@ -271,7 +271,7 @@ class Other():
             deathmatch_messages, winner = dm.do_deathmatch(author, opponent_obj)
             for message in deathmatch_messages[:-1]:
                 await msg.edit(content=message)
-                await asyncio.sleep(1)
+                await asyncio.sleep(2)
 
 
 def setup(bot):

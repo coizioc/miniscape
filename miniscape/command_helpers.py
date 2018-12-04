@@ -211,7 +211,7 @@ def claim(person: User, name, number, other_person=None):
             for item, value in loot.items():
                 out += f'**{item.pluralize(value)}**\n'
         else:
-            out += f'You need another person with whom you can pull this Christmas cracker.'
+            out += f'Please use the `~pull [number] [other_person]` command to claim the christmas crackers.'
     else:
         out += f'{item} is not claimable.'
     return out
