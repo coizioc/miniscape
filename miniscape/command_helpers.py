@@ -199,6 +199,7 @@ def claim(person: User, name, number, other_person=None):
         person.save()
     elif item == CHRISTMAS_CRACKER:
         if other_person:
+            person.update_inventory({CHRISTMAS_CRACKER: number}, remove=True)
             loot = Counter(random.choices(Item.objects.filter(name__contains="partyhat"), k=number))
             other_person_name = other_person.nick if other_person.nick else other_person.plain_name
             out += f'You and {other_person_name} pull the christmas cracker and '
