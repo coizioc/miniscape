@@ -125,7 +125,10 @@ def print_monster(monstername):
         else:
             out += f"{ml.min_amount}-{ml.max_amount}, "
 
-        out += f"rarity: {ml.rarity_str})*\n"
+        if ml.rarity > 1:
+            out += f"rarity: {ml.rarity_str} (1/{ml.rarity}))*\n"
+        else:
+            out += f"rarity: {ml.rarity_str})*\n"
 
         if len(out) >= 1800:
             messages.append(out)
