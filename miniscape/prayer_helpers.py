@@ -1,4 +1,5 @@
 from miniscape.models import User, Prayer, Item
+import string
 
 PRAYER_HEADER = f':pray: __**PRAYER**__ :pray:\n'
 PRAYER_POTION = Item.objects.get(name__iexact="prayer potion")
@@ -59,7 +60,7 @@ def print_list(userid):
     out = PRAYER_HEADER
     messages = []
     for prayer in usable_prayers:
-        out += f'**{prayer.name.title()}** *(level {prayer.level_required})*\n'
+        out += f'**{string.capwords(prayer.name)}** *(level {prayer.level_required})*\n'
         if len(out) > 1800:
             messages.append(out)
             out = f'{PRAYER_HEADER}'
@@ -86,5 +87,5 @@ def set_prayer(userid, prayer):
 
     user.prayer_slot = prayer
     user.save()
-    out = f'{PRAYER_HEADER}Your prayer has been set to {prayer.name.title()}!'
+    out = f'{PRAYER_HEADER}Your prayer has been set to {string.capwords(prayer.name)}!'
     return out

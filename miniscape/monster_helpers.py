@@ -1,5 +1,6 @@
 from miniscape.models import Monster, User, MonsterLoot
 import random
+import string
 
 CHARACTER_HEADER = f':crossed_swords: __**$NAME**__ :crossed_swords:\n'
 
@@ -46,7 +47,7 @@ def print_monster_kills(author, search=None):
     out = f"{CHARACTER_HEADER.replace('$NAME', author.plain_name)}"
 
     for monster in monster_kills:
-        out += f'**{monster.monster.name.title()}**: {monster.amount}\n'
+        out += f'**{string.capwords(monster.monster.name)}**: {monster.amount}\n'
         pass
 
     return out
@@ -76,7 +77,7 @@ def print_list():
         monster_list.append((level, name, slayer_req))
     out = header
     for level, name, req in sorted(monster_list):
-        out += f'**{name.title()}** *(combat: {level}'
+        out += f'**{string.capwords(name)}** *(combat: {level}'
         if int(req) > 1:
             out += f', slayer: {req}'
         out += ')*\n'
@@ -98,12 +99,12 @@ def print_monster(monstername):
     aliases = ', '.join(monster.alias_strings)
 
     out = f'__**:skull_crossbones: BESTIARY :skull_crossbones:**__\n'\
-          f'**Name**: {monster.name.title()}\n'
+          f'**Name**: {string.capwords(monster.name)}\n'
 
     if aliases:
         out += f'**Aliases**: {aliases}\n'
     if monster.quest_req:
-        out += f'**Quest Requirement**: {monster.quest_req.name.title()}\n'
+        out += f'**Quest Requirement**: {string.capwords(monster.quest_req.name)}\n'
     if monster.slayer_level_req > 1:
         out += f'**Slayer Requirement**: {monster.slayer_level_req}\n'
 

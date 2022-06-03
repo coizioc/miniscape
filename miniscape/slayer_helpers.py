@@ -283,13 +283,13 @@ def get_kill_result(person, *args):
         print(e)
         raise ValueError
     num_to_kill = int(num_to_kill)
-    user = User.objects.get(id=person.id)
+    user = User.objects.get(id=person)
     monster = Monster.objects.get(id=monsterid)
     user.add_kills(monster, num_to_kill)
 
     chance = calc_chance(user, monster, num_to_kill, remove_food=True)
     is_success = adv.is_success(chance)
-    if not is_success and user.prayer_slot.id == '16' and random.randint(0, 1):
+    if not is_success and user.prayer_slot_id == '16' and random.randint(0, 1):
         is_success = True
 
     factor = 1 if is_success else int(chance) / 100
@@ -320,7 +320,7 @@ def print_loot(loot, person: Member, monster: Monster, num_to_kill: int, add_men
     """Converts a user's loot from a slayer task to a string."""
     out = f'{SLAYER_HEADER}**'
     if add_mention:
-        out += f'{person.mention}, '
+        out += f'<@{person}>, '
     else:
         out += f'{person.name}, '
     #
@@ -348,7 +348,7 @@ def get_result(person, *args):
         print(e)
         raise ValueError
     num_to_kill = int(num_to_kill)
-    user: User = User.objects.get(id=person.id)
+    user: User = User.objects.get(id=person)
     monster: Monster = Monster.objects.get(id=monsterid)
     user.add_kills(monster, num_to_kill)
 

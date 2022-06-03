@@ -1,5 +1,6 @@
 """Implements commands related to running a freemium-style text-based RPG."""
 import asyncio
+import string
 import datetime
 import random
 from collections import Counter
@@ -101,7 +102,7 @@ def has_post_permission(guildid, channelid):
                 pass
     return True
 
-class Miniscape():
+class Miniscape(commands.Cog):
     """Defines Miniscape commands."""
 
     def __init__(self, bot):
@@ -159,6 +160,7 @@ class Miniscape():
         """Examines a given user."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             search_string = ' '.join(args).lower()
+            mems = await ctx.guild.query_members(query=search_string)
             for member in ctx.guild.members:
                 if member.nick is not None:
                     if search_string in member.nick.lower():
@@ -261,9 +263,9 @@ class Miniscape():
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             item = ' '.join(args)
             if ctx.user_object.lock_item(item):
-                out = f'{item.title()} has been locked!'
+                out = f'{string.capwords(item)} has been locked!'
             else:
-                out = (f'{item.title()} does not exist in your inventory. You must have it '
+                out = (f'{string.capwords(item)} does not exist in your inventory. You must have it '
                        'present to lock it.')
             await ctx.send(out)
 
@@ -272,9 +274,9 @@ class Miniscape():
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             item = ' '.join(args)
             if ctx.user_object.unlock_item(item):
-                out = f'{item.title()} has been unlocked!'
+                out = f'{string.capwords(item)} has been unlocked!'
             else:
-                out = (f'{item.title()} does not exist in your inventory. You must have it '
+                out = (f'{string.capwords(item)} does not exist in your inventory. You must have it '
                        'present to unlock it.')
             await ctx.send(out)
 
@@ -560,7 +562,7 @@ class Miniscape():
             itemid = items.find_by_name(' '.join(args[2:-1]))
             name = get_display_name(ctx.author)
             offer_formatted = '{:,}'.format(offer)
-            out = (f'{items.SHOP_HEADER}{name.title()} wants to sell {name_member.mention} '
+            out = (f'{items.SHOP_HEADER}{string.capwords(name)} wants to sell {name_member.mention} '
                    f'{items.add_plural(number, itemid)} for {offer_formatted} coins. '
                    f'To accept this offer, reply to this post with a :thumbsup:. '
                    f'Otherwise, this offer will expire in one minute.')
@@ -575,7 +577,7 @@ class Miniscape():
                 users.update_inventory(name_member.id, loot)
 
                 buyer_name = get_display_name(name_member)
-                await ctx.send(f'{items.SHOP_HEADER}{name.title()} successfully sold '
+                await ctx.send(f'{items.SHOP_HEADER}{string.capwords(name)} successfully sold '
                                f'{items.add_plural(number, itemid)} to {buyer_name} for '
                                f'{offer_formatted} coins!')
             ctx.bot.trade_manager.reset_trade(trade, ctx.author.id, name_member.id)
@@ -783,7 +785,7 @@ class Miniscape():
             item = Item.objects.get(name="coins")
 
             if name is None:
-                amount = '{:,}'.format(user.get_item_by_item(COINS).amount)
+                amount = '{:,}'.format(user.get_item_by_item(COINS)[0].amount)
                 name = get_display_name(ctx.author)
                 await ctx.send(f'{name} has {amount} coins')
             elif name == 'universe':
@@ -837,6 +839,11 @@ class Miniscape():
             print(messages)
             await ctx.send(messages)
             return
+        else:
+            for msg in messages:
+                await ctx.send(msg)
+            return
+        
         if len(messages) == 1:
             await ctx.send(messages[0])
             return
@@ -905,7 +912,7 @@ class Miniscape():
                     bot_self = bot_guild.get_channel(int(announcement_channel))
                 except KeyError:
                     bot_self = bot_guild.get_channel(channelid)
-                person = bot_guild.get_member(int(userid))
+                person = int(userid)
 
                 adventures = {
                     0: sh.get_result,

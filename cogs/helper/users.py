@@ -1,4 +1,5 @@
 import datetime
+import string
 import os
 import shutil
 import time
@@ -361,7 +362,7 @@ def print_account(author, printequipment=True):
     # TODO: This can probably be done better
     for skill, level, skill_name in zip(author.xp_fields_str, author.level_fields_str, SKILLS):
         xp_formatted = '{:,}'.format(getattr(author, skill, 0))
-        out += f'**{skill_name.title()} Level**: {getattr(author, level, 0)} *({xp_formatted} xp)*\n'
+        out += f'**{string.capwords(skill_name)} Level**: {getattr(author, level, 0)} *({xp_formatted} xp)*\n'
 
     out += f'**Skill Total**: {author.total_level}/{len(SKILLS) * 99}\n\n'
     out += f'**Quests Completed**: {len(author.completed_quests.all())}/{len(quests.QUESTS.keys())}\n\n'
@@ -401,7 +402,7 @@ def print_equipment(author, name=None, with_header=False):
 
     for slot in armour_print_order:
         item = equipment[slot]
-        out += f'**{slot.title()}**: '
+        out += f'**{string.capwords(slot)}**: '
         if item is not None:
             out += f'{item.name} '
             out += f'*(dam: {item.damage}, ' \

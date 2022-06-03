@@ -1,4 +1,5 @@
 import config
+import string
 from enum import Enum, auto
 from miniscape.models import Item, User, Quest
 
@@ -151,7 +152,7 @@ def get_leaderboard(key, name):
             secondary = -1
 
         primary_formatted = '{:,}'.format(primary)
-        out += f'**{name.title()}**: {primary_formatted}'
+        out += f'**{string.capwords(name)}**: {primary_formatted}'
         if secondary != -1:
             secondary_formatted = '{:,}'.format(secondary)
             out += f' *({secondary_formatted} xp)*\n'

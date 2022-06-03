@@ -1,4 +1,5 @@
 import random
+import string
 import ujson
 from collections import Counter
 
@@ -174,7 +175,7 @@ def print_item_from_lootable(item):
                 item_max = int(loottable[itemid]['max'])
                 rarity = int(loottable[itemid]['rarity'])
 
-                out += f'{MONSTERS[monsterid][NAME_KEY].title()} *(amount: '
+                out += f'{string.capwords(MONSTERS[monsterid][NAME_KEY])} *(amount: '
 
                 if item_min == item_max:
                     out += f'{item_min}, '

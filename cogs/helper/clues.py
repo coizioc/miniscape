@@ -1,5 +1,6 @@
 import math
 import random
+import string
 from collections import Counter
 
 from cogs.helper import items
@@ -109,7 +110,7 @@ def print_item_from_lootable(item):
                 item_max = int(loottable[itemid]['max'])
                 rarity = int(loottable[itemid]['rarity'])
 
-                out += f'{name.title()} *(amount: '
+                out += f'{string.capwords(name)} *(amount: '
 
                 if item_min == item_max:
                     out += f'{item_min}, '

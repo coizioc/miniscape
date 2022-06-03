@@ -1,4 +1,5 @@
 from config import SHOP_FILE
+import string
 from miniscape.models import Item, User, Quest
 from miniscape.itemconsts import COINS
 from collections import Counter
@@ -24,7 +25,7 @@ def compare(item1, item2):
         return f'Error: {item2} does not exist.'
 
     out = f':moneybag: __**COMPARE**__ :moneybag:\n'\
-          f'**{i1.name.title()} vs {i2.name.title()}:**\n\n'\
+          f'**{string.capwords(i1.name)} vs {string.capwords(i2.name)}:**\n\n'\
           f'**Accuracy**: {i1.accuracy} vs {i2.accuracy} *({i1.accuracy - i2.accuracy})*\n' \
           f'**Damage**: {i1.damage} vs {i2.damage} *({i1.damage - i2.damage})*\n' \
           f'**Armour**: {i1.armour} vs {i2.armour} *({i1.armour - i2.armour})*\n' \
@@ -54,7 +55,7 @@ def print_shop(userid):
         if is_available:
             name = item.name
             price = '{:,}'.format(4 * item.value)
-            out += f'**{name.title()}**: {price} coins\n'
+            out += f'**{string.capwords(name)}**: {price} coins\n'
 
         if len(out) > 1800:
             messages.append(out)

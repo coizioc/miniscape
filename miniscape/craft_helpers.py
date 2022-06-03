@@ -1,4 +1,5 @@
 import math
+import string
 from collections import Counter
 import random
 
@@ -43,7 +44,7 @@ def start_gather(guildid, channelid, user: User, itemname, length=-1, number=-1)
             return f'Error: {length} is not a valid length of time.'
 
         if not item.is_gatherable:
-            return f'Error: you cannot gather item {ite.name}.'
+            return f'Error: you cannot gather item {item.name}.'
 
         quest_req = item.quest_req
         if quest_req and quest_req not in user.completed_quests_list:
@@ -111,17 +112,17 @@ def print_rc_status(userid, time_left, *args):
     return out
 
 
-def print_recipe(user, recipe):
+def print_recipe(user, recipe_name):
     """Prints details related to a particular recipe."""
 
-    created_item = Item.find_by_name_or_nick(recipe)
+    created_item = Item.find_by_name_or_nick(recipe_name)
     recipe = Recipe.objects.filter(creates=created_item)
     if not recipe:
-        return f'Error: cannot find recipe that crafts {recipe}.'
+        return f'Error: cannot find recipe that crafts {recipe_name}.'
     recipe = recipe[0]
 
     out = f'{CRAFT_HEADER}'\
-          f'**Name**: {created_item.name.title()}\n'\
+          f'**Name**: {string.capwords(created_item.name)}\n'\
           f'**Artisan Requirement**: {recipe.level_requirement}\n'\
           f'**XP Per Item**: {created_item.xp}\n'\
           f'**Inputs**:\n'
@@ -148,8 +149,11 @@ def print_list(user: User, search):
     recipes = list(recipes)
     user_quests = user.completed_quests_list
     for recipe in recipes:
-        if recipe.quest_requirement in user_quests:
-            out += f'**{recipe.creates.name.title()}** *(level {recipe.level_requirement})*\n'
+        if recipe.quest_requirement:
+            if recipe.quest_requirement in user_quests:
+                out += f'**{string.capwords(recipe.creates.name)}** *(level {recipe.level_requirement})*\n'
+        else:
+            out += f'**{string.capwords(recipe.creates.name)}** *(level {recipe.level_requirement})*\n'
 
         if len(out) > 1800:
             messages.append(out)
@@ -212,7 +216,7 @@ def get_gather_list():
     messages = []
     out = GATHER_HEADER
     for item in gatherables:
-        out += f'**{item.name.title()}** *(level: {item.level}, ' \
+        out += f'**{string.capwords(item.name)}** *(level: {item.level}, ' \
                f'xp: {item.xp})*\n'
         if len(out) > 1800:
             messages.append(out)
@@ -229,7 +233,7 @@ def get_gather(person, *args):
     except ValueError as e:
         print(e)
         raise ValueError
-    user = User.objects.get(id=person.id)
+    user = User.objects.get(id=person)
     item = Item.objects.get(id=itemid)
     user.update_inventory({item: number})
     xp = XP_FACTOR * number * item.xp
@@ -239,7 +243,7 @@ def get_gather(person, *args):
 
     xp_formatted = '{:,}'.format(xp)
     out = f'{GATHER_HEADER}' \
-          f'{person.mention}, your gathering session has finished! You have gathered ' \
+          f'<@{person}>, your gathering session has finished! You have gathered ' \
           f'{item.pluralize(number)} and have gained {xp_formatted} gathering xp! '
 
     if gather_level_after > gather_level_before:

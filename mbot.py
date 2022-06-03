@@ -14,11 +14,12 @@ from discord.ext import commands
 import cogs.managers.trade_manager as tm
 from miniscape.models import User
 import config
+from pythonjsonlogger import jsonlogger
 
 def extensions_generator():
     """Returns a generator for all cog files that aren't in do_not_use."""
     cog_path = "./cogs"
-    do_not_use = ['errors', 'helper', 'managers', '__pycache__']
+    do_not_use = ['errors', 'helper', 'managers', '__pycache__', 'test.py']
     for cog in os.listdir(cog_path):
         if cog not in do_not_use:
             yield f"cogs.{cog[:-3]}"
@@ -31,7 +32,7 @@ class MiniscapeBot(commands.Bot):
     """Defines the miniscapebot class and functions."""
 
     def __init__(self):
-        super().__init__(command_prefix=["~", "%"], description=DESCRIPTION)
+        super().__init__(command_prefix=["~", "%", "./"], description=DESCRIPTION)
         self.default_nick = "Miniscape"
         self.add_command(self.load)
         self.remove_command('help')
@@ -52,6 +53,7 @@ class MiniscapeBot(commands.Bot):
         ch = logging.StreamHandler(sys.stdout)
         ch.setLevel(logging.DEBUG)
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        formatter = jsonlogger.JsonFormatter()
         ch.setFormatter(formatter)
         root.addHandler(ch)
         logging.getLogger(__name__).info("Logging initialized")

@@ -1,4 +1,5 @@
 import random
+import string
 from collections import Counter
 
 from miniscape import clue_helpers
@@ -97,7 +98,7 @@ def print_inventory(person, search):
 
     messages = [(lock_template if item.is_locked else unlock_template)
                 % (
-                    item.item.name.title(),
+                    string.capwords(item.item.name),
                     '{:,}'.format(item.amount),
                     '{:,}'.format(item.total_value),
                     '{:,}'.format(item.item.value)
@@ -128,9 +129,9 @@ def print_pets(person):
     out = pets_header
     for pet in all_pets:
         if pet in user_pets:
-            out += f"**{pet.name.title()}**\n"
+            out += f"**{string.capwords(pet.name)}**\n"
         else:
-            out += f'{pet.name.title()}\n'
+            out += f'{string.capwords(pet.name)}\n'
 
         if len(out) > 1900:
             messages.append(out)
@@ -348,9 +349,9 @@ def print_item_stats(itemname: str):
     """Prints the stats of an item."""
     item: Item = Item.find_by_name_or_nick(itemname)
     if not item:
-        return f'Error: {item} is not an item.'
+        return f'Error: {itemname} is not an item.'
 
-    name = item.name.title()
+    name = string.capwords(item.name)
     value = '{:,}'.format(item.value)
     aliases = ', '.join(item.alias_strings)
 
@@ -372,7 +373,7 @@ def print_item_stats(itemname: str):
         out += f'**Accuracy**: {accuracy}\n'
         out += f'**Armour**: {armour}\n'
         out += f'**Prayer Bonus**: {prayer}\n'
-        out += f'**Slot**: {SLOTS[str(item.slot)].title()}\n'
+        out += f'**Slot**: {string.capwords(SLOTS[str(item.slot)])}\n'
         out += f'**Combat Requirement**: {level}\n'
     if item.is_gatherable:
         xp = item.xp
@@ -389,7 +390,7 @@ def print_item_stats(itemname: str):
         else:
             amt = "%d-%d" % (ml.min_amount, ml.max_amount)
 
-        out += f'\n{ml.monster.name.title()} _(amount: {amt}, rarity: {ml.rarity_str})_'
+        out += f'\n{string.capwords(ml.monster.name)} _(amount: {amt}, rarity: {ml.rarity_str})_'
 
     out += clue_helpers.print_item_from_lootable(item)
     return out
