@@ -53,7 +53,7 @@ class GeneralCommands:
             recipes = craft_helpers.print_list(ctx.user_object, search_term, filter_quests=False, allow_empty=False)
             if recipes: recipes[-1] += "\n"
         if global_search or args[0] in ["quest", "q"]:
-            quests = quest_helpers.print_list(ctx.user_object, search=search_term, get_stats=False, allow_empty=False)
+            quests = quest_helpers.print_list(ctx.user_object, search=search_term, get_stats=False, allow_empty=False, ignore_req=True)
             if quests: quests[-1] += "\n"
         if global_search or args[0] in ["pray", "prayer", "p"]:
             prayers = prayer_helpers.print_list("", search_term, allow_empty=False)

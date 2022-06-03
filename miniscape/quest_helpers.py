@@ -219,7 +219,7 @@ def get_result(person, *args):
     return out
 
 
-def print_list(user, incomplete=False, search="", get_stats=True, allow_empty=True):
+def print_list(user, incomplete=False, search="", get_stats=True, allow_empty=True, ignore_req=False):
     """Lists quests a user can do at the moment."""
     out = f'{QUEST_HEADER}'
     messages = []
@@ -235,7 +235,7 @@ def print_list(user, incomplete=False, search="", get_stats=True, allow_empty=Tr
             if incomplete:
                 continue  # Skip because only showing incomplete ones
             out += f'~~**{quest.id}**. {quest.name}~~\n'
-        elif user.has_quest_req_for_quest(quest, user_quests):
+        elif user.has_quest_req_for_quest(quest, user_quests) or ignore_req:
             out += f'**{quest.id}**. {quest.name}\n'
 
         if len(out) > 1800:
