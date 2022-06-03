@@ -3,7 +3,6 @@ resources/
 test/
 subs/markov/resources/
 config.py
-__init__.py
 *.pyc
 *.csv
 *.txt
