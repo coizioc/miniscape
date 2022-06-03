@@ -3,7 +3,6 @@ from .item import Item
 
 
 class Quest(models.Model):
-
     id = models.PositiveIntegerField(primary_key=True)
     name = models.CharField(max_length=200,
                             unique=True)
@@ -15,8 +14,7 @@ class Quest(models.Model):
     success = models.CharField(max_length=4096,
                                default="You did it!")
     failure = models.CharField(max_length=4096,
-                                   default="You didn't do it!")
-
+                               default="You didn't do it!")
 
     # Stats
     damage = models.PositiveIntegerField(default=0)

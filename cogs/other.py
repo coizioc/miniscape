@@ -90,7 +90,7 @@ def calc_relationship(name1, name2=''):
     return percent
 
 
-class Other():
+class Other(commands.cog):
     """Defines Other commands."""
 
     def __init__(self, bot):
