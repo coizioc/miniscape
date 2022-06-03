@@ -13,6 +13,7 @@ import miniscape.periodicchecker_helpers as pc_helpers
 import miniscape.quest_helpers as quest_helpers
 import miniscape.slayer_helpers as sh
 from cogs.cmd import *
+from cogs.cmd.channel_permissions import get_channel, ANNOUNCEMENT_KEY
 from cogs.cmd.common import has_post_permission
 from config import ARROW_LEFT_EMOJI, ARROW_RIGHT_EMOJI, THUMBS_UP_EMOJI, TICK_SECONDS, MAX_PER_ACTION
 from miniscape import adventures as adv, craft_helpers
@@ -26,7 +27,8 @@ class Miniscape(commands.Cog,
                 CombatCommands,
                 RunecraftCommands,
                 RecipeCommands,
-                AdventureCommands):
+                AdventureCommands,
+                GeneralCommands):
     """Defines Miniscape commands."""
 
     def __init__(self, bot):
@@ -93,9 +95,9 @@ class Miniscape(commands.Cog,
     async def craft(self, ctx, *args):
         """Crafts (a given number of) an item."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            number, recipe = ch.parse_number_and_name(args)
-            if number and recipe:
-                out = craft_helpers.craft(ctx.user_object, recipe, n=min(number, MAX_PER_ACTION))
+            number, rec = ch.parse_number_and_name(args)
+            if number and rec:
+                out = craft_helpers.craft(ctx.user_object, rec, n=min(number, MAX_PER_ACTION))
                 await ctx.send(out)
 
     @commands.command(aliases=['cock', 'fry', 'grill', 'saute', 'boil'])
@@ -107,14 +109,14 @@ class Miniscape(commands.Cog,
                 out = craft_helpers.cook(ctx.user_object, food, n=min(number, MAX_PER_ACTION))
                 await ctx.send(out)
 
-    async def confirm(self, ctx, msg, content, timeout=300):
+    async def confirm(self, ctx, msg, _, timeout=300):
         """Asks the user to confirm an action, and returns whether they confirmed or not."""
         await msg.add_reaction('\N{THUMBS UP SIGN}')
 
         while True:
             try:
-                reaction, user = await self.bot.wait_for('reaction_add', timeout=timeout)
-                if (str(reaction.emoji) == THUMBS_UP_EMOJI and user == ctx.author and
+                reaction, person = await self.bot.wait_for('reaction_add', timeout=timeout)
+                if (str(reaction.emoji) == THUMBS_UP_EMOJI and person == ctx.author and
                         reaction.message.id == msg.id):
                     return True
             except asyncio.TimeoutError:
@@ -144,8 +146,8 @@ class Miniscape(commands.Cog,
         await msg.add_reaction(ARROW_RIGHT_EMOJI)
 
         while True:
-            reaction, user = await self.bot.wait_for('reaction_add')
-            if user == ctx.author and reaction.message.id == msg.id:
+            reaction, person = await self.bot.wait_for('reaction_add')
+            if person == ctx.author and reaction.message.id == msg.id:
 
                 if str(reaction.emoji) == ARROW_LEFT_EMOJI:
                     if current_page > 0:
@@ -177,6 +179,8 @@ class Miniscape(commands.Cog,
         while not self.bot.is_closed():
             with open('./resources/debug.txt', 'a+') as debug_file:
                 debug_file.write(f'Bot check at {datetime.datetime.now()}:\n')
+
+            finished_tasks = []
             try:
                 finished_tasks = adv.get_finished()
             except Exception as adv_exception:
@@ -197,7 +201,7 @@ class Miniscape(commands.Cog,
                 channelid = int(task[4])
                 bot_guild = self.bot.get_guild(guildid)
                 try:
-                    announcement_channel = cp.get_channel(guildid, cp.ANNOUNCEMENT_KEY)
+                    announcement_channel = get_channel(guildid, ANNOUNCEMENT_KEY)
                     bot_self = bot_guild.get_channel(int(announcement_channel))
                 except KeyError:
                     bot_self = bot_guild.get_channel(channelid)
