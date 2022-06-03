@@ -75,7 +75,7 @@ def start_gather(guildid, channelid, user: User, itemname, length=-1, number=-1)
             length = 180
 
         if int(number) < 0:
-            number = calc_number(user,item, length * 60)
+            number = calc_number(user, item, length * 60)
             if number > 500:
                 number = 500
         elif int(length) < 0:
@@ -121,10 +121,10 @@ def print_recipe(user, recipe_name):
         return f'Error: cannot find recipe that crafts {recipe_name}.'
     recipe = recipe[0]
 
-    out = f'{CRAFT_HEADER}'\
-          f'**Name**: {string.capwords(created_item.name)}\n'\
-          f'**Artisan Requirement**: {recipe.level_requirement}\n'\
-          f'**XP Per Item**: {created_item.xp}\n'\
+    out = f'{CRAFT_HEADER}' \
+          f'**Name**: {string.capwords(created_item.name)}\n' \
+          f'**Artisan Requirement**: {recipe.level_requirement}\n' \
+          f'**XP Per Item**: {created_item.xp}\n' \
           f'**Inputs**:\n'
 
     item_requirements = RecipeRequirement.objects.filter(recipe=recipe)
@@ -137,9 +137,11 @@ def print_recipe(user, recipe_name):
     return out
 
 
-def print_list(user: User, search):
-    """Prints a list of the recipes a user can use."""
-    # completed_quests = set(users.get_completed_quests(userid))
+def print_list(user: User, search, filter_quests=True, allow_empty=True):
+    """Prints a list of the recipes a user can use.
+    user: the user object to compare quest completion
+    search: a string to search through recipe names
+    filter_quests: whether to filter results based on completed quests or not"""
     messages = []
     out = f'{CRAFT_HEADER}'
     recipes = Recipe.objects.all().order_by('level_requirement', 'creates__name')
@@ -147,19 +149,27 @@ def print_list(user: User, search):
         recipes = recipes.filter(creates__name__icontains=search)
 
     recipes = list(recipes)
+    if not recipes and not allow_empty:
+        return []
     user_quests = user.completed_quests_list
     for recipe in recipes:
-        if recipe.quest_requirement:
-            if recipe.quest_requirement in user_quests:
-                out += f'**{string.capwords(recipe.creates.name)}** *(level {recipe.level_requirement})*\n'
+        msg = f'**{string.capwords(recipe.creates.name)}** *(level {recipe.level_requirement})*\n'
+
+        # if we're filtering on quests, only add the recipe if it either doesn't have a quest req
+        # or the req is met
+        if filter_quests:
+            if not recipe.quest_requirement or \
+                 recipe.quest_requirement in user_quests:
+                out += msg
         else:
-            out += f'**{string.capwords(recipe.creates.name)}** *(level {recipe.level_requirement})*\n'
+            # Otherwise add it unconditionally
+            out += msg
 
         if len(out) > 1800:
             messages.append(out)
             out = f'{CRAFT_HEADER}'
 
-    out += 'Type `~recipes info [item]` to get more info about how to craft a particular item.'
+    out += 'Type `~recipes info [item]` to get more info about how to craft a particular item.\n'
     messages.append(out)
     return messages
 
@@ -177,7 +187,7 @@ def get_runecraft(person, *args):
     item = Item.objects.get(id=itemid)
 
     if not user.has_item_amount_by_item(RUNE_ESSENCE, number) \
-        and not user.has_item_amount_by_item(PURE_ESSENCE, number):
+            and not user.has_item_amount_by_item(PURE_ESSENCE, number):
         return f"{person.mention}, your session did not net you any xp " \
                f"because you did not have enough rune essence."
 
@@ -272,7 +282,7 @@ def calc_length(user: User, item: Item, number):
 
     if item.is_tree:
         if user.equipment_slots[12]:
-            item_multiplier = 2 - user.equipment_slots[12].level/100
+            item_multiplier = 2 - user.equipment_slots[12].level / 100
         else:
             item_multiplier = 10
     elif item.is_rock:
@@ -309,7 +319,7 @@ def calc_number(user: User, item: Item, time):
     item_level = item.level
     if item.is_tree:
         if user.equipment_slots[12]:
-            item_multiplier = 2 - user.equipment_slots[12].level/100
+            item_multiplier = 2 - user.equipment_slots[12].level / 100
         else:
             item_multiplier = 10
     elif item.is_rock:
@@ -352,13 +362,13 @@ def craft(user: User, recipe, n=1):
     inputs = recipe.get_requirements()
     negative_loot = {}
     for rr in list(inputs):
-        if user.has_item_amount_by_item(rr.item, rr.amount*n):
+        if user.has_item_amount_by_item(rr.item, rr.amount * n):
             negative_loot[rr.item] = rr.amount * n
         else:
             return f'Error: you do not have enough items to make {recipe.creates.pluralize(n)} ' \
                    f'({rr.item.pluralize(rr.amount * n)}).'
 
-    bonus = random.randint(1, math.floor(n/20)) if artisan_level == 99 and n >=20 else 0
+    bonus = random.randint(1, math.floor(n / 20)) if artisan_level == 99 and n >= 20 else 0
 
     goldsmith_bonus = 1
     if recipe == GOLD_BAR_RECIPE and GOLD_GAUNTLETS in user.equipment_slots:
@@ -397,8 +407,8 @@ def cook(user: User, food, n=1):
     if not rr:
         return "You cannot cook {name}."
     rr = rr[0]
-    if user.has_item_amount_by_item(rr.item, rr.amount*n):
-        negative_loot = {rr.item: rr.amount*n}
+    if user.has_item_amount_by_item(rr.item, rr.amount * n):
+        negative_loot = {rr.item: rr.amount * n}
     else:
         return f'You do not have enough items to make {rr.item.pluralize(n)} ' \
                f'({rr.item.pluralize(rr.amount * n)}).'
