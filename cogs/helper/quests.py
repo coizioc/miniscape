@@ -1,11 +1,7 @@
-import math
-import ujson
 from collections import Counter
 
-from cogs.helper import craft
-from cogs.helper import items
-from cogs.helper import monsters as mon
-from cogs.helper import users
+import ujson
+
 from config import QUESTS_JSON, QUEST_EMOJI
 
 with open(QUESTS_JSON, 'r') as f:

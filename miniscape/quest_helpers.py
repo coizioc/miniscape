@@ -219,12 +219,17 @@ def get_result(person, *args):
     return out
 
 
-def print_list(user, incomplete=False):
+def print_list(user, incomplete=False, search="", get_stats=True, allow_empty=True):
     """Lists quests a user can do at the moment."""
     out = f'{QUEST_HEADER}'
     messages = []
-    all_quests = Quest.objects.all()
+    all_quests = Quest.objects.filter(name__icontains=search)
+
+    if not all_quests and not allow_empty:
+        return []
+
     user_quests = user.completed_quests_list
+
     for quest in all_quests:
         if quest in user_quests:
             if incomplete:
@@ -237,7 +242,8 @@ def print_list(user, incomplete=False):
             messages.append(out)
             out = f'{QUEST_HEADER}'
 
-    out += f'\n**Quests Completed**: {user.num_quests_complete}/{Quest.objects.count()}\n'
-    out += 'Type `~quest [quest number]` to see more information about a quest.'
+    if get_stats:
+        out += f'\n**Quests Completed**: {user.num_quests_complete}/{Quest.objects.count()}\n'
+    out += 'Type `~quest [quest number]` to see more information about a quest.\n'
     messages.append(out)
     return messages
