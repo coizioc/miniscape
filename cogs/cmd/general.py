@@ -20,6 +20,7 @@ class GeneralCommands:
         - item | i
         - recipe | r
         - quest | q
+        - prayer | p
 
         If the second arg (the word coming after `~search` isn't one of those, it will attempt to do
         a broad search across all 5 and return the results in a nice way"""
