@@ -1,9 +1,10 @@
 """Implements commands related to administrating a freemium-style text-based RPG."""
 from discord.ext import commands
 from discord.ext.commands import has_permissions
-from cogs.helper import channel_permissions as cp
+from cogs.cmd import channel_permissions as cp
 
-class Admin():
+
+class Admin(commands.cog):
     """Defines Admin commands."""
 
     def __init__(self, bot):

@@ -52,7 +52,7 @@ class MiniscapeBot(commands.Bot):
         root = logging.getLogger()
         ch = logging.StreamHandler(sys.stdout)
         ch.setLevel(logging.DEBUG)
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        # formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         formatter = jsonlogger.JsonFormatter()
         ch.setFormatter(formatter)
         root.addHandler(ch)
