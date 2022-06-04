@@ -33,6 +33,7 @@ class MiniscapeBot(commands.Bot):
 
     def __init__(self):
         super().__init__(command_prefix=["~", "%", "./"], description=DESCRIPTION)
+        super().__init__(command_prefix=["~", "%", "./", "."], description=DESCRIPTION)
         self.default_nick = "Miniscape"
         self.add_command(self.load)
         self.remove_command('help')
