@@ -78,7 +78,7 @@ class Item(models.Model):
         if item:
             return item[0]
         else:
-            nick = ItemNickname.objects.filter(nickname=name)
+            nick = ItemNickname.objects.filter(nickname__iexact=name)
             if nick:
                 return nick[0].real_item
             else:
