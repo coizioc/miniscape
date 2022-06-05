@@ -1,20 +1,23 @@
 #! /usr/bin/env python3
 """Runs bots for a Discord server."""
 # These lines allow us to use Django models
-import logging
 import os
-import sys
-import asyncio
-import traceback
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "miniscapebot.settings")
 import django
 django.setup()
+
+import logging
+import sys
+import asyncio
+import traceback
 from django.core.exceptions import ObjectDoesNotExist
+from cogs.managers.farming_manager import FarmingManager
 from discord.ext import commands
 import cogs.managers.trade_manager as tm
 from miniscape.models import User
 import config
 from pythonjsonlogger import jsonlogger
+
 
 def extensions_generator():
     """Returns a generator for all cog files that aren't in do_not_use."""
@@ -24,7 +27,9 @@ def extensions_generator():
         if cog not in do_not_use:
             yield f"cogs.{cog[:-3]}"
 
+
 DESCRIPTION = "A bot that runs a basic role-playing game."
+
 
 # log = logging.getLogger(__name__)
 
@@ -32,7 +37,9 @@ class MiniscapeBot(commands.Bot):
     """Defines the miniscapebot class and functions."""
 
     def __init__(self):
-        super().__init__(command_prefix=["~", "%", "./"], description=DESCRIPTION)
+        super().__init__(command_prefix=["~", "%", "./", "."], description=DESCRIPTION)
+        self.trade_manager = None
+        self.farm_manager = None
         self.default_nick = "Miniscape"
         self.add_command(self.load)
         self.remove_command('help')
@@ -61,6 +68,7 @@ class MiniscapeBot(commands.Bot):
 
     def initialize_managers(self):
         self.trade_manager = tm.TradeManager()
+        self.farm_manager = FarmingManager()
 
     async def on_ready(self):
         """Prints bot initialization info"""
@@ -110,9 +118,11 @@ class MiniscapeBot(commands.Bot):
             await ctx.send(f'Failed to load extension {extension}.', file=sys.stderr)
             traceback.print_exc()
 
+
 class MiniscapeBotContext(commands.Context):
 
     def __init__(self, *args, **kwargs):
+        self.bot: MiniscapeBot = None
         super().__init__(*args, **kwargs)
 
         try:
@@ -134,4 +144,3 @@ class MiniscapeBotContext(commands.Context):
             self.user_object.nick = self.author.nick if self.author.nick is not None else ''
             self.user_object.name = self.author.name + '#' + self.author.discriminator
             self.user_object.save()
-
