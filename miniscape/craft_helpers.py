@@ -35,7 +35,7 @@ def start_gather(guildid, channelid, user: User, itemname, length=-1, number=-1)
 
         item: Item = Item.find_by_name_or_nick(itemname)
         if not item:
-            return f'Error: {item} is not an item.'
+            return f'Error: {itemname} is not an item.'
 
         try:
             length = int(length)
@@ -47,7 +47,7 @@ def start_gather(guildid, channelid, user: User, itemname, length=-1, number=-1)
             return f'Error: you cannot gather item {item.name}.'
 
         quest_req = item.quest_req
-        if quest_req and quest_req not in user.completed_quests_list:
+        if quest_req and quest_req not in list(user.completed_quest_queryset):
             return f'Error: You do not have the required quest to gather this item.'
 
         item_name = item.name
@@ -151,7 +151,7 @@ def print_list(user: User, search, filter_quests=True, allow_empty=True):
     recipes = list(recipes)
     if not recipes and not allow_empty:
         return []
-    user_quests = user.completed_quests_list
+    user_quests = list(user.completed_quest_queryset)
     for recipe in recipes:
         msg = f'**{string.capwords(recipe.creates.name)}** *(level {recipe.level_requirement})*\n'
 
@@ -183,7 +183,8 @@ def get_runecraft(person, *args):
     except ValueError as e:
         print(e)
         raise ValueError
-    user = User.objects.get(id=person.id)
+
+    user = User.objects.get(id=person)
     item = Item.objects.get(id=itemid)
 
     if not user.has_item_amount_by_item(RUNE_ESSENCE, number) \
@@ -460,28 +461,26 @@ def start_runecraft(guildid, channelid, user: User, item, number=1, pure=0):
             return f'{number} is not a valid number.'
 
         if not item.is_rune:
-            return f'{items.get_attr(itemid)} is not a rune that can be crafted.'
+            return f'{item.name} is not a rune that can be crafted.'
 
         # Find out if user has the talisman
         rune_type = item.name.split(" ")[0]
         if not user.has_item_by_name(rune_type + " talisman"):
-            return f'{items.get_attr(talismanid)} not found in inventory.'
+            return f'{rune_type + " talisman"} not found in inventory.'
 
-        item_name = item.name
-        runecrafting_level = user.rc_level
         runecraft_req = item.level
         player_potion = user.potion_slot.id if user.potion_slot else '0'
 
         if player_potion == 435:
-            boosted_level = runecrafting_level + 3
+            boosted_level = user.rc_level + 3
         elif player_potion == 436:
-            boosted_level = runecrafting_level + 6
+            boosted_level = user.rc_level + 6
         else:
-            boosted_level = runecrafting_level
+            boosted_level = user.rc_level
 
         if boosted_level < runecraft_req:
-            return f'Error: {item_name} has a runecrafting requirement ({runecraft_req}) higher ' \
-                   f'than your runecrafting level ({runecrafting_level})'
+            return f'Error: {item.name} has a runecrafting requirement ({runecraft_req}) higher ' \
+                   f'than your runecrafting level ({user.rc_level})'
 
         if item.quest_req and not user.has_completed_quest(item.quest_req):
             return f'You do not have the required quest to craft this rune.'
@@ -500,7 +499,7 @@ def start_runecraft(guildid, channelid, user: User, item, number=1, pure=0):
             return f'You do not have enough essence to craft this many runes.'
 
         rc_session = adv.format_line(6, user.id, adv.get_finish_time(length * 60), guildid, channelid,
-                                     item.id, item_name, number, length, pure)
+                                     item.id, item.name, number, length, pure)
         adv.write(rc_session)
         out += f'You are now crafting {item.pluralize(number)} for {length} minutes.'
     else:
