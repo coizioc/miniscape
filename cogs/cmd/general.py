@@ -1,5 +1,4 @@
 from discord.ext import commands
-from typing import Tuple, List
 
 from mbot import MiniscapeBotContext
 from miniscape import quest_helpers, craft_helpers, monster_helpers, item_helpers, prayer_helpers
@@ -37,7 +36,7 @@ class GeneralCommands:
             global_search = True
             msgs.append("No category specified, searching across everything... \n")
 
-        if len(search_term) < 3:
+        if len(search_term) < 3 and not global_search:
             await ctx.send("Search term must be at least three characters")
             return
 
@@ -60,11 +59,12 @@ class GeneralCommands:
             if prayers: prayers[-1] += "\n"
 
         msgs = self._merge_search_results(msgs, monsters, items, recipes, quests, prayers)
-
+        if not msgs:
+            msgs = ["Unable to find anything that matches your search query."]
         await self.paginate(ctx, msgs)
 
-    @classmethod
-    def _merge_search_results(cls, *args):
+    @staticmethod
+    def _merge_search_results(*args):
         """ Takes a bunch of lists of messages and merges them into one list with each message being (hopefully)
         1800-2000 characters so that it fits in the discord text limit of 2000 characters. Ideal for use when some
         of the lists have single small messages as it reduces the number of messages we need to send, meaning we won't
