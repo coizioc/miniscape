@@ -183,8 +183,7 @@ def get_runecraft(person, *args):
     except ValueError as e:
         print(e)
         raise ValueError
-    user = User.objects.get(id=person.id)
-    user = User.objects.get(id=person   )
+    user = User.objects.get(id=person)
     item = Item.objects.get(id=itemid)
 
     if not user.has_item_amount_by_item(RUNE_ESSENCE, number) \
