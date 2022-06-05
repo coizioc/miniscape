@@ -50,7 +50,7 @@ def get_clue_scroll(person, *args):
         print(e)
         raise ValueError
 
-    user = User.objects.get(id=person.id)
+    user = User.objects.get(id=person)
 
     difficulty = int(difficulty)
     itemname = DIFFICULTY[difficulty] + ' clue scroll'
