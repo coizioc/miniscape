@@ -36,7 +36,7 @@ class GeneralCommands:
             global_search = True
             msgs.append("No category specified, searching across everything... \n")
 
-        if len(search_term) < 3 and not global_search:
+        if len(search_term) < 3 and global_search:
             await ctx.send("Search term must be at least three characters")
             return
 
