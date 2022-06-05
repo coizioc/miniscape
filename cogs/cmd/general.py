@@ -59,7 +59,7 @@ class GeneralCommands:
             if prayers: prayers[-1] += "\n"
 
         msgs = self._merge_search_results(msgs, monsters, items, recipes, quests, prayers)
-        if not msgs:
+        if not msgs or not msgs[0]:
             msgs = ["Unable to find anything that matches your search query."]
         await self.paginate(ctx, msgs)
 
