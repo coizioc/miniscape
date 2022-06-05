@@ -189,7 +189,7 @@ def get_runecraft(person, *args):
 
     if not user.has_item_amount_by_item(RUNE_ESSENCE, number) \
             and not user.has_item_amount_by_item(PURE_ESSENCE, number):
-        return f"{person.mention}, your session did not net you any xp " \
+        return f"<@{person}>, your session did not net you any xp " \
                f"because you did not have enough rune essence."
 
     rc_level_before = user.rc_level
@@ -209,15 +209,16 @@ def get_runecraft(person, *args):
     user.update_inventory(loot, remove=True)
     user.rc_xp += xp
     rc_level_after = user.rc_level
+    user.potion_slot = None
+    user.save()
 
     xp_formatted = '{:,}'.format(xp)
     out = f'{RUNECRAFT_HEADER}' \
-          f'{person.mention}, your runecrafting session has finished! You have crafted ' \
+          f'<@{person}>, your runecrafting session has finished! You have crafted ' \
           f'{item.pluralize(number)} and have gained {xp_formatted} runecrafting xp! '
     if rc_level_after > rc_level_before:
         out += f'In addition, you have gained {rc_level_after - rc_level_before} runecrafting levels!'
-    user.potion_slot = None
-    user.save()
+
     return out
 
 

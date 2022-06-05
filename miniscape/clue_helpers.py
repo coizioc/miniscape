@@ -61,12 +61,13 @@ def get_clue_scroll(person, *args):
 
     attr_name = DIFFICULTY[difficulty] + '_clues'
     setattr(user, attr_name, getattr(user, attr_name, 0) + 1)
+    user.save()
 
     out = f'{CLUE_HEADER}' \
-          f'{person.mention}, you have finished your {DIFFICULTY[int(difficulty)]} clue scroll! ' \
+          f'<@{person}>, you have finished your {DIFFICULTY[int(difficulty)]} clue scroll! ' \
           f'You have received the following items:\n'
     out += print_loot(loot, item)
-    user.save()
+
     return out
 
 
