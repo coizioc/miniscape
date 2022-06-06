@@ -389,7 +389,7 @@ def get_reaper_result(person, *args):
         print(e)
         raise ValueError
     num_to_kill = int(num_to_kill)
-    user: User = User.objects.get(id=person.id)
+    user: User = User.objects.get(id=person)
     monster: Monster = Monster.objects.get(id=monsterid)
     out = ''
 
