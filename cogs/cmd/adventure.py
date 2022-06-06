@@ -50,7 +50,7 @@ class AdventureCommands:
                 out = 'You are not currently doing anything.'
             await ctx.send(out)
 
-    @commands.command(aliases=['stuatus'])
+    @commands.command(aliases=['stuatus', 'statussy'])
     async def status(self, ctx):
         """Says what you are currently doing."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
