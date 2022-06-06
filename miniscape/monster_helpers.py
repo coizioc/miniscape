@@ -33,7 +33,7 @@ def get_random(author: User, wants_boss=False):
                                       is_slayable=not wants_boss,
                                       slayer_level_req__lte=author.slayer_level,
                                       is_dragon=author.offhand_slot.is_anti_dragon)
-    return random.sample(monsters, 1)[0]
+    return random.sample(set(monsters), 1)[0]
 
 
 def print_monster_kills(author, search=None):
