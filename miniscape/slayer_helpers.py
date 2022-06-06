@@ -173,8 +173,6 @@ def get_task(guildid, channelid, author: User):
     if not adv.is_on_adventure(author.id):
         cb_level = author.combat_level
         slayer_level = author.slayer_level
-        completed_quests = set(author.completed_quests.all())
-        equipment = author.equipment_slots
 
         for _ in range(1000):
             monster = mon.get_random(author, wants_boss=False)
@@ -187,8 +185,7 @@ def get_task(guildid, channelid, author: User):
             if 0.25 <= task_length / base_time <= 2 \
                     and chance >= 20 \
                     and mon_level / cb_level >= 0.8 \
-                    and task_length <= 3600 \
-                    and (monster.quest_req and monster.quest_req in completed_quests):
+                    and task_length <= 3600:
                 break
             else:
                 log_str = f"Failed to give task to user\n" \
@@ -196,8 +193,7 @@ def get_task(guildid, channelid, author: User):
                           f"Conditionals: \n" \
                           f"  task_length / base_time: {task_length / base_time}\n" \
                           f"  chance: {chance}\n"\
-                          f"  mon levl / cb lvl: {mon_level / cb_level}\n" \
-                          f"  quest req satisfied: {monster.quest_req and monster.quest_req in completed_quests}\n"
+                          f"  mon levl / cb lvl: {mon_level / cb_level}\n"
                 logging.getLogger(__name__).info(log_str)
                 continue  # For breakpoints :^)
         else:
