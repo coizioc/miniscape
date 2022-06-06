@@ -1,4 +1,6 @@
 from cogs.helper.monsters import MONSTERS, add_plural, get_attr
+from django.db.models import Q
+
 from miniscape.models import Monster, User, MonsterLoot
 import random
 import string
