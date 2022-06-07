@@ -1,15 +1,128 @@
+import string
 from collections import Counter
 
 from django.db import models
+from django.db.models import Q
 
+import config
 from .quest import Quest
 from .prayer import Prayer
 from .monster import Monster
 from .userinventory import UserInventory
 from .item import Item, ItemNickname
-from django.core.exceptions import ObjectDoesNotExist
 from .playermonsterkills import PlayerMonsterKills
-from cogs.helper.users import xp_to_level
+from .farming_plot import FarmPlot
+
+CHARACTER_HEADER = f'{config.COMBAT_EMOJI} __**$NAME**__ {config.COMBAT_EMOJI}\n'
+
+COMBAT_XP_KEY = 'combat'  # User's combat xp, stored as an int.
+SLAYER_XP_KEY = 'slayer'  # User's slayer xp, stored as an int.
+GATHER_XP_KEY = 'gather'  # User's gathering xp, stored as an int.
+ARTISAN_XP_KEY = 'artisan'  # User's artisan xp, stored as an int.
+COOK_XP_KEY = 'cook'  # User's cooking xp, stored as an int.
+PRAY_XP_KEY = 'prayer'  # User's prayer xp, stored as an int.
+RC_XP_KEY = 'runecrafting'  # User's runecrafting xp, stored as an int.
+SKILLS = [COMBAT_XP_KEY, SLAYER_XP_KEY, GATHER_XP_KEY, ARTISAN_XP_KEY, COOK_XP_KEY, PRAY_XP_KEY, RC_XP_KEY]
+
+XP = {'0': 1,
+      '81': 2,
+      '174': 3,
+      '276': 4,
+      '388': 5,
+      '512': 6,
+      '650': 7,
+      '801': 8,
+      '969': 9,
+      '1154': 10,
+      '1358': 11,
+      '1583': 12,
+      '1832': 13,
+      '2107': 14,
+      '2411': 15,
+      '2746': 16,
+      '3115': 17,
+      '3523': 18,
+      '3973': 19,
+      '4470': 20,
+      '5018': 21,
+      '5624': 22,
+      '6291': 23,
+      '7028': 24,
+      '7842': 25,
+      '8740': 26,
+      '9730': 27,
+      '10824': 28,
+      '12031': 29,
+      '13363': 30,
+      '14833': 31,
+      '16456': 32,
+      '18247': 33,
+      '20224': 34,
+      '22406': 35,
+      '24815': 36,
+      '27473': 37,
+      '30408': 38,
+      '33648': 39,
+      '37224': 40,
+      '41171': 41,
+      '45529': 42,
+      '50339': 43,
+      '55649': 44,
+      '61512': 45,
+      '67983': 46,
+      '75127': 47,
+      '83014': 48,
+      '91721': 49,
+      '101333': 50,
+      '111945': 51,
+      '123660': 52,
+      '136593': 53,
+      '150872': 54,
+      '166636': 55,
+      '184039': 56,
+      '203253': 57,
+      '224466': 58,
+      '247885': 59,
+      '273741': 60,
+      '302287': 61,
+      '333803': 62,
+      '368599': 63,
+      '407014': 64,
+      '449427': 65,
+      '496253': 66,
+      '547952': 67,
+      '605031': 68,
+      '668050': 69,
+      '737627': 70,
+      '814444': 71,
+      '899256': 72,
+      '992894': 73,
+      '1096277': 74,
+      '1210420': 75,
+      '1336442': 76,
+      '1475580': 77,
+      '1629199': 78,
+      '1798807': 79,
+      '1986067': 80,
+      '2192817': 81,
+      '2421086': 82,
+      '2673113': 83,
+      '2951372': 84,
+      '3258593': 85,
+      '3597791': 86,
+      '3972293': 87,
+      '4385775': 88,
+      '4842294': 89,
+      '5346331': 90,
+      '5902830': 91,
+      '6517252': 92,
+      '7195628': 93,
+      '7944613': 94,
+      '8771557': 95,
+      '9684576': 96,
+      '10692628': 97,
+      '11805605': 98,
+      '13034430': 99}
 
 
 class User(models.Model):
@@ -35,7 +148,7 @@ class User(models.Model):
                                     'cook': self.cook_level,
                                     'cooking': self.cook_level,
                                     'pray': self.prayer_level,
-                                    'prayer':  self.prayer_level,
+                                    'prayer': self.prayer_level,
                                     'rc': self.rc_level,
                                     'runecrafting': self.rc_level}
 
@@ -65,7 +178,7 @@ class User(models.Model):
                                  'cook': self.cook_xp,
                                  'cooking': self.cook_xp,
                                  'pray': self.prayer_xp,
-                                 'prayer':  self.prayer_xp,
+                                 'prayer': self.prayer_xp,
                                  'rc': self.rc_xp,
                                  'runecrafting': self.rc_xp}
 
@@ -290,7 +403,7 @@ class User(models.Model):
                 self._add_inventory_object(item, amount=amount)
         self.save()
 
-    def _update_inventory_item_id(self, loot: str, amount=1,  remove=False):
+    def _update_inventory_item_id(self, loot: str, amount=1, remove=False):
         item = Item.objects.get(id=loot)
         return self._update_inventory_object(item, amount=amount, remove=remove)
 
@@ -338,8 +451,8 @@ class User(models.Model):
 
     def monster_kills(self, search=None):
         if search:
-            return self.playermonsterkills_set.\
-                filter(monster__name__icontains=search)\
+            return self.playermonsterkills_set. \
+                filter(monster__name__icontains=search) \
                 .order_by('monster__name')
         else:
             return self.playermonsterkills_set.all().order_by('monster__name')
@@ -354,7 +467,7 @@ class User(models.Model):
         # Validate prayer level
         if self.prayer_level >= prayer.level_required:
             # Validate quest req
-            if not prayer.quest_req or prayer.quest_req in self.completed_quests_list:
+            if not prayer.quest_req or prayer.quest_req in list(self.completed_quest_queryset):
                 return True
 
         # Default
@@ -448,36 +561,96 @@ class User(models.Model):
         return True
 
     def has_completed_quest(self, quest):
-        return quest in self.completed_quests_list
+        return quest in list(self.completed_quest_queryset)
 
     def has_items_for_quest(self, quest: Quest):
         quest_items = quest.required_items
         if quest_items:
-            quest_items = {qir.item : qir.amount for qir in quest_items}
+            quest_items = {qir.item: qir.amount for qir in quest_items}
             quest_items = Counter(quest_items)
             return self.has_item_amount_by_counter(quest_items)
         else:
             return True
 
+    def print_account(self, printequipment=True):
+        """Writes a string showing basic user information."""
+        nickname = self.nick if self.nick else self.name
+        out = f"{CHARACTER_HEADER.replace('$NAME', nickname.upper())}"
+
+        # TODO: This can probably be done better
+        for skill, level, skill_name in zip(self.xp_fields_str, self.level_fields_str, SKILLS):
+            xp_formatted = '{:,}'.format(getattr(self, skill, 0))
+            out += f'**{string.capwords(skill_name)} Level**: {getattr(self, level, 0)} *({xp_formatted} xp)*\n'
+
+        out += f'**Skill Total**: {self.total_level}/{len(SKILLS) * 99}\n\n'
+        out += f'**Quests Completed**: {len(self.completed_quests.all())}/{len(Quest.objects.all())}\n\n'
+
+        if printequipment:
+            out += self.print_equipment()
+
+        return out
+
+    def print_equipment(self, name=None, with_header=False):
+        """Writes a string showing the stats of a user's equipment."""
+
+        armour_print_order = ['Head', 'Back', 'Neck', 'Ammunition', 'Main-Hand', 'Torso', 'Off-Hand',
+                              'Legs', 'Hands', 'Feet', 'Ring', 'Pocket', 'Hatchet', 'Pickaxe', 'Potion']
+
+        if with_header and name is not None:
+            out = f"{CHARACTER_HEADER.replace('$NAME', name.upper())}"
+        else:
+            out = ''
+        equipment = self.all_armour
+        damage, accuracy, armour, prayer = self.equipment_stats
+        out += f'**Damage**: {damage}\n' \
+               f'**Accuracy**: {accuracy}\n' \
+               f'**Armour**: {armour}\n' \
+               f'**Prayer Bonus**: {prayer}\n'
+
+        if self.prayer_slot:
+            out += f'**Active Prayer**: {self.prayer_slot.name}\n'
+        else:
+            out += f'**Active Prayer**: none\n'
+
+        if self.active_food:
+            out += f'**Active Food**: {self.active_food.name}\n\n'
+        else:
+            out += f'**Active Food**: none\n\n'
+
+        for slot in armour_print_order:
+            item = equipment[slot]
+            out += f'**{string.capwords(slot)}**: '
+            if item is not None:
+                out += f'{item.name} '
+                out += f'*(dam: {item.damage}, ' \
+                       f'acc: {item.accuracy}, ' \
+                       f'arm: {item.armour}, ' \
+                       f'pray: {item.prayer})*\n'
+            else:
+                out += 'none *(dam: 0, acc: 0, arm: 0, pray: 0)*\n'
+
+        return out
+
+    @property
+    def unlocked_patches(self):
+        return FarmPlot.objects.filter(quest_req__in=self.completed_quest_queryset)
+
     @property
     def usable_prayers(self):
         prayers = Prayer.objects.filter(level_required__lte=self.prayer_level)
-        ret = []
-        for p in prayers:
-            if p.quest_req and p.quest_req in self.completed_quests_list:
-                ret.append(p)
-            elif not p.quest_req:
-                ret.append(p)
-
-        return ret
+        return prayers.filter(Q(quest_req=None) or Q(quest_req__in=self.completed_quest_queryset))
 
     @property
     def completed_quests_list(self):
-        return [uq.quest for uq in self.userquest_set.all()]
+        return list(self.completed_quest_queryset)
+
+    @property
+    def completed_quest_queryset(self):
+        return Quest.objects.filter(userquest__user=self)
 
     @property
     def num_quests_complete(self):
-        return len(self.completed_quests_list)
+        return len(self.completed_quest_queryset)
 
     @property
     def is_eating(self):
@@ -609,3 +782,40 @@ class User(models.Model):
 
     def __str__(self):
         return self.__repr__()
+
+
+def xp_to_level(xp):
+    """Converts a  user's xp into its equivalent level based on an XP table."""
+    xp = int(xp)
+    for level_xp in XP:
+        if int(level_xp) > xp:
+            return int(XP[level_xp]) - 1
+    else:
+        return 99
+
+
+def calc_xp_to_level(author, skill, level):
+    """Calculates the xp needed to get to a level."""
+    author_levels = author.skill_level_mapping
+    author_xps = author.skill_xp_mapping
+
+    if skill not in author_levels.keys():
+        return f'{skill} is not a skill.'
+
+    if level is None:
+        level = author_levels[skill] + 1
+
+    if level > 99:
+        return f'You have already attained the maximum level in this skill.'
+
+    current_xp = author_xps[skill]
+    for xp_value in XP.keys():
+        if XP[xp_value] == level:
+            xp_needed = int(xp_value) - current_xp
+            break
+    else:
+        raise KeyError
+    xp_formatted = '{:,}'.format(xp_needed)
+
+    out = f'You need {xp_formatted} xp to get level {level} in {skill}.'
+    return out

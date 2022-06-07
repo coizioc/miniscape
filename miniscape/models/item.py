@@ -32,6 +32,9 @@ class Item(models.Model):
     is_max_only = models.BooleanField(default=False)
     is_pet = models.BooleanField(default=False)
 
+    # Farming
+    farm_patch = models.PositiveIntegerField(default=0)
+
     # misc
     pouch = models.PositiveIntegerField(default=0)
     luck_modifier = models.FloatField(default=0)

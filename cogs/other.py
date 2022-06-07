@@ -1,5 +1,6 @@
 """Implements commands related to running a freemium-style text-based RPG."""
 import asyncio
+import string
 import math
 import random
 
@@ -89,7 +90,7 @@ def calc_relationship(name1, name2=''):
     return percent
 
 
-class Other():
+class Other(commands.cog):
     """Defines Other commands."""
 
     def __init__(self, bot):
@@ -106,9 +107,9 @@ class Other():
         for c in name:
             total += ord(c)
         if total % 2 == 0:
-            await ctx.send(f"{name.title()}, you were spared by Thanos.")
+            await ctx.send(f"{string.capwords(name)}, you were spared by Thanos.")
         else:
-            await ctx.send(f'{name.title()}, you were slain by Thanos, for the good of the Universe.')
+            await ctx.send(f'{string.capwords(name)}, you were slain by Thanos, for the good of the Universe.')
 
     @commands.command(aliases=['8ball'])
     async def eight_ball(self, ctx, *args):

@@ -1,8 +1,9 @@
 import random
-import ujson
+import string
 from collections import Counter
 
-from cogs.helper import items, users, quests
+import ujson
+
 from config import MONSTERS_JSON, MONSTER_DIRECTORY
 
 with open(MONSTERS_JSON, 'r') as f:
@@ -174,7 +175,7 @@ def print_item_from_lootable(item):
                 item_max = int(loottable[itemid]['max'])
                 rarity = int(loottable[itemid]['rarity'])
 
-                out += f'{MONSTERS[monsterid][NAME_KEY].title()} *(amount: '
+                out += f'{string.capwords(MONSTERS[monsterid][NAME_KEY])} *(amount: '
 
                 if item_min == item_max:
                     out += f'{item_min}, '

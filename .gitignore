@@ -3,13 +3,13 @@ resources/
 test/
 subs/markov/resources/
 config.py
-__init__.py
 *.pyc
 *.csv
 *.txt
 *.ini
 *.log
 *.db
+*.swp
 .idea/
 venv/
 db.sqlite3

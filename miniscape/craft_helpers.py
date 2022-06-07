@@ -1,4 +1,5 @@
 import math
+import string
 from collections import Counter
 import random
 
@@ -34,7 +35,7 @@ def start_gather(guildid, channelid, user: User, itemname, length=-1, number=-1)
 
         item: Item = Item.find_by_name_or_nick(itemname)
         if not item:
-            return f'Error: {item} is not an item.'
+            return f'Error: {itemname} is not an item.'
 
         try:
             length = int(length)
@@ -43,10 +44,10 @@ def start_gather(guildid, channelid, user: User, itemname, length=-1, number=-1)
             return f'Error: {length} is not a valid length of time.'
 
         if not item.is_gatherable:
-            return f'Error: you cannot gather item {ite.name}.'
+            return f'Error: you cannot gather item {item.name}.'
 
         quest_req = item.quest_req
-        if quest_req and quest_req not in user.completed_quests_list:
+        if quest_req and quest_req not in list(user.completed_quest_queryset):
             return f'Error: You do not have the required quest to gather this item.'
 
         item_name = item.name
@@ -74,7 +75,7 @@ def start_gather(guildid, channelid, user: User, itemname, length=-1, number=-1)
             length = 180
 
         if int(number) < 0:
-            number = calc_number(user,item, length * 60)
+            number = calc_number(user, item, length * 60)
             if number > 500:
                 number = 500
         elif int(length) < 0:
@@ -111,19 +112,19 @@ def print_rc_status(userid, time_left, *args):
     return out
 
 
-def print_recipe(user, recipe):
+def print_recipe(user, recipe_name):
     """Prints details related to a particular recipe."""
 
-    created_item = Item.find_by_name_or_nick(recipe)
+    created_item = Item.find_by_name_or_nick(recipe_name)
     recipe = Recipe.objects.filter(creates=created_item)
     if not recipe:
-        return f'Error: cannot find recipe that crafts {recipe}.'
+        return f'Error: cannot find recipe that crafts {recipe_name}.'
     recipe = recipe[0]
 
-    out = f'{CRAFT_HEADER}'\
-          f'**Name**: {created_item.name.title()}\n'\
-          f'**Artisan Requirement**: {recipe.level_requirement}\n'\
-          f'**XP Per Item**: {created_item.xp}\n'\
+    out = f'{CRAFT_HEADER}' \
+          f'**Name**: {string.capwords(created_item.name)}\n' \
+          f'**Artisan Requirement**: {recipe.level_requirement}\n' \
+          f'**XP Per Item**: {created_item.xp}\n' \
           f'**Inputs**:\n'
 
     item_requirements = RecipeRequirement.objects.filter(recipe=recipe)
@@ -136,9 +137,11 @@ def print_recipe(user, recipe):
     return out
 
 
-def print_list(user: User, search):
-    """Prints a list of the recipes a user can use."""
-    # completed_quests = set(users.get_completed_quests(userid))
+def print_list(user: User, search, filter_quests=True, allow_empty=True):
+    """Prints a list of the recipes a user can use.
+    user: the user object to compare quest completion
+    search: a string to search through recipe names
+    filter_quests: whether to filter results based on completed quests or not"""
     messages = []
     out = f'{CRAFT_HEADER}'
     recipes = Recipe.objects.all().order_by('level_requirement', 'creates__name')
@@ -146,16 +149,27 @@ def print_list(user: User, search):
         recipes = recipes.filter(creates__name__icontains=search)
 
     recipes = list(recipes)
-    user_quests = user.completed_quests_list
+    if not recipes and not allow_empty:
+        return []
+    user_quests = list(user.completed_quest_queryset)
     for recipe in recipes:
-        if recipe.quest_requirement in user_quests:
-            out += f'**{recipe.creates.name.title()}** *(level {recipe.level_requirement})*\n'
+        msg = f'**{string.capwords(recipe.creates.name)}** *(level {recipe.level_requirement})*\n'
+
+        # if we're filtering on quests, only add the recipe if it either doesn't have a quest req
+        # or the req is met
+        if filter_quests:
+            if not recipe.quest_requirement or \
+                 recipe.quest_requirement in user_quests:
+                out += msg
+        else:
+            # Otherwise add it unconditionally
+            out += msg
 
         if len(out) > 1800:
             messages.append(out)
             out = f'{CRAFT_HEADER}'
 
-    out += 'Type `~recipes info [item]` to get more info about how to craft a particular item.'
+    out += 'Type `~recipes info [item]` to get more info about how to craft a particular item.\n'
     messages.append(out)
     return messages
 
@@ -169,11 +183,12 @@ def get_runecraft(person, *args):
     except ValueError as e:
         print(e)
         raise ValueError
-    user = User.objects.get(id=person.id)
+
+    user = User.objects.get(id=person)
     item = Item.objects.get(id=itemid)
 
     if not user.has_item_amount_by_item(RUNE_ESSENCE, number) \
-        and not user.has_item_amount_by_item(PURE_ESSENCE, number):
+            and not user.has_item_amount_by_item(PURE_ESSENCE, number):
         return f"{person.mention}, your session did not net you any xp " \
                f"because you did not have enough rune essence."
 
@@ -212,7 +227,7 @@ def get_gather_list():
     messages = []
     out = GATHER_HEADER
     for item in gatherables:
-        out += f'**{item.name.title()}** *(level: {item.level}, ' \
+        out += f'**{string.capwords(item.name)}** *(level: {item.level}, ' \
                f'xp: {item.xp})*\n'
         if len(out) > 1800:
             messages.append(out)
@@ -229,7 +244,7 @@ def get_gather(person, *args):
     except ValueError as e:
         print(e)
         raise ValueError
-    user = User.objects.get(id=person.id)
+    user = User.objects.get(id=person)
     item = Item.objects.get(id=itemid)
     user.update_inventory({item: number})
     xp = XP_FACTOR * number * item.xp
@@ -239,7 +254,7 @@ def get_gather(person, *args):
 
     xp_formatted = '{:,}'.format(xp)
     out = f'{GATHER_HEADER}' \
-          f'{person.mention}, your gathering session has finished! You have gathered ' \
+          f'<@{person}>, your gathering session has finished! You have gathered ' \
           f'{item.pluralize(number)} and have gained {xp_formatted} gathering xp! '
 
     if gather_level_after > gather_level_before:
@@ -268,7 +283,7 @@ def calc_length(user: User, item: Item, number):
 
     if item.is_tree:
         if user.equipment_slots[12]:
-            item_multiplier = 2 - user.equipment_slots[12].level/100
+            item_multiplier = 2 - user.equipment_slots[12].level / 100
         else:
             item_multiplier = 10
     elif item.is_rock:
@@ -305,7 +320,7 @@ def calc_number(user: User, item: Item, time):
     item_level = item.level
     if item.is_tree:
         if user.equipment_slots[12]:
-            item_multiplier = 2 - user.equipment_slots[12].level/100
+            item_multiplier = 2 - user.equipment_slots[12].level / 100
         else:
             item_multiplier = 10
     elif item.is_rock:
@@ -348,13 +363,13 @@ def craft(user: User, recipe, n=1):
     inputs = recipe.get_requirements()
     negative_loot = {}
     for rr in list(inputs):
-        if user.has_item_amount_by_item(rr.item, rr.amount*n):
+        if user.has_item_amount_by_item(rr.item, rr.amount * n):
             negative_loot[rr.item] = rr.amount * n
         else:
             return f'Error: you do not have enough items to make {recipe.creates.pluralize(n)} ' \
                    f'({rr.item.pluralize(rr.amount * n)}).'
 
-    bonus = random.randint(1, math.floor(n/20)) if artisan_level == 99 and n >=20 else 0
+    bonus = random.randint(1, math.floor(n / 20)) if artisan_level == 99 and n >= 20 else 0
 
     goldsmith_bonus = 1
     if recipe == GOLD_BAR_RECIPE and GOLD_GAUNTLETS in user.equipment_slots:
@@ -393,8 +408,8 @@ def cook(user: User, food, n=1):
     if not rr:
         return "You cannot cook {name}."
     rr = rr[0]
-    if user.has_item_amount_by_item(rr.item, rr.amount*n):
-        negative_loot = {rr.item: rr.amount*n}
+    if user.has_item_amount_by_item(rr.item, rr.amount * n):
+        negative_loot = {rr.item: rr.amount * n}
     else:
         return f'You do not have enough items to make {rr.item.pluralize(n)} ' \
                f'({rr.item.pluralize(rr.amount * n)}).'
@@ -440,34 +455,42 @@ def start_runecraft(guildid, channelid, user: User, item, number=1, pure=0):
         if not item:
             return f'{item} is not an item.'
 
+        if not item.is_rune:
+            return f'{item.name} is not a rune that can be crafted.'
+
         try:
             number = int(number)
         except ValueError:
             return f'{number} is not a valid number.'
 
+<<<<<<< Updated upstream
         if not item.is_rune:
-            return f'{items.get_attr(itemid)} is not a rune that can be crafted.'
+            return f'{item.name} is not a rune that can be crafted.'
 
         # Find out if user has the talisman
         rune_type = item.name.split(" ")[0]
         if not user.has_item_by_name(rune_type + " talisman"):
-            return f'{items.get_attr(talismanid)} not found in inventory.'
+            return f'{rune_type + " talisman"} not found in inventory.'
+=======
+        # Find out if user has the talisman
+        rune_type = item.name.split(" ")[0]
+        if not user.has_item_by_name(rune_type + " talisman"):
+            return f'Appropriate talisman not found in inventory.'
+>>>>>>> Stashed changes
 
-        item_name = item.name
-        runecrafting_level = user.rc_level
         runecraft_req = item.level
         player_potion = user.potion_slot.id if user.potion_slot else '0'
 
         if player_potion == 435:
-            boosted_level = runecrafting_level + 3
+            boosted_level = user.rc_level + 3
         elif player_potion == 436:
-            boosted_level = runecrafting_level + 6
+            boosted_level = user.rc_level + 6
         else:
-            boosted_level = runecrafting_level
+            boosted_level = user.rc_level
 
         if boosted_level < runecraft_req:
-            return f'Error: {item_name} has a runecrafting requirement ({runecraft_req}) higher ' \
-                   f'than your runecrafting level ({runecrafting_level})'
+            return f'Error: {item.name} has a runecrafting requirement ({runecraft_req}) higher ' \
+                   f'than your runecrafting level ({user.rc_level})'
 
         if item.quest_req and not user.has_completed_quest(item.quest_req):
             return f'You do not have the required quest to craft this rune.'
@@ -486,7 +509,7 @@ def start_runecraft(guildid, channelid, user: User, item, number=1, pure=0):
             return f'You do not have enough essence to craft this many runes.'
 
         rc_session = adv.format_line(6, user.id, adv.get_finish_time(length * 60), guildid, channelid,
-                                     item.id, item_name, number, length, pure)
+                                     item.id, item.name, number, length, pure)
         adv.write(rc_session)
         out += f'You are now crafting {item.pluralize(number)} for {length} minutes.'
     else:

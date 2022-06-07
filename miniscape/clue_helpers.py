@@ -1,4 +1,5 @@
 import math
+import string
 import random
 from collections import Counter
 
@@ -96,7 +97,7 @@ def print_clue_scrolls(author):
     """Prints the number of clues a user has completed."""
     out = f'{CLUE_HEADER}'
     for clue in author.clue_counts:
-        out += f'**{clue[0].title()}**: {clue[1]}\n'
+        out += f'**{string.capwords(clue[0])}**: {clue[1]}\n'
 
     return out
 
@@ -105,7 +106,7 @@ def print_clue_scrolls(author):
     """Prints the number of clues a user has completed."""
     out = f'{CLUE_HEADER}'
     for clue in author.clue_counts:
-        out += f'**{clue[0].title()}**: {clue[1]}\n'
+        out += f'**{string.capwords(clue[0])}**: {clue[1]}\n'
 
     return out
 
@@ -114,7 +115,7 @@ def print_item_from_lootable(item):
     out = '\n'
 
     for cl in ClueLoot.objects.filter(loot_item=item):
-        out += f'{cl.clue_item.name.title()} *(amount: '
+        out += f'{string.capwords(cl.clue_item.name)} *(amount: '
         if cl.min_amount == cl.max_amount:
             out += f'{cl.min_amount}, '
         else:

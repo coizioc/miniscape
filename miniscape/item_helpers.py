@@ -1,8 +1,10 @@
 from config import SHOP_FILE
+import string
 from miniscape.models import Item, User, Quest
 from miniscape.itemconsts import COINS
 from collections import Counter
 
+ITEM_HEADER = '__**:moneybag: ITEMS :moneybag:**__\n'
 SHOP_HEADER = '__**:moneybag: SHOP :moneybag:**__\n'
 
 
@@ -23,8 +25,8 @@ def compare(item1, item2):
     if not i2:
         return f'Error: {item2} does not exist.'
 
-    out = f':moneybag: __**COMPARE**__ :moneybag:\n'\
-          f'**{i1.name.title()} vs {i2.name.title()}:**\n\n'\
+    out = f':moneybag: __**COMPARE**__ :moneybag:\n' \
+          f'**{string.capwords(i1.name)} vs {string.capwords(i2.name)}:**\n\n' \
           f'**Accuracy**: {i1.accuracy} vs {i2.accuracy} *({i1.accuracy - i2.accuracy})*\n' \
           f'**Damage**: {i1.damage} vs {i2.damage} *({i1.damage - i2.damage})*\n' \
           f'**Armour**: {i1.armour} vs {i2.armour} *({i1.armour - i2.armour})*\n' \
@@ -54,7 +56,7 @@ def print_shop(userid):
         if is_available:
             name = item.name
             price = '{:,}'.format(4 * item.value)
-            out += f'**{name.title()}**: {price} coins\n'
+            out += f'**{string.capwords(name)}**: {price} coins\n'
 
         if len(out) > 1800:
             messages.append(out)
@@ -94,7 +96,7 @@ def sell(userid, item, number):
     item_name = item.name
     if user.has_item_amount_by_item(item, number):
         value = item.value
-        user.update_inventory(Counter({COINS: value*number}))
+        user.update_inventory(Counter({COINS: value * number}))
         user.update_inventory(Counter({item: number}), remove=True)
 
         value_formatted = '{:,}'.format(value * number)
@@ -138,3 +140,23 @@ def buy(userid, item, number):
             return 'Error: You do not have the requirements to buy this item.'
     else:
         return f'Error: {item_name} not available in shop.'
+
+
+def print_all_items(search_term="", allow_empty=True):
+    out = f'{ITEM_HEADER}'
+    messages = []
+    items: list[Item] = list(Item.objects.filter(name__icontains=search_term))
+
+    if not items and not allow_empty:
+        return []
+
+    for i in items:
+        out += f'**{string.capwords(i.name)}**\n'
+
+        if len(out) > 1900:
+            messages.append(out)
+            out = f'{ITEM_HEADER}'
+
+    out += 'Type `~item info [name]` to get more information about a particular item.\n'
+    messages.append(out)
+    return messages

@@ -1,4 +1,5 @@
 from miniscape.models import User, Prayer, Item
+import string
 
 PRAYER_HEADER = f':pray: __**PRAYER**__ :pray:\n'
 PRAYER_POTION = Item.objects.get(name__iexact="prayer potion")
@@ -51,20 +52,24 @@ def print_info(prayer):
     return out
 
 
-def print_list(userid):
+def print_list(userid, search_term="", allow_empty=True):
     """Lists the prayers the the user can use."""
-    user = User.objects.get(id=userid)
-    usable_prayers = user.usable_prayers
-
+    if userid:
+        user = User.objects.get(id=userid)
+        usable_prayers = user.usable_prayers
+    else:
+        usable_prayers = Prayer.objects.filter(name__icontains=search_term)
+    if not usable_prayers and not allow_empty:
+        return []
     out = PRAYER_HEADER
     messages = []
     for prayer in usable_prayers:
-        out += f'**{prayer.name.title()}** *(level {prayer.level_required})*\n'
+        out += f'**{string.capwords(prayer.name)}** *(level {prayer.level_required})*\n'
         if len(out) > 1800:
             messages.append(out)
             out = f'{PRAYER_HEADER}'
 
-    out += 'Type `~prayer info [name]` to get more information about a particular prayer.'
+    out += 'Type `~prayer info [name]` to get more information about a particular prayer.\n'
     messages.append(out)
     return messages
 
@@ -86,5 +91,5 @@ def set_prayer(userid, prayer):
 
     user.prayer_slot = prayer
     user.save()
-    out = f'{PRAYER_HEADER}Your prayer has been set to {prayer.name.title()}!'
+    out = f'{PRAYER_HEADER}Your prayer has been set to {string.capwords(prayer.name)}!'
     return out

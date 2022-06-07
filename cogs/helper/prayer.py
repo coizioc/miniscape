@@ -1,11 +1,3 @@
-import ujson
-
-from cogs.helper import users
-from config import PRAYERS_JSON
-
-with open(PRAYERS_JSON, 'r') as f:
-    PRAYERS = ujson.load(f)
-
 NAME_KEY = 'name'                       # Name of prayer, stored as a string.
 NICK_KEY = 'nick'                       # List of nicknames of prayer.
 DESC_KEY = 'description'                # Description of function of prayer.

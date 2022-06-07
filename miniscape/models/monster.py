@@ -7,7 +7,6 @@ from django.db import models
 
 
 class Monster(models.Model):
-
     id = models.PositiveIntegerField(primary_key=True)
     name = models.CharField(max_length=200,
                             unique=True)
@@ -15,8 +14,6 @@ class Monster(models.Model):
                               blank=True,
                               default="s")
     nick = models.ManyToManyField('MonsterNickname')
-
-
 
     # Stats
     xp = models.PositiveIntegerField(default=0)
@@ -112,7 +109,7 @@ class Monster(models.Model):
                 loot[ml.item] += amount
 
             # Chance to drop christmas cracker per kill for Christmas event.
-            if random.randint(1, 1000000) == 1:
+            if random.randint(1, 100000) == 1:
                 christmas_cracker = Item.objects.get(name='christmas cracker')
                 log_str = "Awarded %d %s as part of loot generation for %d %s" % (1,
                                                                                   christmas_cracker.name,

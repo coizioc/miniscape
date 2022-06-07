@@ -1,5 +1,6 @@
 from miniscape.models import User, Quest, Item, Monster, Recipe, UserQuest
 from django.core.exceptions import ObjectDoesNotExist
+import string
 import math
 
 QUEST_HEADER = ':crossed_swords: __**QUESTS**__ :shield:\n'
@@ -7,8 +8,12 @@ DFS = Item.objects.get(name__iexact="dragonfire shield")
 ANTI_DRAGON_SHIELD = Item.objects.get(name__iexact="anti-dragon shield")
 
 
-def calc_chance(user, quest, remove_food=False):
+def calc_chance(user: User, quest, remove_food=False):
     """Calculates the chance of success of a quest."""
+    if isinstance(user, str) or isinstance(user, int):
+        user = User.objects.get(id=user)
+    if isinstance(quest, str) or isinstance(quest, int):
+        quest = Quest.objects.get(id=quest)
     # user_prayer = users.read_user(userid, key=users.PRAY_KEY)
     player_arm = user.armour
     player_combat = user.combat_level
@@ -69,7 +74,7 @@ def calc_length(user, quest):
 
 def print_quest(quest, time, chance):
     """Prints the quest information into a string."""
-    out = f"You are now doing the quest {quest.name.title()}. This will take {math.floor(time / 60)} minutes " \
+    out = f"You are now doing the quest {quest.name}. This will take {math.floor(time / 60)} minutes " \
           f"and has a {chance}% chance of succeeding with your current gear. "
     return out
 
@@ -114,9 +119,10 @@ def print_details(user, questid):
 
 def print_status(userid, time_left, *args):
     questid, chance = args[0]
+    quest = Quest.objects.get(id=questid)
     chance = calc_chance(userid, questid)
     out = f'{QUEST_HEADER}' \
-          f'You are already on the quest {get_attr(questid)}. You can see the results of this quest {time_left}. ' \
+          f'You are already on the quest {quest.name}. You can see the results of this quest {time_left}. ' \
           f'You currently have a {chance}% of succeeding with your current gear. '
     return out
 
@@ -136,7 +142,7 @@ def start_quest(guildid, channelid, user: User, questid):
     except ObjectDoesNotExist:
         return f"Error: quest number {questid} does not refer to any quest."
 
-    if quest in user.completed_quests_list:
+    if quest in list(user.completed_quest_queryset):
         return "Error: you have already done this quest."
 
     if not user.has_quest_req_for_quest(quest):
@@ -167,10 +173,10 @@ def get_result(person, *args):
         print(e)
         raise ValueError
 
-    user: User = User.objects.get(id=person.id)
+    user: User = User.objects.get(id=person)
     quest: Quest = Quest.objects.get(id=questid)
 
-    out = f'{QUEST_HEADER}**{person.mention}, here is the result of your quest, {quest.name}**:\n'
+    out = f'{QUEST_HEADER}**<@{person}>, here is the result of your quest, {quest.name}**:\n'
     if adv.is_success(calc_chance(user, quest, remove_food=True)):
         out += f'*{quest.success}*\n\n'
 
@@ -189,7 +195,7 @@ def get_result(person, *args):
         if quest_items:
             out += f'**You Can Now Use**:\n'
             for item in quest_items:
-                out += f'{item.name.title()}\n'
+                out += f'{string.capwords(item.name)}\n'
             out += '\n'
 
         quest_recipes = Recipe.objects.filter(quest_requirement__id=questid)
@@ -213,25 +219,31 @@ def get_result(person, *args):
     return out
 
 
-def print_list(user, incomplete=False):
+def print_list(user, incomplete=False, search="", get_stats=True, allow_empty=True, ignore_req=False):
     """Lists quests a user can do at the moment."""
     out = f'{QUEST_HEADER}'
     messages = []
-    all_quests = Quest.objects.all()
+    all_quests = Quest.objects.filter(name__icontains=search)
+
+    if not all_quests and not allow_empty:
+        return []
+
     user_quests = user.completed_quests_list
+
     for quest in all_quests:
         if quest in user_quests:
             if incomplete:
                 continue  # Skip because only showing incomplete ones
             out += f'~~**{quest.id}**. {quest.name}~~\n'
-        elif user.has_quest_req_for_quest(quest, user_quests):
+        elif user.has_quest_req_for_quest(quest, user_quests) or ignore_req:
             out += f'**{quest.id}**. {quest.name}\n'
 
         if len(out) > 1800:
             messages.append(out)
             out = f'{QUEST_HEADER}'
 
-    out += f'\n**Quests Completed**: {user.num_quests_complete}/{Quest.objects.count()}\n'
-    out += 'Type `~quest [quest number]` to see more information about a quest.'
+    if get_stats:
+        out += f'\n**Quests Completed**: {user.num_quests_complete}/{Quest.objects.count()}\n'
+    out += 'Type `~quest [quest number]` to see more information about a quest.\n'
     messages.append(out)
     return messages

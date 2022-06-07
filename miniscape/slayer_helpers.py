@@ -177,18 +177,19 @@ def get_task(guildid, channelid, author: User):
         equipment = author.equipment_slots
 
         for _ in range(1000):
-            monster = mon.get_random(author, wants_boss=False)
+            monster: Monster = mon.get_random(author, wants_boss=False)
 
             num_to_kill = random.randint(LOWEST_NUM_TO_KILL, LOWEST_NUM_TO_KILL + 15 + 3 * slayer_level)
             base_time, task_length = calc_length(author, monster, num_to_kill)
             chance = calc_chance(author, monster, num_to_kill)
+            quest_req_met = (monster.quest_req in completed_quests) if monster.quest_req else True
 
             mon_level = monster.level
             if 0.25 <= task_length / base_time <= 2 \
                     and chance >= 20 \
                     and mon_level / cb_level >= 0.8 \
                     and task_length <= 3600 \
-                    and (monster.quest_req and monster.quest_req in completed_quests):
+                    and quest_req_met:
                 break
             else:
                 log_str = f"Failed to give task to user\n" \
@@ -283,13 +284,13 @@ def get_kill_result(person, *args):
         print(e)
         raise ValueError
     num_to_kill = int(num_to_kill)
-    user = User.objects.get(id=person.id)
+    user = User.objects.get(id=person)
     monster = Monster.objects.get(id=monsterid)
     user.add_kills(monster, num_to_kill)
 
     chance = calc_chance(user, monster, num_to_kill, remove_food=True)
     is_success = adv.is_success(chance)
-    if not is_success and user.prayer_slot.id == '16' and random.randint(0, 1):
+    if not is_success and user.prayer_slot_id == '16' and random.randint(0, 1):
         is_success = True
 
     factor = 1 if is_success else int(chance) / 100
@@ -320,7 +321,7 @@ def print_loot(loot, person: Member, monster: Monster, num_to_kill: int, add_men
     """Converts a user's loot from a slayer task to a string."""
     out = f'{SLAYER_HEADER}**'
     if add_mention:
-        out += f'{person.mention}, '
+        out += f'<@{person}>, '
     else:
         out += f'{person.name}, '
     #
@@ -348,7 +349,7 @@ def get_result(person, *args):
         print(e)
         raise ValueError
     num_to_kill = int(num_to_kill)
-    user: User = User.objects.get(id=person.id)
+    user: User = User.objects.get(id=person)
     monster: Monster = Monster.objects.get(id=monsterid)
     user.add_kills(monster, num_to_kill)
 

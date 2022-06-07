@@ -1,29 +1,43 @@
 #! /usr/bin/env python3
 """Runs bots for a Discord server."""
 # These lines allow us to use Django models
-import logging
 import os
-import sys
-import asyncio
-import traceback
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "miniscapebot.settings")
 import django
 django.setup()
+
+<<<<<<< Updated upstream
+import logging
+import sys
+import asyncio
+import traceback
+=======
+import sys
+import asyncio
+import traceback
+import logging
+
+>>>>>>> Stashed changes
 from django.core.exceptions import ObjectDoesNotExist
+from cogs.managers.farming_manager import FarmingManager
 from discord.ext import commands
 import cogs.managers.trade_manager as tm
 from miniscape.models import User
 import config
+from pythonjsonlogger import jsonlogger
+
 
 def extensions_generator():
     """Returns a generator for all cog files that aren't in do_not_use."""
     cog_path = "./cogs"
-    do_not_use = ['errors', 'helper', 'managers', '__pycache__']
+    do_not_use = ['errors', 'helper', 'managers', '__pycache__', 'test.py']
     for cog in os.listdir(cog_path):
         if cog not in do_not_use:
             yield f"cogs.{cog[:-3]}"
 
+
 DESCRIPTION = "A bot that runs a basic role-playing game."
+
 
 # log = logging.getLogger(__name__)
 
@@ -31,7 +45,9 @@ class MiniscapeBot(commands.Bot):
     """Defines the miniscapebot class and functions."""
 
     def __init__(self):
-        super().__init__(command_prefix=["~", "%"], description=DESCRIPTION)
+        super().__init__(command_prefix=["~", "%", "./", "."], description=DESCRIPTION)
+        self.trade_manager = None
+        self.farm_manager = None
         self.default_nick = "Miniscape"
         self.add_command(self.load)
         self.remove_command('help')
@@ -51,7 +67,8 @@ class MiniscapeBot(commands.Bot):
         root = logging.getLogger()
         ch = logging.StreamHandler(sys.stdout)
         ch.setLevel(logging.DEBUG)
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        # formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        formatter = jsonlogger.JsonFormatter()
         ch.setFormatter(formatter)
         root.addHandler(ch)
         logging.getLogger(__name__).info("Logging initialized")
@@ -59,6 +76,7 @@ class MiniscapeBot(commands.Bot):
 
     def initialize_managers(self):
         self.trade_manager = tm.TradeManager()
+        self.farm_manager = FarmingManager()
 
     async def on_ready(self):
         """Prints bot initialization info"""
@@ -108,9 +126,11 @@ class MiniscapeBot(commands.Bot):
             await ctx.send(f'Failed to load extension {extension}.', file=sys.stderr)
             traceback.print_exc()
 
+
 class MiniscapeBotContext(commands.Context):
 
     def __init__(self, *args, **kwargs):
+        self.bot: MiniscapeBot = None
         super().__init__(*args, **kwargs)
 
         try:
@@ -132,4 +152,3 @@ class MiniscapeBotContext(commands.Context):
             self.user_object.nick = self.author.nick if self.author.nick is not None else ''
             self.user_object.name = self.author.name + '#' + self.author.discriminator
             self.user_object.save()
-

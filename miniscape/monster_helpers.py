@@ -1,17 +1,21 @@
+from django.db.models import Q
+
+from cogs.helper.monsters import MONSTERS, add_plural, get_attr
 from miniscape.models import Monster, User, MonsterLoot
 import random
+import string
 
 CHARACTER_HEADER = f':crossed_swords: __**$NAME**__ :crossed_swords:\n'
 
 RARITY_NAMES = {
-        1: 'always',
-        16: 'common',
-        128: 'uncommon',
-        256: 'rare',
-        1024: 'super rare',
-        4096: 'ultra rare',
-        8192: 'super duper rare'
-    }
+    1: 'always',
+    16: 'common',
+    128: 'uncommon',
+    256: 'rare',
+    1024: 'super rare',
+    4096: 'ultra rare',
+    8192: 'super duper rare'
+}
 
 AFFINITIES = {
     0: "Melee",
@@ -24,20 +28,12 @@ AFFINITIES = {
 def get_random(author: User, wants_boss=False):
     """Randomly selects and returns a monster (given a particular boolean key)."""
 
-    monster: Monster
-    if wants_boss:
-        monster = random.sample(set(Monster.objects.filter(is_boss=True)), 1)
-    else:
-        if author.offhand_slot.is_anti_dragon:
-            monster = random.sample(set(Monster.objects.filter(is_boss=False,
-                                                               is_slayable=True,
-                                                               slayer_level_req__lte=author.slayer_level)), 1)
-        else:
-            monster = random.sample(set(Monster.objects.filter(is_boss=False,
-                                                               is_slayable=True,
-                                                               slayer_level_req__lte=author.slayer_level,
-                                                               is_dragon=False)), 1)
-    return monster[0]
+    monsters = Monster.objects.filter(Q(quest_req=None) | Q(quest_req__in=author.completed_quests_list),
+                                      is_boss=wants_boss,
+                                      is_slayable=not wants_boss,
+                                      slayer_level_req__lte=author.slayer_level,
+                                      is_dragon=author.offhand_slot.is_anti_dragon)
+    return random.sample(monsters, 1)[0]
 
 
 def print_monster_kills(author, search=None):
@@ -46,10 +42,11 @@ def print_monster_kills(author, search=None):
     out = f"{CHARACTER_HEADER.replace('$NAME', author.plain_name)}"
 
     for monster in monster_kills:
-        out += f'**{monster.monster.name.title()}**: {monster.amount}\n'
+        out += f'**{string.capwords(monster.monster.name)}**: {monster.amount}\n'
         pass
 
     return out
+
 
 def find_by_name(name):
     """Finds a monster's ID from its name."""
@@ -64,28 +61,6 @@ def find_by_name(name):
     else:
         raise KeyError
 
-def print_list():
-    """Prints a string containing a list of all monsters."""
-    header = '__**:skull_crossbones: BESTIARY :skull_crossbones:**__\n'
-    messages = []
-    monster_list = []
-    for monster in Monster.objects.all():
-        level = monster.level
-        name = monster.name
-        slayer_req = monster.slayer_level_req
-        monster_list.append((level, name, slayer_req))
-    out = header
-    for level, name, req in sorted(monster_list):
-        out += f'**{name.title()}** *(combat: {level}'
-        if int(req) > 1:
-            out += f', slayer: {req}'
-        out += ')*\n'
-        if len(out) >= 1800:
-            messages.append(out)
-            out = header
-    messages.append(out)
-    return messages
-
 
 def print_monster(monstername):
     """Prints information related to a monster."""
@@ -97,13 +72,13 @@ def print_monster(monstername):
     messages = []
     aliases = ', '.join(monster.alias_strings)
 
-    out = f'__**:skull_crossbones: BESTIARY :skull_crossbones:**__\n'\
-          f'**Name**: {monster.name.title()}\n'
+    out = f'__**:skull_crossbones: BESTIARY :skull_crossbones:**__\n' \
+          f'**Name**: {string.capwords(monster.name)}\n'
 
     if aliases:
         out += f'**Aliases**: {aliases}\n'
     if monster.quest_req:
-        out += f'**Quest Requirement**: {monster.quest_req.name.title()}\n'
+        out += f'**Quest Requirement**: {string.capwords(monster.quest_req.name)}\n'
     if monster.slayer_level_req > 1:
         out += f'**Slayer Requirement**: {monster.slayer_level_req}\n'
 
@@ -134,5 +109,34 @@ def print_monster(monstername):
             messages.append(out)
             out = f'__**:skull_crossbones: BESTIARY :skull_crossbones:**__\n'
 
+    messages.append(out)
+    return messages
+
+
+def print_list(search="", allow_empty=True):
+    """Prints a string containing a list of all monsters."""
+    header = '__**:skull_crossbones: BESTIARY :skull_crossbones:**__\n'
+    messages = []
+    monster_list = []
+    for monster in Monster.objects.filter(name__icontains=search):
+        level = monster.level
+        name = monster.name
+        slayer_req = monster.slayer_level_req
+        monster_list.append((level, name, slayer_req))
+
+    if not monster_list and not allow_empty:
+        return []
+
+    out = header
+    for level, name, req in sorted(monster_list):
+        out += f'**{string.capwords(name)}** *(combat: {level}'
+        if int(req) > 1:
+            out += f', slayer: {req}'
+        out += ')*\n'
+        if len(out) >= 1800:
+            messages.append(out)
+            out = header
+
+    out += 'Type `~bes [name]` to get more information about a particular monster.\n'
     messages.append(out)
     return messages
