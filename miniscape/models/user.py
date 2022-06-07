@@ -1,3 +1,4 @@
+import logging
 from collections import Counter
 
 from django.db import models
@@ -240,7 +241,7 @@ class User(models.Model):
     def get_item_count(self, item=None, itemid=None, itemname=None):
         """ Returns the number of items in user inventory by either object, name, or ID"""
         if item:
-            ui = self.get_items_by_obj(item)[0]
+            ui = self.get_items_by_obj(item)
         elif itemid:
             ui = self.get_item_by_id(itemid)
         elif itemname:
@@ -263,8 +264,11 @@ class User(models.Model):
         return items
 
     def get_items_by_obj(self, item):
-        items = self.userinventory_set.get_or_create(item=item)
-        return items
+        item, created = self.userinventory_set.get_or_create(item=item)
+        if created:
+            item.amount = 0
+
+        return item
 
     def get_items_by_objs(self, items):
         items = self.userinventory_set.filter(item__in=items).order_by('item__name')
@@ -272,21 +276,26 @@ class User(models.Model):
 
     def update_inventory(self, loot, amount=1, remove=False):
         if type(loot) == Item:
+            logging.getLogger(__name__).info("got loot requst where loot is Item type. This is deprecated. Pls fix")
             # Need to pass in UserInventory object
             loot = {loot.id: amount}
 
         loot = Counter(loot)
-        for itemid, amount in loot.items():
-            if type(itemid) == Item:
-                item = self.get_items_by_obj(itemid)
-                itemid = item[0].item.id
+        for i, amount in loot.items():
+            if type(i) == Item:
+                item = self.get_items_by_obj(i)
             else:
-                item = self.get_items_by_id(itemid)
+                # This exception shouldn't happen, don't send bad data to here
+                try:
+                    item = self.get_items_by_id(i)[0]
+                except IndexError:
+                    item = None
 
             if item:
-                self._update_inventory_object(item[0], amount=amount, remove=remove)
+                self._update_inventory_object(item, amount=amount, remove=remove)
             else:
-                item = Item.objects.get(id=itemid)
+                # This should never happen
+                item = Item.objects.get(id=i)
                 self._add_inventory_object(item, amount=amount)
         self.save()
 
@@ -345,8 +354,11 @@ class User(models.Model):
             return self.playermonsterkills_set.all().order_by('monster__name')
 
     def add_kills(self, monster: Monster, num: int):
-        mk: PlayerMonsterKills = self.playermonsterkills_set.get_or_create(user=self,
-                                                                           monster=monster)[0]
+        mk, created = self.playermonsterkills_set.get_or_create(user=self,
+                                                                           monster=monster)
+        if created:
+            mk.amount = 0
+
         mk.amount += num
         mk.save()
 
