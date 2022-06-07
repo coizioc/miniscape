@@ -36,7 +36,7 @@ class User(models.Model):
                                     'cook': self.cook_level,
                                     'cooking': self.cook_level,
                                     'pray': self.prayer_level,
-                                    'prayer':  self.prayer_level,
+                                    'prayer': self.prayer_level,
                                     'rc': self.rc_level,
                                     'runecrafting': self.rc_level}
 
@@ -66,7 +66,7 @@ class User(models.Model):
                                  'cook': self.cook_xp,
                                  'cooking': self.cook_xp,
                                  'pray': self.prayer_xp,
-                                 'prayer':  self.prayer_xp,
+                                 'prayer': self.prayer_xp,
                                  'rc': self.rc_xp,
                                  'runecrafting': self.rc_xp}
 
@@ -299,7 +299,7 @@ class User(models.Model):
                 self._add_inventory_object(item, amount=amount)
         self.save()
 
-    def _update_inventory_item_id(self, loot: str, amount=1,  remove=False):
+    def _update_inventory_item_id(self, loot: str, amount=1, remove=False):
         item = Item.objects.get(id=loot)
         return self._update_inventory_object(item, amount=amount, remove=remove)
 
@@ -347,15 +347,16 @@ class User(models.Model):
 
     def monster_kills(self, search=None):
         if search:
-            return self.playermonsterkills_set.\
-                filter(monster__name__icontains=search)\
+            return self.playermonsterkills_set. \
+                filter(monster__name__icontains=search) \
                 .order_by('monster__name')
         else:
             return self.playermonsterkills_set.all().order_by('monster__name')
 
     def add_kills(self, monster: Monster, num: int):
         mk, created = self.playermonsterkills_set.get_or_create(user=self,
-                                                                           monster=monster)
+                                                                monster=monster)
+
         if created:
             mk.amount = 0
 
@@ -465,7 +466,7 @@ class User(models.Model):
     def has_items_for_quest(self, quest: Quest):
         quest_items = quest.required_items
         if quest_items:
-            quest_items = {qir.item : qir.amount for qir in quest_items}
+            quest_items = {qir.item: qir.amount for qir in quest_items}
             quest_items = Counter(quest_items)
             return self.has_item_amount_by_counter(quest_items)
         else:
