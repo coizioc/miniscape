@@ -8,3 +8,4 @@ from .recipe import Recipe, RecipeRequirement
 from .playermonsterkills import PlayerMonsterKills
 from .clueloot import ClueLoot
 from .periodicchecker import PeriodicChecker
+from .farming_plot import FarmPlot

@@ -7,7 +7,6 @@ from django.db import models
 
 
 class Monster(models.Model):
-
     id = models.PositiveIntegerField(primary_key=True)
     name = models.CharField(max_length=200,
                             unique=True)
@@ -15,8 +14,6 @@ class Monster(models.Model):
                               blank=True,
                               default="s")
     nick = models.ManyToManyField('MonsterNickname')
-
-
 
     # Stats
     xp = models.PositiveIntegerField(default=0)

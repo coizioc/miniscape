@@ -177,18 +177,19 @@ def get_task(guildid, channelid, author: User):
         equipment = author.equipment_slots
 
         for _ in range(1000):
-            monster = mon.get_random(author, wants_boss=False)
+            monster: Monster = mon.get_random(author, wants_boss=False)
 
             num_to_kill = random.randint(LOWEST_NUM_TO_KILL, LOWEST_NUM_TO_KILL + 15 + 3 * slayer_level)
             base_time, task_length = calc_length(author, monster, num_to_kill)
             chance = calc_chance(author, monster, num_to_kill)
+            quest_req_met = (monster.quest_req in completed_quests) if monster.quest_req else True
 
             mon_level = monster.level
             if 0.25 <= task_length / base_time <= 2 \
                     and chance >= 20 \
                     and mon_level / cb_level >= 0.8 \
                     and task_length <= 3600 \
-                    and (monster.quest_req and monster.quest_req in completed_quests):
+                    and quest_req_met:
                 break
             else:
                 log_str = f"Failed to give task to user\n" \

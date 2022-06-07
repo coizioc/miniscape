@@ -6,10 +6,18 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "miniscapebot.settings")
 import django
 django.setup()
 
+<<<<<<< Updated upstream
 import logging
 import sys
 import asyncio
 import traceback
+=======
+import sys
+import asyncio
+import traceback
+import logging
+
+>>>>>>> Stashed changes
 from django.core.exceptions import ObjectDoesNotExist
 from cogs.managers.farming_manager import FarmingManager
 from discord.ext import commands

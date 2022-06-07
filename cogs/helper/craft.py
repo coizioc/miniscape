@@ -1,11 +1,4 @@
-import math
-import random
-import ujson
 from collections import Counter
-
-from cogs.helper import items
-from cogs.helper import prayer
-from cogs.helper import users
 
 ARTISAN_REQ_KEY = 'artisan'
 COOKING_REQ_KEY = 'cook'

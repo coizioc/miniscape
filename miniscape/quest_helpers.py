@@ -142,7 +142,7 @@ def start_quest(guildid, channelid, user: User, questid):
     except ObjectDoesNotExist:
         return f"Error: quest number {questid} does not refer to any quest."
 
-    if quest in user.completed_quests_list:
+    if quest in list(user.completed_quest_queryset):
         return "Error: you have already done this quest."
 
     if not user.has_quest_req_for_quest(quest):

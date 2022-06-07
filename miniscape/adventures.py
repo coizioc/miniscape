@@ -2,7 +2,7 @@ import datetime
 import math
 import random
 
-from cogs.helper import quests, slayer, craft, clues
+from cogs.helper import slayer, craft
 from config import ADVENTURES_FILE
 from miniscape import slayer_helpers as sh, clue_helpers, quest_helpers, craft_helpers
 

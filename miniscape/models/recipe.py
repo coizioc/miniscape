@@ -1,9 +1,7 @@
-
 from django.db import models
 
 
 class Recipe(models.Model):
-
     creates = models.ForeignKey('Item',
                                 related_name="item_creates",
                                 on_delete=models.CASCADE)
@@ -26,6 +24,38 @@ class Recipe(models.Model):
 
     def __str__(self):
         return self.__repr__()
+
+
+class FarmRecipe(models.Model):
+    creates = models.ForeignKey('Item',
+                                related_name="item_creates",
+                                on_delete=models.CASCADE)
+    level_requirement = models.PositiveIntegerField(default=0)
+    seed_requirement = models.ForeignKey('Item',
+                                         related_name="item_creates",
+                                         on_delete=models.CASCADE)
+    # How long it takes the plant to grow
+    growth_time_minutes = models.PositiveIntegerField(null=False,
+                                                      default=60)
+
+    # If it's a wood tree, it doesn't give fruit or deplete. It gives a certain number of logs
+    log_yield = models.PositiveIntegerField(null=False,
+                                            default=0)
+
+    # How long it takes the individual fruits to regrow. 0 means it doesn't regrow
+    fruit_growth_time_minutes = models.PositiveIntegerField(null=False,
+                                                            default=0)
+
+    # Maximum number of fruits that can be on the tree or bush. Only relevant if fruit_growth_time_minutes is >0
+    max_fruits = models.PositiveIntegerField(null=False,
+                                             default=60)
+
+    # Depletion chance specifies the odds of a "depletion" being consumed every pick. A lower depletion chance or higher
+    # number of depletions means a bigger harvest. If set 0, means it's a fruit bearing plant and uses static numbers
+    depletion_chance = models.PositiveIntegerField(null=False,
+                                                   default=0)
+    depletions = models.PositiveIntegerField(null=False,
+                                             default=0)
 
 
 class RecipeRequirement(models.Model):

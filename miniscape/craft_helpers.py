@@ -455,11 +455,15 @@ def start_runecraft(guildid, channelid, user: User, item, number=1, pure=0):
         if not item:
             return f'{item} is not an item.'
 
+        if not item.is_rune:
+            return f'{item.name} is not a rune that can be crafted.'
+
         try:
             number = int(number)
         except ValueError:
             return f'{number} is not a valid number.'
 
+<<<<<<< Updated upstream
         if not item.is_rune:
             return f'{item.name} is not a rune that can be crafted.'
 
@@ -467,6 +471,12 @@ def start_runecraft(guildid, channelid, user: User, item, number=1, pure=0):
         rune_type = item.name.split(" ")[0]
         if not user.has_item_by_name(rune_type + " talisman"):
             return f'{rune_type + " talisman"} not found in inventory.'
+=======
+        # Find out if user has the talisman
+        rune_type = item.name.split(" ")[0]
+        if not user.has_item_by_name(rune_type + " talisman"):
+            return f'Appropriate talisman not found in inventory.'
+>>>>>>> Stashed changes
 
         runecraft_req = item.level
         player_potion = user.potion_slot.id if user.potion_slot else '0'

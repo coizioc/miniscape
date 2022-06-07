@@ -3,10 +3,12 @@ import string
 from discord.ext import commands
 from django.db.models import Q
 
+import miniscape.models.user
 from cogs.cmd.common import get_display_name, has_post_permission
 
 from cogs.helper import items,  users
 from cogs.errors.trade_error import TradeError
+from mbot import MiniscapeBotContext
 from miniscape.models import User, Item
 from miniscape.itemconsts import FEDORA, COINS
 import miniscape.command_helpers as ch
@@ -21,21 +23,21 @@ class UserCommands:
     This might be themselves (~me) or another user (~examine)"""
 
     @commands.group(invoke_without_command=True)
-    async def me(self, ctx):
+    async def me(self, ctx: MiniscapeBotContext):
         """Shows information related to the user."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            await ctx.send(users.print_account(ctx.user_object))
+            await ctx.send(ctx.user_object.print_account())
 
     @me.group(name='stats', aliases=['levels'])
-    async def _me_stats(self, ctx):
+    async def _me_stats(self, ctx: MiniscapeBotContext):
         """Shows the levels and stats of a user."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            await ctx.send(users.print_account(ctx.user_object, printequipment=False))
+            await ctx.send(ctx.user_object.print_account(print_equipment=False))
 
     @me.group(name='equipment', aliases=['armour', 'armor'])
-    async def _me_equipment(self, ctx):
+    async def _me_equipment(self, ctx: MiniscapeBotContext):
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            await ctx.send(users.print_equipment(ctx.user_object, with_header=True))
+            await ctx.send(ctx.user_object.print_equipment(with_header=True))
 
     @me.group(name='monsters')
     async def _me_monsters(self, ctx, *args):
@@ -63,20 +65,24 @@ class UserCommands:
         """Examines a given user."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             search_string = ' '.join(args).lower()
-            mems = await ctx.guild.query_members(query=search_string)
+
+            # This is for loading the guild members. No clue whyt his works
+            # TODO: Fix and remove?
+            _ = await ctx.guild.query_members(query=search_string)
+
             for member in ctx.guild.members:
                 if member.nick is not None:
                     if search_string in member.nick.lower():
-                        target = User.objects.get(id=member.id)
+                        target: User = User.objects.get(id=member.id)
                         break
                 if search_string in member.name.lower():
-                    target = User.objects.get(id=member.id)
+                    target: User = User.objects.get(id=member.id)
                     break
             else:
                 await ctx.send(f'Could not find {search_string} in server.')
                 return
 
-            await ctx.send(users.print_account(target))
+            await ctx.send(target.print_account())
 
     @commands.command()
     async def tolevel(self, ctx, *args):
@@ -88,7 +94,7 @@ class UserCommands:
             else:
                 level = None
                 skill = ' '.join(args)
-            out = users.calc_xp_to_level(ctx.user_object, skill, level)
+            out = miniscape.models.user.calc_xp_to_level(ctx.user_object, skill, level)
             await ctx.send(out)
 
     @commands.command()
