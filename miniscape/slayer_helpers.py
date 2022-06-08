@@ -191,6 +191,7 @@ def get_task(guildid, channelid, author: User):
                 log_str = f"Failed to give task to user\n" \
                           f"User: {author.name}, Monster: {monster.name}\n" \
                           f"Conditionals: \n" \
+                          f"  num to kill: {num_to_kill}\n" \
                           f"  task_length / base_time: {task_length / base_time}\n" \
                           f"  chance: {chance}\n"\
                           f"  mon levl / cb lvl: {mon_level / cb_level}\n"
