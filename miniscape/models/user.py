@@ -374,6 +374,9 @@ class User(models.Model):
         return False
 
     def drink(self, potion):
+        found_item = Item.find_by_name_or_nick(potion)
+        if not self.has_item_by_item(found_item):
+            return False
         if type(potion) == Item:
             pot = potion
             if pot.is_pot:
