@@ -38,10 +38,10 @@ class ClueCommands:
                 await ctx.send(f'Error: {difficulty} not valid clue scroll difficulty.')
                 return
             parsed_difficulty = difficulty_names[difficulty]
-        item = Item.objects.get(name__iexact=difficulty)
-        table = clue_helpers.get_loot_table(item)
-        out = ""
-        for i in table:
-            out += f"{i.loot_item}\n"
-        
-        await ctx.send(out)
+            item = Item.objects.get(name__iexact=difficulty)
+            table = clue_helpers.get_loot_table(item)
+            out = ""
+            for i in table:
+                out += f"{i.loot_item}\n"
+            
+            await ctx.send(out)
