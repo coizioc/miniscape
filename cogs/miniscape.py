@@ -28,7 +28,8 @@ class Miniscape(commands.Cog,
                 RunecraftCommands,
                 RecipeCommands,
                 AdventureCommands,
-                GeneralCommands):
+                GeneralCommands,
+                ClueCommands):
     """Defines Miniscape commands."""
 
     def __init__(self, bot):
