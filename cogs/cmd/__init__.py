@@ -7,3 +7,4 @@ from .runecraft import RunecraftCommands
 from .recipe import RecipeCommands
 from .adventure import AdventureCommands
 from .general import GeneralCommands
+from .clues import ClueCommands

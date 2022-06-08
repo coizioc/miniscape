@@ -47,30 +47,7 @@ class Miniscape(commands.Cog,
                 messages = mon.print_monster(monster)
             await self.paginate(ctx, messages)
 
-    @commands.group(aliases=['clues'], invoke_without_command=True)
-    async def clue(self, ctx, difficulty):
-        """Starts a clue scroll."""
-        if has_post_permission(ctx.guild.id, ctx.channel.id):
-            if not difficulty.isdigit():
-                difficulty_names = {
-                    'easy': 1,
-                    'medium': 2,
-                    'hard': 3,
-                    'elite': 4,
-                    'master': 5
-                }
-                if difficulty not in set(difficulty_names.keys()):
-                    await ctx.send(f'Error: {difficulty} not valid clue scroll difficulty.')
-                    return
-                parsed_difficulty = difficulty_names[difficulty]
-            else:
-                if not 0 < int(difficulty) < 6:
-                    await ctx.send(f'Error: {difficulty} not valid clue scroll difficulty.')
-                    return
-                parsed_difficulty = int(difficulty)
-            out = clue_helpers.start_clue(ctx.guild.id, ctx.channel.id, ctx.author.id,
-                                          parsed_difficulty)
-            await ctx.send(out)
+
 
     @commands.command()
     async def gather(self, ctx, *args):
