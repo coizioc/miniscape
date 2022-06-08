@@ -176,8 +176,8 @@ def get_task(guildid, channelid, author: User):
 
         for _ in range(1000):
             monster = mon.get_random(author, wants_boss=False)
-
-            num_to_kill = random.randint(LOWEST_NUM_TO_KILL, LOWEST_NUM_TO_KILL + 15 + 3 * slayer_level)
+            min_assign = monster.min_assignable
+            num_to_kill = random.randint(min_assign, min_assign + 15 + 3 * slayer_level)
             base_time, task_length = calc_length(author, monster, num_to_kill)
             chance = calc_chance(author, monster, num_to_kill)
 
