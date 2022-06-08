@@ -182,7 +182,8 @@ def get_task(guildid, channelid, author: User):
             chance = calc_chance(author, monster, num_to_kill)
 
             mon_level = monster.level
-            if 0.25 <= task_length / base_time <= 2 \
+            #if 0.25 <= task_length / base_time <= 2 \
+            if 600 <= task_length  \
                     and chance >= 20 \
                     and mon_level / cb_level >= 0.8 \
                     and task_length <= 3600:
