@@ -39,7 +39,7 @@ class UserCommands:
 
     @commands.command()
     async def kc(self, ctx, *args):
-        await self._me_monsters(ctx, args)
+        await self._me_monsters(ctx, *args)
 
     @me.group(name='monsters')
     async def _me_monsters(self, ctx, *args):
