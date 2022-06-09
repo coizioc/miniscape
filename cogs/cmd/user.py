@@ -37,6 +37,10 @@ class UserCommands:
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             await ctx.send(users.print_equipment(ctx.user_object, with_header=True))
 
+    @commands.command()
+    async def kc(self, ctx, *args):
+        return self._me_monsters(ctx, args)
+
     @me.group(name='monsters')
     async def _me_monsters(self, ctx, *args):
         """Shows how many monsters a user has killed."""
