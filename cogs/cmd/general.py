@@ -9,7 +9,7 @@ ALL_CATEGORIES = ["monster", "item", "recipe", "quest", "pray", "prayer",
 
 class GeneralCommands:
 
-    @commands.command
+    @commands.command()
     async def ree(self, ctx, *args):
         await ctx.send(":reet:")
 
