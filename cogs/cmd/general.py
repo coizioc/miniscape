@@ -9,6 +9,10 @@ ALL_CATEGORIES = ["monster", "item", "recipe", "quest", "pray", "prayer",
 
 class GeneralCommands:
 
+    @commands.command
+    async def ree(self, ctx, *args):
+        await ctx.send(":reet:")
+
     @commands.command(aliases=["s"])
     async def search(self, ctx: MiniscapeBotContext, *args):
         """The ~search or ~s command is for searching for various things in miniscape. For example, one
