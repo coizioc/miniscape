@@ -11,7 +11,7 @@ class GeneralCommands:
 
     @commands.command()
     async def ree(self, ctx, *args):
-        await ctx.send(":reet:")
+        await ctx.send("<:reet:479701958916309012>")
 
     @commands.command(aliases=["s"])
     async def search(self, ctx: MiniscapeBotContext, *args):
