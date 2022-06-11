@@ -56,11 +56,11 @@ class Monster(models.Model):
 
     @classmethod
     def find_by_name_or_nick(cls, name: str):
-        monster = Monster.objects.filter(name=name)
+        monster = Monster.objects.filter(name__iexact=name)
         if monster:
             return monster[0]
         else:
-            nick = MonsterNickname.objects.filter(nickname=name)
+            nick = MonsterNickname.objects.filter(nickname__iexact=name)
             if nick:
                 return nick[0].real_monster
             else:
