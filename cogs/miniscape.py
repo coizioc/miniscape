@@ -109,35 +109,6 @@ class Miniscape(commands.Cog,
                 out = craft_helpers.cook(ctx.user_object, food, n=min(number, MAX_PER_ACTION))
                 await ctx.send(out)
 
-    @commands.command()
-    async def food(self, ctx):
-        """Lists all cooked food a user has"""
-        if has_post_permission(ctx.guild.id, ctx.channel.id):
-            items = UserInventory.objects.filter(user = ctx.user_object,food_value > 0)
-            
-            lock_template = "**%s (:lock:)**: %s. *(value: %s, %s ea)*\n"
-            unlock_template = "**%s**: %s. *(value: %s, %s ea)*\n"
-
-            messages = [(lock_template if item.is_locked else unlock_template)
-                % (
-                    string.capwords(item.item.name),
-                    '{:,}'.format(item.amount),
-                    '{:,}'.format(item.total_value),
-                    '{:,}'.format(item.item.value)
-            ) for item in inventory]
-
-            ret = []
-            header = f"{config.ITEMS_EMOJI} __**{user.name.upper()}'S INVENTORY**__ {config.ITEMS_EMOJI}\n"
-            out = header
-
-            for message in messages:
-                if len(out) + len(message) > 1800:
-                    ret.append(out)
-                    out = header
-                out = out + message
-            ret.append(out)
-
-                await ctx.send(ret)
 
     async def confirm(self, ctx, msg, _, timeout=300):
         """Asks the user to confirm an action, and returns whether they confirmed or not."""
