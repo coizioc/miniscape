@@ -31,7 +31,7 @@ def calc_drain_time(user: User):
         potion_base = 1
 
     base_time = float(36 / prayer_drain)
-    effective_time = 60 * user_prayer * base_time * potion_base * (1 + equipped_prayer / 30)
+    effective_time = 60 * user_prayer * base_time * potion_base * (1 + prayer_drain / 30)
     return effective_time
 
 
