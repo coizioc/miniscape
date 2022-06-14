@@ -188,6 +188,12 @@ class User(models.Model):
         """ Returns a list of UserInventory Objects related to user filtered by name"""
         return self.userinventory_set.filter(item__name__icontains=name).order_by('item__name')
 
+    def get_food(self):
+        """ Returns a list of UserInventory Objects related to this user"""
+        return self.userinventory_set.filter(item__food_value__gte="1").order_by('item__name')
+        #inventory = UserInventory.objects.filter(user = person, food_value > 0)
+        
+
     def has_item_by_name(self, item_name):
         if self.get_item_by_name(item_name) is None:
             return False

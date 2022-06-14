@@ -118,6 +118,37 @@ def print_inventory(person, search):
     return ret
 
 
+def print_food(person, search):
+    """Prints a list of a user's inventory into discord message-sized chunks."""
+    name = person.nick if person.nick else person.plain_name
+
+    inventory = person.get_food()
+    
+
+    lock_template = "**%s (:lock:)**: %s. *(value: %s, %s ea)*\n"
+    unlock_template = "**%s**: %s. *(value: %s, %s ea)*\n"
+
+    messages = [(lock_template if item.is_locked else unlock_template)
+                % (
+                    string.capwords(item.item.name),
+                    '{:,}'.format(item.amount),
+                    '{:,}'.format(item.total_value),
+                    '{:,}'.format(item.item.value)
+                ) for item in inventory]
+
+    ret = []
+    header = f"{config.ITEMS_EMOJI} __**{name.upper()}'S INVENTORY**__ {config.ITEMS_EMOJI}\n"
+    out = header
+    for message in messages:
+        if len(out) + len(message) > 1800:
+            ret.append(out)
+            out = header
+        out = out + message
+
+    # Make sure we append our final message to ret
+    ret.append(out)
+    return ret
+
 def print_pets(person):
     """Prints a formatted list of pets a user has."""
 
