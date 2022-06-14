@@ -82,14 +82,14 @@ def set_prayer(userid, prayer):
     if adv.is_on_adventure(userid):
         return 'You cannot change your prayer while on an adventure.'
 
-    prayer = Prayer.find_by_name_or_nick(prayer)
-    if not prayer:
+    found_prayer = Prayer.find_by_name_or_nick(prayer)
+    if not found_prayer:
         return f'{prayer} is not a prayer.'
 
-    if not user.can_use_prayer(prayer):
+    if not user.can_use_prayer(found_prayer):
         return f'You cannot use this prayer.'
 
-    user.prayer_slot = prayer
+    user.prayer_slot = found_prayer
     user.save()
-    out = f'{PRAYER_HEADER}Your prayer has been set to {string.capwords(prayer.name)}!'
+    out = f'{PRAYER_HEADER}Your prayer has been set to {string.capwords(found_prayer.name)}!'
     return out
