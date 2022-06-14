@@ -20,10 +20,10 @@ def calc_pray_bonus(user: User, prayer: Prayer =None):
 def calc_drain_time(user: User):
     # TODO: Port this, not actively in use it appears
     """Calculates the effective drain rate of a prayer."""
-    equipment_prayer = user.prayer_slot
+    equipped_prayer = user.prayer_slot
     user_potion = user.potion_slot
     user_prayer = user.prayer_level
-    prayer_drain = prayer.drain
+    prayer_drain = equipped_prayer.drain
 
     if user_potion == PRAYER_POTION:
         potion_base = 2
@@ -31,7 +31,7 @@ def calc_drain_time(user: User):
         potion_base = 1
 
     base_time = float(36 / prayer_drain)
-    effective_time = 60 * user_prayer * base_time * potion_base * (1 + equipment_prayer / 30)
+    effective_time = 60 * user_prayer * base_time * potion_base * (1 + equipped_prayer / 30)
     return effective_time
 
 
