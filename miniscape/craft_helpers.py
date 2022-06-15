@@ -513,5 +513,10 @@ def start_runecraft(guildid, channelid, user: User, entered_item, number=1, pure
 def list_runes():
     out = ""
     for rune in RUNES:
-        out += f"{string.capwords(rune.name)}: level f{rune.level}\n"
-    return out
+        out += f"{string.capwords(rune.name)}: level {rune.level}\n"
+        
+    return discord.Embed(
+        title = "Craftable Runes",
+        type = "rich",
+        description = out,
+    )

@@ -31,4 +31,4 @@ class RunecraftCommands:
     @runecraft.command(name='list')
     async def _rc_list(self, ctx, *args):
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            await ctx.send(craft_helpers.list_runes())
+            await ctx.send(embed=craft_helpers.list_runes())
