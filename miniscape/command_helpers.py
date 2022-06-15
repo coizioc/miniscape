@@ -447,10 +447,10 @@ def format_as_table(content):
 
     for line in content[1:]:
         for i, field in enumerate(line):
-            out += field.rjust(lens[i]) + " |"
+            out += field.ljust(lens[i]) + " |"
         out += "\n|"
 
-    out.rstrip("\n|")
+    out = out[:-2]
     out += "```"
     print(out)
     return out
