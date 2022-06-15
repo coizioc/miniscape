@@ -159,9 +159,13 @@ def print_value(person, search):
     lock_template = "**%s (:lock:)**: %s. *(value: %s, %s ea)*\n"
     unlock_template = "**%s**: %s. *(value: %s, %s ea)*\n"
 
+    total_value = 0
+
     for item in inventory:
         total_value += item.total_value
+
     header = f"{name.upper()}'s Total Inventory Value: {total_value}\n"
+    
     return header
 
 def print_pets(person):
