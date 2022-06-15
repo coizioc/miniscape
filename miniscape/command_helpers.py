@@ -440,17 +440,20 @@ def format_as_table(content):
                 lens[i] = len(line[i])
 
     out = "```"
-    out += "\n|"
+    out += "\n"
     for i, header in enumerate(headers):
-        out += header.rjust(lens[i]) + " |"
-    out += "\n|"
+        out += header.center(lens[i]) + " |"
+        
+    out.rstrip("|")
+    out += "\n"
 
     for line in content[1:]:
         for i, field in enumerate(line):
             out += field.ljust(lens[i]) + " |"
-        out += "\n|"
+        out.rstrip("|")
+        out += "\n"
 
-    out = out[:-2]
+    # out = out[:-2]
     out += "```"
     print(out)
     return out
