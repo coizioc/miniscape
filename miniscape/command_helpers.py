@@ -426,7 +426,7 @@ def print_item_stats(itemname: str):
     out += clue_helpers.print_item_from_lootable(item)
     return out
 
-def format_as_table(content: list[list[str]]):
+def format_as_table(content):
     # First line should be table headers
     # Each line after that should be the same length as content[0] and match
     

@@ -512,7 +512,7 @@ def start_runecraft(guildid, channelid, user: User, entered_item, number=1, pure
     return out
 
 def list_runes():
-    content: list[list[str]] = []
+    content = []
     content.append(["RUNE", "LEVEL"])
     
     for rune in RUNES:
