@@ -439,7 +439,8 @@ def format_as_table(content):
             if len(line[i]) > lens[i]:
                 lens[i] = len(line[i])
 
-    out = "|"
+    out = "```"
+    out += "\n|"
     for i, header in enumerate(headers):
         out += header.rjust(lens[i]) + " |"
     out += "\n|"
@@ -449,6 +450,8 @@ def format_as_table(content):
             out += field.rjust(lens[i]) + " |"
         out += "\n|"
 
+    out.rstrip("\n|")
+    out += "```"
     print(out)
     return out
 
