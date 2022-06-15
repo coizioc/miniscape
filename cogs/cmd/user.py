@@ -41,6 +41,13 @@ class UserCommands:
     async def kc(self, ctx, *args):
         await self._me_monsters(ctx, *args)
 
+    @commands.command()
+    async def value(self, ctx):
+        """Show's the player's total inventory value."""
+        if has_post_permission(ctx.guild.id, ctx.channel.id):
+            value = users.get_value_of_inventory(ctx.user_object)
+            await self.paginate(ctx, inventory)
+
     @me.group(name='monsters')
     async def _me_monsters(self, ctx, *args):
         """Shows how many monsters a user has killed."""
