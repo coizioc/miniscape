@@ -131,10 +131,10 @@ class Miniscape(commands.Cog,
             print(messages)
             await ctx.send(messages)
             return
-        else:
+        """else:
             for msg in messages:
                 await ctx.send(msg)
-            return
+            return"""
 
         if len(messages) == 1:
             await ctx.send(messages[0])
