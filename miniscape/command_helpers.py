@@ -450,7 +450,7 @@ def format_as_table(content):
     for line in content[1:]:
         for i, field in enumerate(line):
             out += field.ljust(lens[i]) + " |"
-        out.rstrip("|")
+        out = out[:-2]
         out += "\n"
 
     # out = out[:-2]
