@@ -45,7 +45,7 @@ class UserCommands:
     async def value(self, ctx):
         """Show's the player's total inventory value."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            value = users.get_value_of_inventory(ctx.user_object)
+            value = users.get_value_of_inventory(ctx.author.id)
             await self.paginate(ctx, inventory)
 
     @me.group(name='monsters')
