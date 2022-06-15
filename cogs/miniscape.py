@@ -155,14 +155,14 @@ class Miniscape(commands.Cog,
                         current_page -= 1
                         out = messages[current_page]
                         out += f"\n{current_page + 1}/{len(messages)}"
-                        await msg.edit(content=None)
+                        #await msg.edit(content=None)
                         await msg.edit(content=out)
                 elif str(reaction.emoji) == ARROW_RIGHT_EMOJI:
                     if current_page < len(messages) - 1:
                         current_page += 1
                         out = messages[current_page]
                         out += f"\n{current_page + 1}/{len(messages)}"
-                        await msg.edit(content=None)
+                        #await msg.edit(content=None)
                         await msg.edit(content=out)
 
     async def reset_dailies(self):
