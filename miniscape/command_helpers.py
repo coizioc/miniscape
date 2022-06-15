@@ -429,6 +429,7 @@ def print_item_stats(itemname: str):
 def format_as_table(content):
     # First line should be table headers
     # Each line after that should be the same length as content[0] and match
+    # Every entry in content is a list of strings. If you send a non-string it will probably fail
     
     headers = content[0]
     # Figure out the length of each column based on the longest item in the column

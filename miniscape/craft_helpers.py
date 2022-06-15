@@ -516,7 +516,7 @@ def list_runes():
     content.append(["RUNE", "LEVEL"])
     
     for rune in RUNES:
-        content.append([rune.name, rune.level])
+        content.append([rune.name, str(rune.level)])
 
     return Embed(
         title = "Craftable Runes",
