@@ -290,6 +290,6 @@ class UserCommands:
                 if user == ctx.author and reaction.message.id == msg.id:
                     for key in lb_helpers.EMOJI.keys():
                         if str(reaction.emoji) == lb_helpers.EMOJI[key]:
-                            await msg.edit(content=None)
+                            #await msg.edit(content=None)
                             await msg.edit(content=lb_helpers.get_leaderboard(key, name))
 
