@@ -510,8 +510,8 @@ def start_runecraft(guildid, channelid, user: User, entered_item, number=1, pure
         out += adv.print_on_adventure_error('runecrafting session')
     return out
 
-    def list_runes():
-        out = ""
-        for rune in RUNES:
-            out += f"{string.capwords(rune.name)}: level f{rune.level}\n"
-        return out
+def list_runes():
+    out = ""
+    for rune in RUNES:
+        out += f"{string.capwords(rune.name)}: level f{rune.level}\n"
+    return out
