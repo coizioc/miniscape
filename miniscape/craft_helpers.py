@@ -4,11 +4,10 @@ from collections import Counter
 import random
 
 from config import XP_FACTOR
-from miniscape import prayer_helpers
+from miniscape import prayer_helpers, command_helpers
 from miniscape.models import Item, User, Recipe, Prayer, RecipeRequirement, Quest
 from config import GATHER_EMOJI, ARTISAN_EMOJI, RC_EMOJI
 from discord import Embed
-from miniscape.command_helpers import format_as_table
 
 GATHER_HEADER = f'{GATHER_EMOJI} __**GATHERING**__ {GATHER_EMOJI}\n'
 CRAFT_HEADER = f'{ARTISAN_EMOJI} __**CRAFTING**__ {ARTISAN_EMOJI}\n'
@@ -522,5 +521,5 @@ def list_runes():
     return Embed(
         title = "Craftable Runes",
         type = "rich",
-        description = format_as_table(content),
+        description = command_helpers.format_as_table(content),
     )
