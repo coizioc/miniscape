@@ -8,7 +8,7 @@ from miniscape import craft_helpers
 
 class RunecraftCommands:
 
-    @commands.group(aliases=['rc'])
+    @commands.group(aliases=['rc'], invoke_without_command=True)
     async def runecraft(self, ctx, *args):
         """Starts a runecrafting session."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):

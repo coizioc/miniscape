@@ -23,18 +23,18 @@ class ItemCommands:
                 out = ch.bury(ctx.user_object, name, min(number, MAX_PER_ACTION))
                 await ctx.send(out)
 
+    @commands.command()
+    async def food(self, ctx, search=''):
+        """Show's the player's inventory."""
+        if has_post_permission(ctx.guild.id, ctx.channel.id):
+            inventory = ch.print_food(ctx.user_object, search.lower())
+            await self.paginate(ctx, inventory)                
+
     @commands.group(aliases=['invent', 'inventory', 'item'], invoke_without_command=True)
     async def items(self, ctx, search=''):
         """Show's the player's inventory."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
             inventory = ch.print_inventory(ctx.user_object, search.lower())
-            await self.paginate(ctx, inventory)
-
-    @commands.group()
-    async def food(self, ctx, search=''):
-        """Show's the player's inventory."""
-        if has_post_permission(ctx.guild.id, ctx.channel.id):
-            inventory = ch.print_food(ctx.user_object, search.lower())
             await self.paginate(ctx, inventory)
 
     @items.command(name='info')
