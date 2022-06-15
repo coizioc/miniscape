@@ -27,3 +27,8 @@ class RunecraftCommands:
                 out = craft_helpers.start_runecraft(
                     ctx.guild.id, ctx.channel.id, ctx.user_object, rune, min(number, MAX_PER_ACTION), pure=1)
                 await ctx.send(out)
+
+    @runecraft.command()
+    async def list(self, ctx, *args):
+        if has_post_permission(ctx.guild.id, ctx.channel.id):
+            await ctx.send(craft_helpers.list_runes())

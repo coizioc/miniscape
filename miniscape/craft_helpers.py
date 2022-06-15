@@ -23,6 +23,7 @@ BURNT_FOOD = Item.objects.get(name__iexact="burnt food")
 RUNE_MYSTERIES = Quest.objects.get(name__iexact="rune mysteries")
 ABYSS_QUEST = Quest.objects.get(name__iexact="Enter the Abyss")
 POUCHES = list(Item.objects.filter(pouch__gt=0))
+RUNES = list(Item.objects.filter(is_rune=True).order_by("level"))
 
 
 def start_gather(guildid, channelid, user: User, itemname, length=-1, number=-1):
@@ -445,15 +446,15 @@ def cook(user: User, food, n=1):
     return out
 
 
-def start_runecraft(guildid, channelid, user: User, item, number=1, pure=0):
+def start_runecraft(guildid, channelid, user: User, entered_item, number=1, pure=0):
     """Starts a runecrafting session."""
     from miniscape import adventures as adv
 
     out = ''
     if not adv.is_on_adventure(user.id):
-        item: Item = Item.find_by_name_or_nick(item)
+        item: Item = Item.find_by_name_or_nick(entered_item)
         if not item:
-            return f'{item} is not an item.'
+            return f'{entered_item} is not an item.'
 
         try:
             number = int(number)
@@ -508,3 +509,9 @@ def start_runecraft(guildid, channelid, user: User, item, number=1, pure=0):
         out = adv.print_adventure(user.id)
         out += adv.print_on_adventure_error('runecrafting session')
     return out
+
+    def list_runes():
+        out = ""
+        for rune in RUNES:
+            out += f"{string.capwords(rune.name)}: level f{rune.level}\n"
+        return out
