@@ -164,8 +164,8 @@ def print_value(person, search):
     for item in inventory:
         total_value += item.total_value
 
-    header = f"{name.upper()}'s Total Inventory Value: {total_value}\n"
-    
+    header = f"__**{name}'s Total Inventory Value: {total_value:,}**__\n"
+
     return header
 
 def print_pets(person):
