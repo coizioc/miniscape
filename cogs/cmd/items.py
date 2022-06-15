@@ -30,6 +30,13 @@ class ItemCommands:
             inventory = ch.print_food(ctx.user_object, search.lower())
             await self.paginate(ctx, inventory)
 
+    @commands.command()
+    async def value(self, ctx, search=''):
+        """Show's the player's total inventory value."""
+        if has_post_permission(ctx.guild.id, ctx.channel.id):
+            inventory = ch.print_value(ctx.user_object, search.lower())
+            await self.paginate(ctx, inventory)
+
     @commands.group(aliases=['invent', 'inventory', 'item'], invoke_without_command=True)
     async def items(self, ctx, search=''):
         """Show's the player's inventory."""

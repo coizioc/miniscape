@@ -149,6 +149,21 @@ def print_food(person, search):
     ret.append(out)
     return ret
 
+def print_value(person, search):
+    """Prints a list of a user's inventory into discord message-sized chunks."""
+    name = person.nick if person.nick else person.plain_name
+
+    inventory = person.get_inventory()
+    
+
+    lock_template = "**%s (:lock:)**: %s. *(value: %s, %s ea)*\n"
+    unlock_template = "**%s**: %s. *(value: %s, %s ea)*\n"
+
+    for item in inventory:
+        total_value += item.total_value
+    header = f"{name.upper()}'s Total Inventory Value: {total_value}\n"
+    return header
+
 def print_pets(person):
     """Prints a formatted list of pets a user has."""
 
