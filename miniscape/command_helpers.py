@@ -435,7 +435,7 @@ def format_as_table(content):
     lens = [0] * len(headers)
     for i in range(0, len(headers)):
         for line in content:
-            if len(line[i] > lens[i]):
+            if len(line[i]) > lens[i]:
                 lens[i] = len(line[i])
 
     out = "|"
