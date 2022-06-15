@@ -449,6 +449,7 @@ def format_as_table(content):
             out += field.rjust(lens[i]) + " |"
         out += "\n|"
 
+    print(out)
     return out
 
 
