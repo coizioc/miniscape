@@ -426,5 +426,29 @@ def print_item_stats(itemname: str):
     out += clue_helpers.print_item_from_lootable(item)
     return out
 
+def format_as_table(content: list[list[str]]):
+    # First line should be table headers
+    # Each line after that should be the same length as content[0] and match
+    
+    headers = content[0]
+    # Figure out the length of each column based on the longest item in the column
+    lens = [0] * len(headers)
+    for i in range(0, len(headers)):
+        for line in content:
+            if len(line[i] > lens[i]):
+                lens[i] = len(line[i])
+
+    out = "|"
+    for i, header in enumerate(headers):
+        out += header.rjust(lens[i]) + " |"
+    out += "\n|"
+
+    for line in content[1:]:
+        for i, field in enumerate(line):
+            out += field.rjust(lens[i]) + " |"
+        out += "\n|"
+
+    return out
+
 
 

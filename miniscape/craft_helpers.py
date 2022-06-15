@@ -8,6 +8,7 @@ from miniscape import prayer_helpers
 from miniscape.models import Item, User, Recipe, Prayer, RecipeRequirement, Quest
 from config import GATHER_EMOJI, ARTISAN_EMOJI, RC_EMOJI
 from discord import Embed
+from miniscape.command_helpers import format_as_table
 
 GATHER_HEADER = f'{GATHER_EMOJI} __**GATHERING**__ {GATHER_EMOJI}\n'
 CRAFT_HEADER = f'{ARTISAN_EMOJI} __**CRAFTING**__ {ARTISAN_EMOJI}\n'
@@ -512,12 +513,14 @@ def start_runecraft(guildid, channelid, user: User, entered_item, number=1, pure
     return out
 
 def list_runes():
-    out = ""
+    content: list[list[str]] = []
+    content.append(["RUNE", "LEVEL"])
+    
     for rune in RUNES:
-        out += f"{string.capwords(rune.name)}: level {rune.level}\n"
+        content.append([rune.name, rune.level])
 
     return Embed(
         title = "Craftable Runes",
         type = "rich",
-        description = out,
+        description = format_as_table(content),
     )
