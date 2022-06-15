@@ -7,6 +7,7 @@ from config import XP_FACTOR
 from miniscape import prayer_helpers
 from miniscape.models import Item, User, Recipe, Prayer, RecipeRequirement, Quest
 from config import GATHER_EMOJI, ARTISAN_EMOJI, RC_EMOJI
+from discord import Embed
 
 GATHER_HEADER = f'{GATHER_EMOJI} __**GATHERING**__ {GATHER_EMOJI}\n'
 CRAFT_HEADER = f'{ARTISAN_EMOJI} __**CRAFTING**__ {ARTISAN_EMOJI}\n'
@@ -514,8 +515,8 @@ def list_runes():
     out = ""
     for rune in RUNES:
         out += f"{string.capwords(rune.name)}: level {rune.level}\n"
-        
-    return discord.Embed(
+
+    return Embed(
         title = "Craftable Runes",
         type = "rich",
         description = out,
