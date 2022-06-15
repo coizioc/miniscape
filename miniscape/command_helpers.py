@@ -444,7 +444,7 @@ def format_as_table(content):
     for i, header in enumerate(headers):
         out += header.center(lens[i]) + " |"
         
-    out.rstrip("|")
+    out = out[:-2]
     out += "\n"
 
     for line in content[1:]:
@@ -453,7 +453,6 @@ def format_as_table(content):
         out = out[:-2]
         out += "\n"
 
-    # out = out[:-2]
     out += "```"
     print(out)
     return out
