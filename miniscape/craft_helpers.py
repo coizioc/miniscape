@@ -194,7 +194,7 @@ def print_list(user: User, search, filter_quests=True, allow_empty=True):
     return messages
 
 
-def get_runecraft2(task: Task):
+def get_runecrafting_results(task: Task):
     # Keys: "item_id", "num", "length", "is_pure"
     extra_data = json.loads(task.extra_data)
     item = Item.objects.get(id=extra_data["item_id"])
@@ -240,7 +240,7 @@ def get_runecraft2(task: Task):
     return out
 
 
-def get_runecraft(person, *args):
+def get_runecraft_old(person, *args):
     """Gets the result of a runecrafting session."""
     try:
         itemid, item_name, number, length, pure = args[0]
@@ -511,7 +511,7 @@ def cook(user: User, food, n=1):
     return out
 
 
-def start_runecraft2(ctx: MiniscapeBotContext, *args, pure=False):
+def start_runecraft(ctx: MiniscapeBotContext, *args, pure=False):
     out = discord.Embed(title="Runecrafting", type="rich", description=RUNECRAFT_HEADER)
 
     # Do all of our error checking first
@@ -612,7 +612,7 @@ def start_runecraft2(ctx: MiniscapeBotContext, *args, pure=False):
     return out
 
 
-def start_runecraft(guildid, channelid, user: User, entered_item, number=1, pure=0):
+def start_runecraft_old(guildid, channelid, user: User, entered_item, number=1, pure=0):
     """Starts a runecrafting session."""
 
     out = ''

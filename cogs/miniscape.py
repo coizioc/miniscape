@@ -223,7 +223,7 @@ class Miniscape(commands.Cog,
                 3: craft_helpers.get_gather,
                 4: clue_helpers.get_clue_scroll,
                 5: sh.get_reaper_result,
-                6: craft_helpers.get_runecraft
+                6: craft_helpers.get_runecraft_old
             }
             try:
                 logging.getLogger(__name__).info(f"About to call function for adventure "
@@ -240,7 +240,7 @@ class Miniscape(commands.Cog,
     async def _check_adventures_from_database(self):
         tasks = Task.objects.all()
         adv_map = {
-            "runecraft": craft_helpers.get_runecraft2
+            "runecraft": craft_helpers.get_runecrafting_results
         }
         logger = logging.getLogger(__name__)
         task: Task
