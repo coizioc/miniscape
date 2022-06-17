@@ -1,24 +1,18 @@
 import datetime
-import math
+import logging
 import random
 
-from cogs.helper import quests, slayer, craft, clues
 from config import ADVENTURES_FILE
+from errors import AdventureNotFoundError
 from miniscape import slayer_helpers as sh, clue_helpers, quest_helpers, craft_helpers
 
 # An adventure in the adventure file is stored as the following (with semicolon delimiters in between):
 # adventureid, userid, completion_time, guildid, channelid, *args
 # where *args represent adventure-specific arguments.
+from miniscape.models import Task
+from utils.command_helpers import get_delta
 
 ON_ADVENTURE_ERROR = 'You are currently in the middle of something. Please finish that before starting something else.'
-
-
-def add(adventure_id, userid, *args):
-    """Adds an adventure to a file."""
-    args_str = [str(arg) for arg in args]
-    out = f'{adventure_id};{userid};$TIME;'
-    out += f"{';'.join(args_str)}\n"
-    write(out)
 
 
 def add_finish_time(userid, time):
@@ -27,34 +21,17 @@ def add_finish_time(userid, time):
     write('\n'.join(adventures), overwrite=True)
 
 
-def format_line(*args):
-    args_str = [str(arg) for arg in args]
-    return ';'.join(args_str) + '\n'
-
-
 def get_adventure(userid):
-    lines = get_list()
-    for line in lines:
-        if str(userid) in line:
+    userid = str(userid)
+    for line in get_list():
+        if userid in line:
             return line.split(';')
-    else:
-        raise NameError
 
+    tasks = Task.objects.filter(user__id=userid)
+    if len(tasks) == 0:
+        raise AdventureNotFoundError
+    return tasks.first()
 
-def get_delta(finish_time):
-    """Calculates the time remaining until a task is finished in minutes."""
-    try:
-        finish_time = datetime.datetime.strptime(finish_time, '%Y-%m-%d %H:%M:%S.%f')
-    except ValueError:
-        raise ValueError
-    current_time = datetime.datetime.now()
-    delta = finish_time - current_time
-    return math.floor(delta.total_seconds() / 60)
-
-
-def get_finish_time(task_length):
-    """Calculates the time when an adventure is over given its length."""
-    return datetime.datetime.now() + datetime.timedelta(seconds=task_length)
 
 
 def get_finished():
@@ -88,13 +65,15 @@ def get_list():
 
 def is_on_adventure(userid):
     """Determines whether a user is already on/is preparing for an adventure."""
-    adventures = get_list()
-
-    for adventure in adventures:
-        if str(userid) in adventure:
+    userid = str(userid)
+    for adventure in get_list():
+        if userid in adventure:
             return True
-    else:
+
+    tasks = Task.objects.filter(user__id=userid)
+    if len(tasks) == 0:
         return False
+    return True
 
 
 def is_success(chance):
@@ -106,39 +85,48 @@ def is_success(chance):
 
 
 def print_adventure(userid):
-    lines = get_list()
-
-    for line in lines:
-        if str(userid) in line:
+    userid = str(userid)
+    for line in get_list():
+        if userid in line:
             adventure = line.split(';')
             break
     else:
-        raise KeyError
-    adventureid, userid, finish_time = adventure[0:3]
-    adventures = {
-        '0': sh.print_status,
-        '1': sh.print_kill_status,
-        '2': quest_helpers.print_status,
-        '3': craft_helpers.print_status,
-        '4': clue_helpers.print_status,
-        '5': sh.print_reaper_status,
-        '6': craft_helpers.print_rc_status
-    }
-    time_left = get_delta(finish_time)
-    if time_left == 1:
-        time_string = 'in 1 minute'
-    elif time_left < 1:
-        time_string = 'soon'
+        try:
+            tasks = Task.objects.filter(user__id=userid)
+            adventure = tasks[0]
+            if len(tasks) == 0:
+                raise KeyError
+        except Exception as e:
+            logging.getLogger(__name__).error("error encountered checking db for tasks: %s", str(e))
+            raise KeyError
+
+    if type(adventure) == list:
+        adventureid, userid, finish_time = adventure[0:3]
+        adventures = {
+            '0': sh.print_status,
+            '1': sh.print_kill_status,
+            '2': quest_helpers.print_status,
+            '3': craft_helpers.print_status,
+            '4': clue_helpers.print_status,
+            '5': sh.print_reaper_status,
+            '6': craft_helpers.print_rc_status
+        }
+        time_left = get_delta(finish_time)
+        if time_left == 1:
+            time_string = 'in 1 minute'
+        elif time_left < 1:
+            time_string = 'soon'
+        else:
+            time_string = f'in {time_left} minutes'
+        out = adventures[adventureid](userid, time_string, adventure[5:])
+        return out
     else:
-        time_string = f'in {time_left} minutes'
-    out = adventures[adventureid](userid, time_string, adventure[5:])
-    return out
-
-
-def print_on_adventure_error(adventure):
-    """Prints a string saying that the user cannot do two adventures at once."""
-    out = f'Please finish that first before starting a new {adventure}.'
-    return out
+        adventures = {
+            "runecraft": craft_helpers.print_rc_status2
+        }
+        time_left = get_delta(adventure.completion_time)
+        ret = adventures[adventure.type](adventure, time_left)
+        return ret
 
 
 def read(userid):

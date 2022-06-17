@@ -1,3 +1,4 @@
+import utils.command_helpers
 from miniscape.models import User, Quest, Item, Monster, Recipe, UserQuest
 from django.core.exceptions import ObjectDoesNotExist
 import string
@@ -133,7 +134,7 @@ def start_quest(guildid, channelid, user: User, questid):
 
     if adv.is_on_adventure(user.id):
         out = adv.print_adventure(user.id)
-        out += adv.print_on_adventure_error('quest')
+        out += utils.command_helpers.print_on_adventure_error('quest')
         return out
 
 
@@ -155,8 +156,8 @@ def start_quest(guildid, channelid, user: User, questid):
 
     chance = calc_chance(user, quest)
     quest_length = calc_length(user, quest)
-    quest_adv = adv.format_line(2, user.id, adv.get_finish_time(quest_length), guildid,
-                                channelid, questid, chance)
+    quest_adv = utils.command_helpers.format_adventure_line(2, user.id, utils.command_helpers.calculate_finish_time(quest_length), guildid,
+                                                            channelid, questid, chance)
     adv.write(quest_adv)
     out += print_quest(quest, quest_length, chance)
 

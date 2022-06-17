@@ -1,0 +1,3 @@
+
+class AdventureNotFoundError(BaseException):
+    pass

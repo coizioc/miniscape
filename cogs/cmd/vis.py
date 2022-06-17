@@ -2,6 +2,7 @@ from discord.ext import commands
 
 import miniscape.command_helpers as ch
 import miniscape.vis_helpers as vis_helpers
+import utils.command_helpers
 from cogs.cmd.common import has_post_permission
 
 
@@ -60,6 +61,6 @@ class VisCommands:
     async def _vis_buy(self, ctx, *args):
         """Buys an item from the vis wax shop."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            number, item = ch.parse_number_and_name(args)
+            number, item = utils.command_helpers.parse_number_and_name(args)
             if item:
                 await ctx.send(vis_helpers.shop_buy(ctx.user_object, item, number))

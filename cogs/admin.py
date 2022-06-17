@@ -4,7 +4,7 @@ from discord.ext.commands import has_permissions
 from cogs.cmd import channel_permissions as cp
 
 
-class Admin(commands.cog):
+class Admin(commands.Cog):
     """Defines Admin commands."""
 
     def __init__(self, bot):

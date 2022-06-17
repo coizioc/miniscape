@@ -193,7 +193,7 @@ class User(models.Model):
         return self.userinventory_set.filter(item__food_value__gte="1").order_by('item__name')        
 
     def has_item_by_name(self, item_name):
-        if self.get_item_by_name(item_name) is None:
+        if not self.get_item_by_name(item_name):
             return False
         else:
             return True
@@ -234,11 +234,13 @@ class User(models.Model):
         """ Get a particular item from user """
         item = Item.objects.filter(name=item_name)
         if item:
-            return self.userinventory_set.filter(item=item[0])
+            ret = self.userinventory_set.filter(item=item[0])
+            return ret
 
         item = ItemNickname.objects.filter(nickname=item_name)
         if item:
-            return self.userinventory_set.filter(item=item[0])
+            ret = self.userinventory_set.filter(item=item[0])
+            return ret
 
         return None
 
@@ -623,6 +625,10 @@ class User(models.Model):
         prayer_luck = self.prayer_slot.luck_factor if self.prayer_slot else 0
         ring_luck = self.ring_slot.luck_modifier if self.ring_slot else 0
         return max(1, prayer_luck, ring_luck)
+
+    @property
+    def mention(self):
+        return f"<@{self.id}>"
 
     def __repr__(self):
         return "User ID %d: %s" % (self.id, self.name)
