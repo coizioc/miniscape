@@ -152,20 +152,22 @@ def print_status(userid, time_left, *args):
     return out
 
 
-def start_clue(guildid, channelid, userid, difficulty, num_clues=1):
+def start_clue(guildid, channelid, userid, difficulty):
     """Starts a clue scroll."""
     user = User.objects.get(id=userid)
     out = f'{CLUE_HEADER}'
     if not adv.is_on_adventure(userid):
         scrollid = str(EASY_CLUE_SCROLL_ID + difficulty - 1)
         scroll = Item.objects.get(id=scrollid)
-        if not user.has_item_amount_by_item(scroll, num_clues):
-            return f'Error: you only have {scroll.pluralize()} in your inventory. (requested {num_clues})'
+        if not user.has_item_by_item(scroll):
+            return f'Error: you do not have a {scroll.name} in your inventory.'
+        user.update_inventory(Counter({scroll: 1}), remove=True)
 
         length = math.floor(calc_length(userid, difficulty) / 60)
-        clue = utils.command_helpers.format_adventure_line(4, userid, utils.command_helpers.calculate_finish_time(length * 60), guildid, channelid, difficulty, length)
+        clue = utils.command_helpers.format_adventure_line(4, userid,
+                                                           utils.command_helpers.calculate_finish_time(length * 60),
+                                                           guildid, channelid, difficulty, length)
         adv.write(clue)
-        user.update_inventory(Counter({scroll: num_clues}), remove=True)
         out += f'You are now doing a {DIFFICULTY[difficulty]} clue scroll for {length} minutes.'
     else:
         out = adv.print_adventure(userid)

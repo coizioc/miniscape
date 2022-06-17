@@ -596,7 +596,7 @@ def start_runecraft2(ctx: MiniscapeBotContext, *args, pure=False):
 
     task = Task(type="runecraft",
                 user=user,
-                completion_time=utils.command_helpers.calculate_finish_time(length * 60),
+                completion_time=utils.command_helpers.calculate_finish_time_utc(length * 60),
                 guild=ctx.guild.id,
                 channel=ctx.channel.id,
                 extra_data=json.dumps(task_data))

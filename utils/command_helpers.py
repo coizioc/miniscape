@@ -129,6 +129,12 @@ def calculate_finish_time(task_length):
     return datetime.datetime.now() + datetime.timedelta(seconds=task_length)
 
 
+def calculate_finish_time_utc(task_length):
+    """Calculates the time (in UTC) when an adventure is over given its length."""
+    return datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=task_length)
+
+
+
 def print_on_adventure_error(adventure):
     """Prints a string saying that the user cannot do two adventures at once."""
     out = f'Please finish that first before starting a new {adventure}.'
