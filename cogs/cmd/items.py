@@ -5,6 +5,7 @@ from discord.ext import commands
 from django.db.models import Q
 
 import miniscape.command_helpers as ch
+import utils.command_helpers
 from cogs.cmd.common import get_display_name, has_post_permission
 from cogs.helper import users
 from config import MAX_PER_ACTION
@@ -18,7 +19,7 @@ class ItemCommands:
     async def bury(self, ctx, *args):
         """Buries items for prayer experience."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            number, name = ch.parse_number_and_name(args)
+            number, name = utils.command_helpers.parse_number_and_name(args)
             if number and name:
                 out = ch.bury(ctx.user_object, name, min(number, MAX_PER_ACTION))
                 await ctx.send(out)
@@ -77,14 +78,14 @@ class ItemCommands:
     async def claim(self, ctx, *args):
         """Claims xp/items from another item."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            number, name = ch.parse_number_and_name(args)
+            number, name = utils.command_helpers.parse_number_and_name(args)
             out = ch.claim(ctx.user_object, name, number)
             await ctx.send(out)
 
     @commands.command()
     async def pull(self, ctx, *args):
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            number, name = ch.parse_number_and_name(args)
+            number, name = utils.command_helpers.parse_number_and_name(args)
             other_person = User.objects.filter(Q(name__icontains=name) or Q(nick__icontains=name))[0]
 
             if other_person:
@@ -129,7 +130,7 @@ class ItemCommands:
     async def buy(self, ctx, *args):
         """Buys something from the shop."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            number, item = ch.parse_number_and_name(args)
+            number, item = utils.command_helpers.parse_number_and_name(args)
             if number and item:
                 out = item_helpers.buy(ctx.author.id, item, number=number)
                 await ctx.send(out)
@@ -138,7 +139,7 @@ class ItemCommands:
     async def sell(self, ctx, *args):
         """Sells the player's inventory for gold pieces."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            number, item = ch.parse_number_and_name(args)
+            number, item = utils.command_helpers.parse_number_and_name(args)
             if number and item:
                 out = item_helpers.sell(ctx.author.id, item, number=number)
                 await ctx.send(out)

@@ -19,10 +19,11 @@ from pythonjsonlogger import jsonlogger
 def extensions_generator():
     """Returns a generator for all cog files that aren't in do_not_use."""
     cog_path = "./cogs"
-    do_not_use = ['errors', 'helper', 'managers', '__pycache__', 'test.py']
+    do_not_use = ['errors', 'helper', 'managers', 'cmd', '__pycache__', 'test.py', '__init__.py']
     for cog in os.listdir(cog_path):
         if cog not in do_not_use:
             yield f"cogs.{cog[:-3]}"
+
 
 DESCRIPTION = "A bot that runs a basic role-playing game."
 
@@ -43,7 +44,7 @@ class MiniscapeBot(commands.Bot):
             try:
                 self.load_extension(extension)
                 print(f"Successfully loaded extension {extension}.")
-            except Exception:
+            except Exception as e:
                 print(f'Failed to load extension {extension}.', file=sys.stderr)
                 traceback.print_exc()
 

@@ -3,6 +3,7 @@ import random
 import string
 from collections import Counter
 
+import utils.command_helpers
 from cogs.helper import items
 from cogs.helper import monsters as mon
 from cogs.helper import quests
@@ -164,10 +165,10 @@ def start_clue(guildid, channelid, userid, difficulty):
         users.update_inventory(userid, [scrollid], remove=True)
 
         length = math.floor(calc_length(userid, difficulty) / 60)
-        clue = adv.format_line(4, userid, adv.get_finish_time(length * 60), guildid, channelid, difficulty, length)
+        clue = utils.command_helpers.format_adventure_line(4, userid, utils.command_helpers.calculate_finish_time(length * 60), guildid, channelid, difficulty, length)
         adv.write(clue)
         out += f'You are now doing a {DIFFICULTY[difficulty]} clue scroll for {length} minutes.'
     else:
         out = adv.print_adventure(userid)
-        out += adv.print_on_adventure_error('clue scroll')
+        out += utils.command_helpers.print_on_adventure_error('clue scroll')
     return out

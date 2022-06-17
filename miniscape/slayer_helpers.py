@@ -2,6 +2,7 @@ import logging
 
 from discord import Member
 
+import utils.command_helpers
 from miniscape.item_helpers import get_loot_value
 from miniscape.itemconsts import SLAYER_HELMET
 from miniscape.models import User, Monster, PlayerMonsterKills, Item
@@ -146,7 +147,7 @@ def get_task_info(userid):
     task = adv.read(userid)
     taskid, userid, finish_time, guildid, channelid, monsterid, monster_name, num_to_kill, chance = task
 
-    time_left = adv.get_delta(finish_time)
+    time_left = utils.command_helpers.get_delta(finish_time)
 
     return taskid, userid, time_left, monsterid, monster_name, num_to_kill, chance
 
@@ -206,15 +207,15 @@ def get_task(guildid, channelid, author: User):
             task_length *= 0.7
             cb_perk = True
 
-        task = adv.format_line(0, author.id, adv.get_finish_time(task_length), guildid, channelid, monster.id,
-                               monster.name, num_to_kill, chance)
+        task = utils.command_helpers.format_adventure_line(0, author.id, utils.command_helpers.calculate_finish_time(task_length), guildid, channelid, monster.id,
+                                                           monster.name, num_to_kill, chance)
         adv.write(task)
         out += print_task(author.id)
         if cb_perk is True:
             out += 'Your time has been reduced by 30% due to your combat perk!'
     else:
         out = adv.print_adventure(author.id)
-        out += adv.print_on_adventure_error('task')
+        out += utils.command_helpers.print_on_adventure_error('task')
     return out
 
 
@@ -262,14 +263,14 @@ def get_kill(guildid, channelid, userid, monstername, length=-1, number=-1):
 
         chance = calc_chance(user, monster, number)
 
-        grind = adv.format_line(1, userid, adv.get_finish_time(length * 60), guildid, channelid,
-                                monster.id, monster_name, number, length, chance)
+        grind = utils.command_helpers.format_adventure_line(1, userid, utils.command_helpers.calculate_finish_time(length * 60), guildid, channelid,
+                                                            monster.id, monster_name, number, length, chance)
         adv.write(grind)
         out += f'You are now killing {monster.pluralize(number, with_zero=True)} for {length} minutes. ' \
                f'You have a {chance}% chance of successfully killing this many monsters without dying.'
     else:
         out = adv.print_adventure(userid)
-        out += adv.print_on_adventure_error('kill')
+        out += utils.command_helpers.print_on_adventure_error('kill')
     return out
 
 
@@ -475,15 +476,15 @@ def get_reaper_task(guildid, channelid, userid):
             task_length *= 0.7
             cb_perk = True
 
-        task = adv.format_line(5, userid, adv.get_finish_time(task_length), guildid, channelid, monster.id,
-                               monster.name, num_to_kill, chance)
+        task = utils.command_helpers.format_adventure_line(5, userid, utils.command_helpers.calculate_finish_time(task_length), guildid, channelid, monster.id,
+                                                           monster.name, num_to_kill, chance)
         adv.write(task)
         out += print_task(userid, reaper=True)
         if cb_perk:
             out += 'Your time has been reduced by 30% due to your combat perk!'
     else:
         out = adv.print_adventure(userid)
-        out += adv.print_on_adventure_error('reaper task')
+        out += utils.command_helpers.print_on_adventure_error('reaper task')
     return out
 
 
@@ -517,7 +518,7 @@ def get_task_info(userid):
     """Gets the info associated with a user's slayer task and returns it as a tuple."""
     task = adv.read(userid)
     taskid, userid, finish_time, guildid, channelid, monsterid, monster_name, num_to_kill, chance = task
-    time_left = adv.get_delta(finish_time)
+    time_left = utils.command_helpers.get_delta(finish_time)
     return taskid, userid, time_left, monsterid, monster_name, num_to_kill, chance
 
 

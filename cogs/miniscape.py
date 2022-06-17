@@ -2,8 +2,10 @@
 import asyncio
 import datetime
 import logging
+import string
 import traceback
 
+import discord
 from discord.ext import commands
 
 import miniscape.clue_helpers as clue_helpers
@@ -12,11 +14,13 @@ import miniscape.monster_helpers as mon
 import miniscape.periodicchecker_helpers as pc_helpers
 import miniscape.quest_helpers as quest_helpers
 import miniscape.slayer_helpers as sh
+import utils.command_helpers
 from cogs.cmd import *
 from cogs.cmd.channel_permissions import get_channel, ANNOUNCEMENT_KEY
 from cogs.cmd.common import has_post_permission
 from config import ARROW_LEFT_EMOJI, ARROW_RIGHT_EMOJI, THUMBS_UP_EMOJI, TICK_SECONDS, MAX_PER_ACTION
 from miniscape import adventures as adv, craft_helpers
+from miniscape.models import Task
 
 
 class Miniscape(commands.Cog,
@@ -76,7 +80,7 @@ class Miniscape(commands.Cog,
     async def gather(self, ctx, *args):
         """Gathers items."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            number, name, length = ch.parse_number_name_length(args)
+            number, name, length = utils.command_helpers.parse_number_name_length(args)
             if name:
                 if number:
                     out = craft_helpers.start_gather(
@@ -95,7 +99,7 @@ class Miniscape(commands.Cog,
     async def craft(self, ctx, *args):
         """Crafts (a given number of) an item."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            number, rec = ch.parse_number_and_name(args)
+            number, rec = utils.command_helpers.parse_number_and_name(args)
             if number and rec:
                 out = craft_helpers.craft(ctx.user_object, rec, n=min(number, MAX_PER_ACTION))
                 await ctx.send(out)
@@ -104,7 +108,7 @@ class Miniscape(commands.Cog,
     async def cook(self, ctx, *args):
         """Cooks (a given amount of) an item."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            number, food = ch.parse_number_and_name(args)
+            number, food = utils.command_helpers.parse_number_and_name(args)
             if number and food:
                 out = craft_helpers.cook(ctx.user_object, food, n=min(number, MAX_PER_ACTION))
                 await ctx.send(out)
@@ -180,55 +184,87 @@ class Miniscape(commands.Cog,
         while not self.bot.is_closed():
             with open('./resources/debug.txt', 'a+') as debug_file:
                 debug_file.write(f'Bot check at {datetime.datetime.now()}:\n')
+            await self._check_adventures_from_file()
+            await self._check_adventures_from_database()
 
-            finished_tasks = []
+            await asyncio.sleep(TICK_SECONDS)
+
+    async def _check_adventures_from_file(self):
+        finished_tasks = []
+        try:
+            finished_tasks = adv.get_finished()
+        except Exception as adv_exception:
+            traceback.print_exc()
+            with open('./resources/debug.txt', 'a+') as debug_file:
+                debug_file.write(f'{adv_exception}\n')
+            print(adv_exception)
+
+        for task in finished_tasks:
+            print(task)
+            with open('./resources/debug.txt', 'a+') as debug_file:
+                debug_file.write(';'.join(task) + '\n')
+            with open('./resources/finished_tasks.txt', 'a+') as task_file:
+                task_file.write(';'.join(task) + '\n')
+            adventureid = int(task[0])
+            userid = int(task[1])
+            guildid = int(task[3])
+            channelid = int(task[4])
+            bot_guild = self.bot.get_guild(guildid)
             try:
-                finished_tasks = adv.get_finished()
-            except Exception as adv_exception:
+                announcement_channel = get_channel(guildid, ANNOUNCEMENT_KEY)
+                bot_self = bot_guild.get_channel(int(announcement_channel))
+            except KeyError:
+                bot_self = bot_guild.get_channel(channelid)
+            person = int(userid)
+
+            adventures = {
+                0: sh.get_result,
+                1: sh.get_kill_result,
+                2: quest_helpers.get_result,
+                3: craft_helpers.get_gather,
+                4: clue_helpers.get_clue_scroll,
+                5: sh.get_reaper_result,
+                6: craft_helpers.get_runecraft
+            }
+            try:
+                logging.getLogger(__name__).info(f"About to call function for adventure "
+                                                 f"{adventureid}")
+                out = adventures[adventureid](person, task[5:])
+                await bot_self.send(out)
+            except Exception as miniscape_exception:
                 traceback.print_exc()
                 with open('./resources/debug.txt', 'a+') as debug_file:
-                    debug_file.write(f'{adv_exception}\n')
-                print(adv_exception)
+                    debug_file.write(f'{miniscape_exception}\n')
+                print(miniscape_exception)
+            print('done')
 
-            for task in finished_tasks:
-                print(task)
-                with open('./resources/debug.txt', 'a+') as debug_file:
-                    debug_file.write(';'.join(task) + '\n')
-                with open('./resources/finished_tasks.txt', 'a+') as task_file:
-                    task_file.write(';'.join(task) + '\n')
-                adventureid = int(task[0])
-                userid = int(task[1])
-                guildid = int(task[3])
-                channelid = int(task[4])
-                bot_guild = self.bot.get_guild(guildid)
-                try:
-                    announcement_channel = get_channel(guildid, ANNOUNCEMENT_KEY)
+    async def _check_adventures_from_database(self):
+        tasks = Task.objects.all()
+        adv_map = {
+            "runecraft": craft_helpers.get_runecraft2
+        }
+        logger = logging.getLogger(__name__)
+        task: Task
+        for task in tasks:
+            try:
+                if task.is_completed:
+                    logger.info(f"About to call function for adventure {str(task)}")
+                    # Get the result of the task
+                    result = adv_map[task.type](task)
+                    task.delete()
+
+                    # Get ready to send the message
+                    bot_guild = self.bot.get_guild(int(task.guild))
+                    announcement_channel = get_channel(task.guild, ANNOUNCEMENT_KEY)
                     bot_self = bot_guild.get_channel(int(announcement_channel))
-                except KeyError:
-                    bot_self = bot_guild.get_channel(channelid)
-                person = int(userid)
-
-                adventures = {
-                    0: sh.get_result,
-                    1: sh.get_kill_result,
-                    2: quest_helpers.get_result,
-                    3: craft_helpers.get_gather,
-                    4: clue_helpers.get_clue_scroll,
-                    5: sh.get_reaper_result,
-                    6: craft_helpers.get_runecraft
-                }
-                try:
-                    logging.getLogger(__name__).info(f"About to call function for adventure "
-                                                     f"{adventureid}")
-                    out = adventures[adventureid](person, task[5:])
-                    await bot_self.send(out)
-                except Exception as miniscape_exception:
-                    traceback.print_exc()
-                    with open('./resources/debug.txt', 'a+') as debug_file:
-                        debug_file.write(f'{miniscape_exception}\n')
-                    print(miniscape_exception)
-                print('done')
-            await asyncio.sleep(TICK_SECONDS)
+                    embed = discord.Embed(title=f"{string.capwords(task.type)} Result",
+                                          type="rich",
+                                          description=result)
+                    # Embeds alone won't actually ping, so we have to @ them as well as do the embed
+                    await bot_self.send(task.user.mention, embed=embed)
+            except Exception as E:
+                # TODO: move this to like a dead-letter queue?
+                logger.error("Unable to complete task %s. Error: %s", str(task), str(E))
 
 
 def setup(bot):

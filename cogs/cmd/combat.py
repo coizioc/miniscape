@@ -2,6 +2,7 @@ from discord.ext import commands
 
 import miniscape.command_helpers as ch
 import miniscape.slayer_helpers as sh
+import utils.command_helpers
 from cogs.cmd.common import has_post_permission
 
 
@@ -25,7 +26,7 @@ class CombatCommands:
     async def kill(self, ctx, *args):
         """Lets the user kill monsters for a certain number or a certain amount of time."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            number, monster, length = ch.parse_number_name_length(args)
+            number, monster, length = utils.command_helpers.parse_number_name_length(args)
             if monster:
                 if monster == 'myself':
                     messages = []

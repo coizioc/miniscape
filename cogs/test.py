@@ -3,6 +3,7 @@ import discord
 from discord.ext import commands
 from django.db.models import Q
 
+import utils.command_helpers
 from miniscape import command_helpers as ch
 from miniscape.models import User, Item
 
@@ -16,7 +17,7 @@ class Test():
     @commands.command()
     async def giveself(self, ctx, *args):
         """Gives the user a number of an item"""
-        number, name = ch.parse_number_and_name(args)
+        number, name = utils.command_helpers.parse_number_and_name(args)
         item = Item.objects.filter(name__icontains=name)
         if not item:
             await ctx.send(f'{name} not found.')
