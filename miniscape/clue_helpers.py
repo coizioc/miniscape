@@ -4,9 +4,6 @@ import random
 from collections import Counter
 
 import utils.command_helpers
-from cogs.helper import items
-from cogs.helper import monsters as mon
-from config import CLUES_DIRECTORY
 from miniscape.item_helpers import get_loot_value
 from miniscape.models import User, Quest, Item, ClueLoot
 from miniscape import adventures as adv

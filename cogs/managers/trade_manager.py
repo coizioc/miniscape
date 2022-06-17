@@ -4,6 +4,7 @@ from threading import Lock
 from cogs.helper import items
 from cogs.helper import users
 from cogs.errors.trade_error import TradeError
+from utils.command_helpers import parse_int
 
 
 class TradeManager():
@@ -75,7 +76,7 @@ class TradeManager():
 
         # Check that the other one is a number too
         try:
-            self.offer = users.parse_int(self.curr_trade['amount2'])
+            self.offer = parse_int(self.curr_trade['amount2'])
         except ValueError:
             raise TradeError(f'{self.curr_trade["amount2"]} is not a valid offer.')
 

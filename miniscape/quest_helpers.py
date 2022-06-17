@@ -54,7 +54,8 @@ def calc_chance(user: User, quest, remove_food=False):
 def calc_length(user, quest):
     """Calculates the length of success of a quest."""
     combat_level = user.combat_level
-    player_dam, player_acc, player_arm, player_pray = user.equipment_stats
+    # TODO(mitch): Use prayer here
+    player_dam, player_acc, player_arm, _ = user.equipment_stats
     monster_arm = quest.armour
     base_time = 60 * quest.time
     monster_base = 1

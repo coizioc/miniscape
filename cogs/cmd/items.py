@@ -6,8 +6,7 @@ from django.db.models import Q
 
 import miniscape.command_helpers as ch
 import utils.command_helpers
-from cogs.cmd.common import get_display_name, has_post_permission
-from cogs.helper import users
+from cogs.cmd.common import has_post_permission
 from config import MAX_PER_ACTION
 from miniscape import item_helpers
 from miniscape.models import User
@@ -143,26 +142,3 @@ class ItemCommands:
             if number and item:
                 out = item_helpers.sell(ctx.author.id, item, number=number)
                 await ctx.send(out)
-
-    #@commands.command()
-    async def sellall(self, ctx, maxvalue=None):
-        """Sells all items in the player's inventory (below a certain value) for gold pieces."""
-        if has_post_permission(ctx.guild.id, ctx.channel.id):
-            name = get_display_name(ctx.author)
-            if maxvalue is not None:
-                value = users.get_value_of_inventory(ctx.author.id, under=maxvalue)
-                users.update_inventory(ctx.author.id, value*["0"])
-                users.clear_inventory(ctx.author.id, under=maxvalue)
-                value_formatted = '{:,}'.format(value)
-                maxvalue_formatted = '{:,}'.format(users.parse_int(maxvalue))
-                name = get_display_name(ctx.author)
-                out = f"All items in {name}'s inventory worth under {maxvalue_formatted} coins "\
-                      f"sold for {value_formatted} coins!"
-            else:
-                value = users.get_value_of_inventory(ctx.author.id)
-                users.update_inventory(ctx.author.id, value * ["0"])
-                users.clear_inventory(ctx.author.id)
-                value_formatted = '{:,}'.format(value)
-                out = f"All items in {name}'s inventory "\
-                      f"sold for {value_formatted} coins!"
-            await ctx.send(out)

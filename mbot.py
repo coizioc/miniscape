@@ -1,20 +1,21 @@
 #! /usr/bin/env python3
 """Runs bots for a Discord server."""
 # These lines allow us to use Django models
-import logging
 import os
-import sys
-import asyncio
-import traceback
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "miniscapebot.settings")
 import django
 django.setup()
+
+import logging
+import sys
+import asyncio
+import traceback
 from django.core.exceptions import ObjectDoesNotExist
 from discord.ext import commands
-import cogs.managers.trade_manager as tm
 from miniscape.models import User
 import config
 from pythonjsonlogger import jsonlogger
+
 
 def extensions_generator():
     """Returns a generator for all cog files that aren't in do_not_use."""
@@ -25,16 +26,13 @@ def extensions_generator():
             yield f"cogs.{cog[:-3]}"
 
 
-DESCRIPTION = "A bot that runs a basic role-playing game."
-
-# log = logging.getLogger(__name__)
-
 class MiniscapeBot(commands.Bot):
     """Defines the miniscapebot class and functions."""
 
     def __init__(self):
-        super().__init__(command_prefix=["~", "%", "./"], description=DESCRIPTION)
-        super().__init__(command_prefix=["~", "%", "./", "."], description=DESCRIPTION)
+        description = "A bot that runs a basic role-playing game."
+        super().__init__(command_prefix=["~", "%", "./"], description=description)
+        super().__init__(command_prefix=["~", "%", "./", "."], description=description)
         self.default_nick = "Miniscape"
         self.add_command(self.load)
         self.remove_command('help')
@@ -50,7 +48,8 @@ class MiniscapeBot(commands.Bot):
 
         self.setup_logging()
 
-    def setup_logging(self):
+    @staticmethod
+    def setup_logging():
         root = logging.getLogger()
         ch = logging.StreamHandler(sys.stdout)
         ch.setLevel(logging.DEBUG)
@@ -62,7 +61,9 @@ class MiniscapeBot(commands.Bot):
         pass
 
     def initialize_managers(self):
-        self.trade_manager = tm.TradeManager()
+        # TODO(mitch): reenable trading?
+        # self.trade_manager = tm.TradeManager()
+        pass
 
     async def on_ready(self):
         """Prints bot initialization info"""
@@ -112,8 +113,8 @@ class MiniscapeBot(commands.Bot):
             await ctx.send(f'Failed to load extension {extension}.', file=sys.stderr)
             traceback.print_exc()
 
-class MiniscapeBotContext(commands.Context):
 
+class MiniscapeBotContext(commands.Context):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -127,11 +128,12 @@ class MiniscapeBotContext(commands.Context):
             return
 
         # Update our user's name/nick if they differ or don't exist
-        # (if they don't exist they == '')
-
-        # TODO: Fix this, it always triggers reeeeee
+        # (if they don't exist they == '' or == None)
         name_match = self.user_object.name == (self.author.name + '#' + self.author.discriminator)
-        nick_match = self.user_object.nick == self.author.nick and self.author.nick
+        nick_match = True
+        if self.author.nick:
+            nick_match = self.author.nick == self.user_object.nick
+
         if not name_match or not nick_match:
             self.user_object.nick = self.author.nick if self.author.nick is not None else ''
             self.user_object.name = self.author.name + '#' + self.author.discriminator

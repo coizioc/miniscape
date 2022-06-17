@@ -12,14 +12,6 @@ from miniscape import slayer_helpers as sh, clue_helpers, quest_helpers, craft_h
 from miniscape.models import Task
 from utils.command_helpers import get_delta
 
-ON_ADVENTURE_ERROR = 'You are currently in the middle of something. Please finish that before starting something else.'
-
-
-def add_finish_time(userid, time):
-    """Adds a datetime to a previously added adventure."""
-    adventures = [adventure.replace('$TIME', time) for adventure in get_list() if str(userid) in adventure]
-    write('\n'.join(adventures), overwrite=True)
-
 
 def get_adventure(userid):
     userid = str(userid)

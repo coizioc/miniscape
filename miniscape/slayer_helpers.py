@@ -109,7 +109,7 @@ def calc_task_vars(user: User, monster: Monster):
     """Calculates the variables required to calculate a task's length/number."""
     user_prayer = user.prayer_slot
     equipment = user.equipment_slots
-    player_dam, player_acc, player_arm, player_pray = user.equipment_stats
+    player_dam, player_acc, player_arm, _ = user.equipment_stats
     monsters_fought = user.monster_kills(monster.name)
     if monsters_fought:
         monsters_fought = monsters_fought[0]
@@ -520,37 +520,6 @@ def get_task_info(userid):
     taskid, userid, finish_time, guildid, channelid, monsterid, monster_name, num_to_kill, chance = task
     time_left = utils.command_helpers.get_delta(finish_time)
     return taskid, userid, time_left, monsterid, monster_name, num_to_kill, chance
-
-
-def print_chance(userid, monsterid, monster_dam=-1, monster_acc=-1, monster_arm=-1, monster_combat=-1, xp=-1,
-                 number=100, dragonfire=False):
-    user = User.objects.get(id=userid)
-    monster = Monster.objects.get(monsterid)
-    player_dam, player_acc, player_arm, player_pray = user.equipment_stats
-
-    player_combat = user.combat_level
-    if monster_dam == -1:
-        monster_dam = monster.damage
-        monster_acc = monster.accuracy
-        monster_arm = monster.armour
-        xp = monster.xp
-        monster_combat = monster.level
-    if dragonfire:
-        monster_base = 100
-    else:
-        monster_base = 1
-
-    c = 1 + monster_combat / 200
-    d = 1 + player_combat / 99
-    dam_multiplier = monster_base + monster_acc / 200
-    chance = round(min(100 * max(0, (2 * d * player_arm) / (number / 50 * monster_dam * dam_multiplier + c)), 100))
-
-    dam_multiplier = 1 + player_acc / 200
-    base_time = math.floor(number * xp / 10)
-    time = round(base_time * (monster_arm * monster_base / (player_dam * dam_multiplier + player_combat)))
-    out = f'level {monster_combat} monster with {monster_dam} dam {monster_acc} acc {monster_arm} arm giving {xp} xp: ' \
-          f'chance: {chance}%, base time: {base_time}, time to kill {number}: {time}, time ratio: {time / base_time}.'
-    return out
 
 
 def print_reaper_status(userid, time_left, *args):

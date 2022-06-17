@@ -1,16 +1,127 @@
 import logging
+import string
 from collections import Counter
 
 from django.db import models
 
+import config
 from .quest import Quest
 from .prayer import Prayer
 from .monster import Monster
 from .userinventory import UserInventory
 from .item import Item, ItemNickname
-from django.core.exceptions import ObjectDoesNotExist
 from .playermonsterkills import PlayerMonsterKills
-from cogs.helper.users import xp_to_level
+
+XP_TO_LEVEL_MAP = {'0': 1,
+                   '81': 2,
+                   '174': 3,
+                   '276': 4,
+                   '388': 5,
+                   '512': 6,
+                   '650': 7,
+                   '801': 8,
+                   '969': 9,
+                   '1154': 10,
+                   '1358': 11,
+                   '1583': 12,
+                   '1832': 13,
+                   '2107': 14,
+                   '2411': 15,
+                   '2746': 16,
+                   '3115': 17,
+                   '3523': 18,
+                   '3973': 19,
+                   '4470': 20,
+                   '5018': 21,
+                   '5624': 22,
+                   '6291': 23,
+                   '7028': 24,
+                   '7842': 25,
+                   '8740': 26,
+                   '9730': 27,
+                   '10824': 28,
+                   '12031': 29,
+                   '13363': 30,
+                   '14833': 31,
+                   '16456': 32,
+                   '18247': 33,
+                   '20224': 34,
+                   '22406': 35,
+                   '24815': 36,
+                   '27473': 37,
+                   '30408': 38,
+                   '33648': 39,
+                   '37224': 40,
+                   '41171': 41,
+                   '45529': 42,
+                   '50339': 43,
+                   '55649': 44,
+                   '61512': 45,
+                   '67983': 46,
+                   '75127': 47,
+                   '83014': 48,
+                   '91721': 49,
+                   '101333': 50,
+                   '111945': 51,
+                   '123660': 52,
+                   '136593': 53,
+                   '150872': 54,
+                   '166636': 55,
+                   '184039': 56,
+                   '203253': 57,
+                   '224466': 58,
+                   '247885': 59,
+                   '273741': 60,
+                   '302287': 61,
+                   '333803': 62,
+                   '368599': 63,
+                   '407014': 64,
+                   '449427': 65,
+                   '496253': 66,
+                   '547952': 67,
+                   '605031': 68,
+                   '668050': 69,
+                   '737627': 70,
+                   '814444': 71,
+                   '899256': 72,
+                   '992894': 73,
+                   '1096277': 74,
+                   '1210420': 75,
+                   '1336442': 76,
+                   '1475580': 77,
+                   '1629199': 78,
+                   '1798807': 79,
+                   '1986067': 80,
+                   '2192817': 81,
+                   '2421086': 82,
+                   '2673113': 83,
+                   '2951372': 84,
+                   '3258593': 85,
+                   '3597791': 86,
+                   '3972293': 87,
+                   '4385775': 88,
+                   '4842294': 89,
+                   '5346331': 90,
+                   '5902830': 91,
+                   '6517252': 92,
+                   '7195628': 93,
+                   '7944613': 94,
+                   '8771557': 95,
+                   '9684576': 96,
+                   '10692628': 97,
+                   '11805605': 98,
+                   '13034430': 99}
+
+
+def xp_to_level(xp):
+    """Converts a  user's xp into its equivalent level based on an XP table."""
+    xp = int(xp)
+    for level_xp in XP_TO_LEVEL_MAP:
+        if int(level_xp) > xp:
+            return int(XP_TO_LEVEL_MAP[level_xp]) - 1
+    else:
+        return 99
+
 
 
 class User(models.Model):
@@ -190,7 +301,7 @@ class User(models.Model):
 
     def get_food(self):
         """ Returns a list of UserInventory Objects related to this user"""
-        return self.userinventory_set.filter(item__food_value__gte="1").order_by('item__name')        
+        return self.userinventory_set.filter(item__food_value__gte="1").order_by('item__name')
 
     def has_item_by_name(self, item_name):
         if not self.get_item_by_name(item_name):
@@ -480,6 +591,85 @@ class User(models.Model):
             return self.has_item_amount_by_counter(quest_items)
         else:
             return True
+
+    def print_account(self, print_equipment=True):
+        name_to_use = self.nick if self.nick else self.name
+        out = f'{config.COMBAT_EMOJI} __**{name_to_use}**__ {config.COMBAT_EMOJI}\n'
+
+        # TODO: This can probably be done better
+        skill_names = ["combat", "slayer", "gather", "artisan", "cook", "prayer", "runecrafting"]
+        for skill, level, skill_name in zip(self.xp_fields_str, self.level_fields_str, skill_names):
+            xp_formatted = '{:,}'.format(getattr(self, skill, 0))
+            out += f'**{string.capwords(skill_name)} Level**: {getattr(self, level, 0)} *({xp_formatted} xp)*\n'
+
+        out += f'**Skill Total**: {self.total_level}/{self.max_possible_level}\n\n'
+        out += f'**Quests Completed**: {len(self.completed_quests_list)}/{len(Quest.objects.all())}\n\n'
+        if print_equipment:
+            out += self.print_equipment()
+
+    def print_equipment(self, with_header=False):
+        armour_print_order = ['Head', 'Back', 'Neck', 'Ammunition', 'Main-Hand', 'Torso', 'Off-Hand',
+                              'Legs', 'Hands', 'Feet', 'Ring', 'Pocket', 'Hatchet', 'Pickaxe', 'Potion']
+
+        if with_header:
+            name_to_use = self.nick if self.nick else self.name
+            out = f'{config.COMBAT_EMOJI} __**{name_to_use}**__ {config.COMBAT_EMOJI}\n'
+        else:
+            out = ''
+
+        damage, accuracy, armour, prayer = self.equipment_stats
+        out += f'**Damage**: {damage}\n' \
+               f'**Accuracy**: {accuracy}\n' \
+               f'**Armour**: {armour}\n' \
+               f'**Prayer Bonus**: {prayer}\n'
+
+        if self.prayer_slot:
+            out += f'**Active Prayer**: {self.prayer_slot.name}\n'
+        else:
+            out += f'**Active Prayer**: none\n'
+
+        if self.active_food:
+            out += f'**Active Food**: {self.active_food.name}\n\n'
+        else:
+            out += f'**Active Food**: none\n\n'
+
+        for slot in armour_print_order:
+            item = self.all_armour[slot]
+            out += f'**{string.capwords(slot)}**: '
+            if item is not None:
+                out += f'{item.name} '
+                out += f'*(dam: {item.damage}, ' \
+                       f'acc: {item.accuracy}, ' \
+                       f'arm: {item.armour}, ' \
+                       f'pray: {item.prayer})*\n'
+            else:
+                out += 'none *(dam: 0, acc: 0, arm: 0, pray: 0)*\n'
+
+        return out
+
+    def calc_xp_to_level(self, skill, level):
+        """Calculates the xp needed to get to a level."""
+        author_levels = self.skill_level_mapping
+        author_xps = self.skill_xp_mapping
+
+        if skill not in author_levels.keys():
+            return f'{skill} is not a skill.'
+
+        if level is None:
+            level = author_levels[skill] + 1
+
+        if level > 99:
+            return f'You have already attained the maximum level in this skill.'
+
+        current_xp = author_xps[skill]
+        for xp_value in XP_TO_LEVEL_MAP.keys():
+            if XP_TO_LEVEL_MAP[xp_value] == level:
+                xp_needed = int(xp_value) - current_xp
+                break
+        else:
+            raise KeyError
+        return xp_needed
+
 
     @property
     def usable_prayers(self):

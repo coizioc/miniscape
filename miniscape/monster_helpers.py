@@ -1,9 +1,9 @@
-from cogs.helper.monsters import MONSTERS, add_plural, get_attr
+import random
+import string
+
 from django.db.models import Q
 
 from miniscape.models import Monster, User, MonsterLoot
-import random
-import string
 
 CHARACTER_HEADER = f':crossed_swords: __**$NAME**__ :crossed_swords:\n'
 
@@ -46,20 +46,6 @@ def print_monster_kills(author, search=None):
         pass
 
     return out
-
-
-def find_by_name(name):
-    """Finds a monster's ID from its name."""
-    name = name.lower()
-    for monsterid in list(MONSTERS.keys()):
-        if name == MONSTERS[monsterid][NAME_KEY]:
-            return monsterid
-        if name == add_plural(0, monsterid):
-            return monsterid
-        if any([name == nick for nick in get_attr(monsterid, key=NICK_KEY)]):
-            return monsterid
-    else:
-        raise KeyError
 
 
 def print_monster(monstername):

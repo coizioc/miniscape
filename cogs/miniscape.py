@@ -9,7 +9,6 @@ import discord
 from discord.ext import commands
 
 import miniscape.clue_helpers as clue_helpers
-import miniscape.command_helpers as ch
 import miniscape.monster_helpers as mon
 import miniscape.periodicchecker_helpers as pc_helpers
 import miniscape.quest_helpers as quest_helpers

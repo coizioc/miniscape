@@ -4,13 +4,12 @@ import string
 import math
 import random
 
-import discord
 from discord.ext import commands
 
 from config import EIGHT_BALL_FILE
 from cogs.helper import deathmatch as dm
-from cogs.helper import users
 from miniscape.models import User
+from utils.command_helpers import parse_int
 
 RESOURCES_DIRECTORY = f'./resources/'
 
@@ -201,7 +200,7 @@ class Other(commands.Cog):
                 await ctx.send('Ironmen cannot start staked deathmatches.')
                 return
             try:
-                bet = users.parse_int(bet)
+                bet = parse_int(bet)
             except ValueError:
                 await ctx.send(f'{bet} does not represent a valid number.')
             bet_formatted = '{:,}'.format(bet)

@@ -1,6 +1,5 @@
 from discord.ext import commands
 
-import miniscape.command_helpers as ch
 import miniscape.vis_helpers as vis_helpers
 import utils.command_helpers
 from cogs.cmd.common import has_post_permission

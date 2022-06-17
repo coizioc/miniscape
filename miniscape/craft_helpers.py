@@ -627,12 +627,12 @@ def start_runecraft(guildid, channelid, user: User, entered_item, number=1, pure
             return f'{number} is not a valid number.'
 
         if not item.is_rune:
-            return f'{items.get_attr(itemid)} is not a rune that can be crafted.'
+            return f'{item.name} is not a rune that can be crafted.'
 
         # Find out if user has the talisman
         rune_type = item.name.split(" ")[0]
         if not user.has_item_by_name(rune_type + " talisman"):
-            return f'{items.get_attr(talismanid)} not found in inventory.'
+            return f'{rune_type} talisman not found in inventory.'
 
         item_name = item.name
         runecrafting_level = user.rc_level
