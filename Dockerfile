@@ -6,7 +6,8 @@ COPY requirements.txt ./
 
 RUN touch config.py db.sqlite3
 
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade pip
+RUN pip --disable-pip-version-check install --no-cache-dir  -r requirements.txt --root-user-action=ignore
 COPY . ./
 
 CMD [ "python", "./launcher.py"]
