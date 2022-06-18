@@ -606,6 +606,7 @@ class User(models.Model):
         out += f'**Quests Completed**: {len(self.completed_quests_list)}/{len(Quest.objects.all())}\n\n'
         if print_equipment:
             out += self.print_equipment()
+        return out
 
     def print_equipment(self, with_header=False):
         armour_print_order = ['Head', 'Back', 'Neck', 'Ammunition', 'Main-Hand', 'Torso', 'Off-Hand',
