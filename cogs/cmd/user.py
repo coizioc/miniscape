@@ -86,16 +86,25 @@ class UserCommands:
     async def tolevel(self, ctx: MiniscapeBotContext, *args):
         """Shows the user how much xp they need to get to a (specified) level."""
         if has_post_permission(ctx.guild.id, ctx.channel.id):
-            if args[0].isdigit():
+            if args[0].isdigit():  # ~tolevel 99 artisan
                 level = int(args[0])
                 skill = ' '.join(args[1:])
-            else:
-                level = None
+            else:  # ~tolevel artisan (e.g. next level)
                 skill = ' '.join(args)
-            xp_needed = ctx.user_object.calc_xp_to_level(skill, level)
-            xp_formatted = '{:,}'.format(xp_needed)
+                try:
+                    level = ctx.user_object.skill_level_mapping[skill] + 1
+                except KeyError:
+                    out = f'{skill} is not a skill.'
+                    await ctx.reply(mention_author=False, embed=discord.Embed(type="rich", description=out, title=""))
+                    return
 
-            out = f'You need {xp_formatted} xp to get level {level} in {skill}.'
+            result = ctx.user_object.calc_xp_to_level(skill, level)
+            try:  # It succeeded and we got an integer back
+                int(result)
+                xp_formatted = '{:,}'.format(result)
+                out = f'You need {xp_formatted} xp to get level {level} in {skill}.'
+            except ValueError:  # We got an error message back
+                out = result
 
             await ctx.reply(mention_author=False, embed=discord.Embed(type="rich", description=out, title=""))
 

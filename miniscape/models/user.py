@@ -648,16 +648,13 @@ class User(models.Model):
 
         return out
 
-    def calc_xp_to_level(self, skill, level):
+    def calc_xp_to_level(self, skill: str, level: int):
         """Calculates the xp needed to get to a level."""
         author_levels = self.skill_level_mapping
         author_xps = self.skill_xp_mapping
 
         if skill not in author_levels.keys():
             return f'{skill} is not a skill.'
-
-        if level is None:
-            level = author_levels[skill] + 1
 
         if level > 99:
             return f'You have already attained the maximum level in this skill.'
@@ -670,7 +667,6 @@ class User(models.Model):
         else:
             raise KeyError
         return xp_needed
-
 
     @property
     def usable_prayers(self):
