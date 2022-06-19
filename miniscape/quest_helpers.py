@@ -1,5 +1,12 @@
+import json
+import logging
+
+import discord
+
 import utils.command_helpers
-from miniscape.models import User, Quest, Item, Monster, Recipe, UserQuest
+from mbot import MiniscapeBotContext
+from miniscape.models import User, Quest, Item, Monster, Recipe, UserQuest, Task
+from miniscape import adventures as adv
 from django.core.exceptions import ObjectDoesNotExist
 import string
 import math
@@ -74,7 +81,7 @@ def calc_length(user, quest):
     return time
 
 
-def print_quest(quest, time, chance):
+def print_quest(quest: Quest, time: int, chance: int):
     """Prints the quest information into a string."""
     out = f"You are now doing the quest {quest.name}. This will take {math.floor(time / 60)} minutes " \
           f"and has a {chance}% chance of succeeding with your current gear. "
@@ -119,6 +126,15 @@ def print_details(user, questid):
     return out
 
 
+def print_status2(task: Task, time_left):
+    extra_data = json.loads(task.extra_data)
+    quest = Quest.objects.get(id=extra_data["quest_id"])
+    chance = extra_data["chance"]
+    return f"{QUEST_HEADER}"\
+           f"You are on the quest {quest.name}. You can see the results of this in {time_left} minutes. "\
+           f"You currently have a {chance}% of succeeding with your current gear. "
+
+
 def print_status(userid, time_left, *args):
     questid, chance = args[0]
     quest = Quest.objects.get(id=questid)
@@ -129,45 +145,118 @@ def print_status(userid, time_left, *args):
     return out
 
 
-def start_quest(guildid, channelid, user: User, questid):
+def start_quest(ctx: MiniscapeBotContext, questid):
     """Assigns a user a slayer task provided they are not in the middle of another adventure."""
-    from miniscape import adventures as adv
+    out = discord.Embed(type="rich", title="Quest", description=QUEST_HEADER)
+    user = ctx.user_object
 
     if adv.is_on_adventure(user.id):
-        out = adv.print_adventure(user.id)
-        out += utils.command_helpers.print_on_adventure_error('quest')
+        out.description = adv.print_adventure(user.id)
+        out.description += utils.command_helpers.print_on_adventure_error('quest')
         return out
-
 
     try:
         quest = Quest.objects.get(id=questid)
     except ObjectDoesNotExist:
-        return f"Error: quest number {questid} does not refer to any quest."
+        out.description += f"Error: quest number {questid} does not refer to any quest."
+        return out
 
     if quest in user.completed_quests_list:
-        return "Error: you have already done this quest."
+        out.description += "Error: you have already done this quest."
+        return out
 
     if not user.has_quest_req_for_quest(quest):
-        return "Error: you have not completed the required quests to do this quest."
+        out.description += "Error: you have not completed the required quests to do this quest."
+        return out
 
     if not user.has_items_for_quest(quest):
-        return "Error: you do not have all the required items to start this quest."
-
-    out = QUEST_HEADER
+        out.description += "Error: you do not have all the required items to start this quest."
+        return out
 
     chance = calc_chance(user, quest)
     quest_length = calc_length(user, quest)
-    quest_adv = utils.command_helpers.format_adventure_line(2, user.id, utils.command_helpers.calculate_finish_time(quest_length), guildid,
-                                                            channelid, questid, chance)
-    adv.write(quest_adv)
-    out += print_quest(quest, quest_length, chance)
+    task_data = {"quest_id": questid, "chance": chance}
+    task = Task(
+        type="quest",
+        user=user,
+        completion_time=utils.command_helpers.calculate_finish_time_utc(quest_length),
+        guild=ctx.guild.id,
+        channel=ctx.channel.id,
+        extra_data=json.dumps(task_data)
+    )
+    try:
+        task.save()
+    except Exception as e:
+        logging.getLogger(__name__).error("unable to persist task. error: %s", str(e))
+        out.description += "Database error trying to start quest. Please report this in " \
+                           "<#981349203395641364>"  # This points to #bugs
+        return out
 
+    out.description += print_quest(quest, quest_length, chance)
+    return out
+
+
+def get_quest_result(task: Task):
+    # Extract our data
+    extra_data = json.loads(task.extra_data)
+    quest_id = extra_data["quest_id"]
+    quest = Quest.objects.get(id=quest_id)
+    chance = extra_data["chance"]
+    user = task.user
+
+    # Create our return message
+    out = discord.Embed(title=QUEST_HEADER, description="", type="rich")
+    out.description = f"**{task.user.mention}, here is the result of your quest: {quest.name}**\n"
+
+    # Did they fail?
+    if not adv.is_success(chance):
+        out.description += f'*{quest.failure}*'
+    else:
+        out.description += f'*{quest.success}*\n\n'
+
+        # Give the user their reward items
+        reward = quest.reward_items
+        if reward:
+            out.description += f'**Reward**:\n'
+
+            loot = {}
+            for qir in reward:
+                loot[qir.item] = qir.amount
+                out.description += f'{qir.amount} {qir.item.name}\n'
+            user.update_inventory(loot)
+            out.description += '\n'
+
+        # tell the user what items they've now unlocked
+        quest_items = Item.objects.filter(quest_req=quest)
+        if quest_items:
+            out.description += f'**You Can Now Use**:\n'
+            for item in quest_items:
+                out.description += f'{string.capwords(item.name)}\n'
+            out.description += '\n'
+
+        # tell the user what recipes they've now unlocked
+        quest_recipes = Recipe.objects.filter(quest_requirement=quest)
+        if quest_recipes:
+            out.description += f'**You Can Now Craft**:\n'
+            for qr in quest_recipes:
+                out.description += f'{qr.creates.name}\n'
+            out.description += '\n'
+
+        # tell the user what monsters they've now unlocked
+        quest_monsters = Monster.objects.filter(quest_req=quest)
+        if quest_monsters:
+            out.description += f'**You Can Now Fight**:\n'
+            for monster in quest_monsters:
+                out.description += f'{monster.name}\n'
+            out.description += '\n'
+
+        uq = UserQuest(user=user, quest=quest)
+        uq.save()
     return out
 
 
 def get_result(person, *args):
     """Gets the result of a quest."""
-    from miniscape import adventures as adv
 
     try:
         questid, chance = args[0]

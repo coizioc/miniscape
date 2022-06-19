@@ -25,7 +25,6 @@ def get_adventure(userid):
     return tasks.first()
 
 
-
 def get_finished():
     """Gets a list of adventures with time preceding the current time, removes those from the adventure file,
     and returns the list of finished adventures."""
@@ -114,7 +113,8 @@ def print_adventure(userid):
         return out
     else:
         adventures = {
-            "runecraft": craft_helpers.print_rc_status2
+            "runecraft": craft_helpers.print_rc_status2,
+            "quest": quest_helpers.print_status2,
         }
         time_left = get_delta(adventure.completion_time)
         ret = adventures[adventure.type](adventure, time_left)

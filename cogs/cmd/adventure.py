@@ -1,3 +1,5 @@
+import json
+
 import discord
 from discord.ext import commands
 
@@ -6,13 +8,18 @@ from errors import AdventureNotFoundError
 from mbot import MiniscapeBotContext
 from miniscape import adventures as adv
 from miniscape.itemconsts import REAPER_TOKEN
-from miniscape.models import User, Task
+from miniscape.models import User, Task, Quest
 
 
-def _get_adv_text_from_database(ctx: MiniscapeBotContext, task: Task) -> str:
+def _get_adv_cancel_text_from_database(ctx: MiniscapeBotContext, task: Task) -> str:
     if task.type == "runecraft":
         task.delete()
         return f"{ctx.user_object.mention}, your runecrafting session has been cancelled!"
+
+    if task.type == "quest":
+        task.delete()
+        quest = Quest.objects.get(id=json.loads(task.extra_data)["quest_id"])
+        return f"{ctx.user_object.mention}, you are no longer doing the quest {quest.name}"
 
 
 def _get_adv_text_from_file(ctx: MiniscapeBotContext, task) -> str:
@@ -65,7 +72,7 @@ class AdventureCommands:
         if type(task) == list:
             out.description = _get_adv_text_from_file(ctx, task)
         else:
-            out.description = _get_adv_text_from_database(ctx, task)
+            out.description = _get_adv_cancel_text_from_database(ctx, task)
 
         await ctx.reply(mention_author=False, embed=out)
 

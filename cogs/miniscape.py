@@ -239,7 +239,8 @@ class Miniscape(commands.Cog,
     async def _check_adventures_from_database(self):
         tasks = Task.objects.all()
         adv_map = {
-            "runecraft": craft_helpers.get_runecrafting_results
+            "runecraft": craft_helpers.get_runecrafting_results,
+            "quest": quest_helpers.get_quest_result
         }
         logger = logging.getLogger(__name__)
         task: Task
@@ -255,11 +256,17 @@ class Miniscape(commands.Cog,
                     bot_guild = self.bot.get_guild(int(task.guild))
                     announcement_channel = get_channel(task.guild, ANNOUNCEMENT_KEY)
                     bot_self = bot_guild.get_channel(int(announcement_channel))
-                    embed = discord.Embed(title=f"{string.capwords(task.type)} Result",
-                                          type="rich",
-                                          description=result)
-                    # Embeds alone won't actually ping, so we have to @ them as well as do the embed
-                    await bot_self.send(task.user.mention, embed=embed)
+                    if type(result) == str:
+                        embed = discord.Embed(title=f"{string.capwords(task.type)} Result",
+                                              type="rich",
+                                              description=result)
+                        # Embeds alone won't actually ping, so we have to @ them as well as do the embed
+                        await bot_self.send(task.user.mention, embed=embed)
+                        return
+                    elif type(result) == discord.Embed:
+                        await bot_self.send(task.user.mention, embed=result)
+                        return
+
             except Exception as E:
                 # TODO: move this to like a dead-letter queue?
                 logger.error("Unable to complete task %s. Error: %s", str(task), str(E))

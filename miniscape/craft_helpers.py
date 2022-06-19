@@ -605,76 +605,11 @@ def start_runecraft(ctx: MiniscapeBotContext, *args, pure=False):
     except Exception as e:
         logging.getLogger(__name__).error("unable to persist task. error: %s", str(e))
         out.description += "Database error trying to start runecrafting session. Please report this in " \
-                           "<#981349203395641364>" # This points to #bugs
+                           "<#981349203395641364>"  # This points to #bugs
         return out
 
     out.description += f"You have started crafting {requested_rune.pluralize(number)} for {length} minutes"
     return out
-
-
-def start_runecraft_old(guildid, channelid, user: User, entered_item, number=1, pure=0):
-    """Starts a runecrafting session."""
-
-    out = ''
-    if not adv.is_on_adventure(user.id):
-        item: Item = Item.find_by_name_or_nick(entered_item)
-        if not item:
-            return f'{entered_item} is not an item.'
-
-        try:
-            number = int(number)
-        except ValueError:
-            return f'{number} is not a valid number.'
-
-        if not item.is_rune:
-            return f'{item.name} is not a rune that can be crafted.'
-
-        # Find out if user has the talisman
-        rune_type = item.name.split(" ")[0]
-        if not user.has_item_by_name(rune_type + " talisman"):
-            return f'{rune_type} talisman not found in inventory.'
-
-        item_name = item.name
-        runecrafting_level = user.rc_level
-        runecraft_req = item.level
-        player_potion = user.potion_slot.id if user.potion_slot else '0'
-
-        if player_potion == 435:
-            boosted_level = runecrafting_level + 3
-        elif player_potion == 436:
-            boosted_level = runecrafting_level + 6
-        else:
-            boosted_level = runecrafting_level
-
-        if boosted_level < runecraft_req:
-            return f'Error: {item_name} has a runecrafting requirement ({runecraft_req}) higher ' \
-                   f'than your runecrafting level ({runecrafting_level})'
-
-        if item.quest_req and not user.has_completed_quest(item.quest_req):
-            return f'You do not have the required quest to craft this rune.'
-        if not user.has_completed_quest(RUNE_MYSTERIES):
-            return f'You do not know how to craft runes.'
-
-        factor = 1 if user.has_completed_quest(ABYSS_QUEST) else 2
-        bonus = 0
-        for pouch in POUCHES:
-            if user.has_item_by_item(pouch):
-                bonus += pouch.pouch
-
-        length = factor * math.ceil(number * 1.2 / (28.0 + bonus))
-        ess_to_check = PURE_ESSENCE if pure else RUNE_ESSENCE
-        if not user.has_item_amount_by_item(ess_to_check, number):
-            return f'You do not have enough essence to craft this many runes.'
-
-        rc_session = utils.command_helpers.format_adventure_line(6, user.id, utils.command_helpers.calculate_finish_time(length * 60), guildid, channelid,
-                                                                 item.id, item_name, number, length, pure)
-        adv.write(rc_session)
-        out += f'You are now crafting {item.pluralize(number)} for {length} minutes.'
-    else:
-        out = adv.print_adventure(user.id)
-        out += utils.command_helpers.print_on_adventure_error('runecrafting session')
-    return out
-
 
 def list_runes():
     content = [["RUNE", "LEVEL"]]
