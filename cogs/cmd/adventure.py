@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 
-from cogs.cmd.common import has_post_permission
+from cogs.cmd.checks import can_post
 from errors import AdventureNotFoundError
 from mbot import MiniscapeBotContext
 from miniscape import adventures as adv
@@ -50,32 +50,31 @@ def _get_adv_text_from_file(ctx: MiniscapeBotContext, task) -> str:
 class AdventureCommands:
 
     @commands.command(aliases=['cancle'])
+    @can_post()
     async def cancel(self, ctx: MiniscapeBotContext):
         """Cancels your current action."""
+        out = discord.Embed(type="rich", description="", title="Cancel Result")
 
-        if has_post_permission(ctx.guild.id, ctx.channel.id):
-            out = discord.Embed(type="rich", description="", title="Cancel Result")
-
-            try:
-                task = adv.get_adventure(ctx.author.id)
-            except AdventureNotFoundError:
-                out.description = f"{ctx.user_object.mention}, you are not currently doing anything."
-                await ctx.reply(mention_author=False, embed=out)
-                return
-
-            if type(task) == list:
-                out.description = _get_adv_text_from_file(ctx, task)
-            else:
-                out.description = _get_adv_text_from_database(ctx, task)
-
+        try:
+            task = adv.get_adventure(ctx.author.id)
+        except AdventureNotFoundError:
+            out.description = f"{ctx.user_object.mention}, you are not currently doing anything."
             await ctx.reply(mention_author=False, embed=out)
+            return
+
+        if type(task) == list:
+            out.description = _get_adv_text_from_file(ctx, task)
+        else:
+            out.description = _get_adv_text_from_database(ctx, task)
+
+        await ctx.reply(mention_author=False, embed=out)
 
     @commands.command(aliases=['stuatus', 'statussy'])
+    @can_post()
     async def status(self, ctx):
         """Says what you are currently doing."""
-        if has_post_permission(ctx.guild.id, ctx.channel.id):
-            if adv.is_on_adventure(ctx.author.id):
-                out = adv.print_adventure(ctx.author.id)
-            else:
-                out = 'You are not doing anything at the moment.'
-            await ctx.send(out)
+        if adv.is_on_adventure(ctx.author.id):
+            out = adv.print_adventure(ctx.author.id)
+        else:
+            out = 'You are not doing anything at the moment.'
+        await ctx.send(out)

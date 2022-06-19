@@ -1,5 +1,7 @@
+import discord
 from discord.ext import commands
 
+from cogs.cmd.checks import can_post
 from mbot import MiniscapeBotContext
 from miniscape import quest_helpers, craft_helpers, monster_helpers, item_helpers, prayer_helpers
 
@@ -10,10 +12,17 @@ ALL_CATEGORIES = ["monster", "item", "recipe", "quest", "pray", "prayer",
 class GeneralCommands:
 
     @commands.command()
+    @can_post()
+    async def test(self, ctx: MiniscapeBotContext, *args):
+        await ctx.reply(embed=discord.Embed(title="YOLO", type="rich"))
+
+    @commands.command()
+    @can_post()
     async def ree(self, ctx, *args):
         await ctx.send("<:reet:479701958916309012>")
 
     @commands.command(aliases=["s"])
+    @can_post()
     async def search(self, ctx: MiniscapeBotContext, *args):
         """The ~search or ~s command is for searching for various things in miniscape. For example, one
         might search for quests, or monsters, or recipes, or items. valid use is like

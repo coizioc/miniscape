@@ -1,10 +1,9 @@
-import string
-
 import discord
 from discord.ext import commands
 from django.db.models import Q
 
-from cogs.cmd.common import get_display_name, has_post_permission
+from cogs.cmd.checks import can_post
+from cogs.cmd.common import get_display_name
 
 from mbot import MiniscapeBotContext
 from miniscape.models import User, Item
@@ -21,156 +20,158 @@ class UserCommands:
     This might be themselves (~me) or another user (~examine)"""
 
     @commands.group(invoke_without_command=True)
+    @can_post()
     async def me(self, ctx: MiniscapeBotContext):
         """Shows information related to the user."""
-        if has_post_permission(ctx.guild.id, ctx.channel.id):
-            await ctx.send(ctx.user_object.print_account())
+        await ctx.send(ctx.user_object.print_account())
 
     @me.group(name='stats', aliases=['levels'])
+    @can_post()
     async def _me_stats(self, ctx: MiniscapeBotContext):
         """Shows the levels and stats of a user."""
-        if has_post_permission(ctx.guild.id, ctx.channel.id):
-            await ctx.send(ctx.user_object.print_account(print_equipment=False))
+        await ctx.send(ctx.user_object.print_account(print_equipment=False))
 
     @me.group(name='equipment', aliases=['armour', 'armor'])
+    @can_post()
     async def _me_equipment(self, ctx: MiniscapeBotContext):
-        if has_post_permission(ctx.guild.id, ctx.channel.id):
-            await ctx.send(ctx.user_object.print_equipment(with_header=True))
+        await ctx.send(ctx.user_object.print_equipment(with_header=True))
 
     @commands.command()
+    @can_post()
     async def kc(self, ctx: MiniscapeBotContext, *args):
         await self._me_monsters(ctx, *args)
 
     @me.group(name='monsters')
+    @can_post()
     async def _me_monsters(self, ctx: MiniscapeBotContext, *args):
         """Shows how many monsters a user has killed."""
-        if has_post_permission(ctx.guild.id, ctx.channel.id):
-            out = mon.print_monster_kills(ctx.user_object, search=" ".join(args))
-            await ctx.send(out)
+        out = mon.print_monster_kills(ctx.user_object, search=" ".join(args))
+        await ctx.send(out)
 
     @me.command(name='clues')
+    @can_post()
     async def _me_clues(self, ctx: MiniscapeBotContext):
         """Shows how many clue scrolls a user has completed."""
-        if has_post_permission(ctx.guild.id, ctx.channel.id):
-            out = clue_helpers.print_clue_scrolls(ctx.user_object)
-            await ctx.send(out)
+        out = clue_helpers.print_clue_scrolls(ctx.user_object)
+        await ctx.send(out)
 
     @me.command(name='pets')
+    @can_post()
     async def _me_pets(self, ctx: MiniscapeBotContext):
         """Shows which pets a user has collected."""
-        if has_post_permission(ctx.guild.id, ctx.channel.id):
-            messages = ch.print_pets(ctx.user_object)
-            await self.paginate(ctx, messages)
+        messages = ch.print_pets(ctx.user_object)
+        await self.paginate(ctx, messages)
 
     @commands.command(aliases=['lookup', 'finger', 'find'])
+    @can_post()
     async def examine(self, ctx: MiniscapeBotContext, *args):
         """Examines a given user."""
-        if has_post_permission(ctx.guild.id, ctx.channel.id):
-            search_string = ' '.join(args).lower()
-            mems = await ctx.guild.query_members(query=search_string)
-            for member in ctx.guild.members:
-                if member.nick is not None:
-                    if search_string in member.nick.lower():
-                        target = User.objects.get(id=member.id)
-                        break
-                if search_string in member.name.lower():
+        search_string = ' '.join(args).lower()
+        mems = await ctx.guild.query_members(query=search_string)
+        for member in ctx.guild.members:
+            if member.nick is not None:
+                if search_string in member.nick.lower():
                     target = User.objects.get(id=member.id)
                     break
-            else:
-                await ctx.send(f'Could not find {search_string} in server.')
-                return
+            if search_string in member.name.lower():
+                target = User.objects.get(id=member.id)
+                break
+        else:
+            await ctx.send(f'Could not find {search_string} in server.')
+            return
 
-            await ctx.send(target.print_account())
+        await ctx.send(target.print_account())
 
     @commands.command()
+    @can_post()
     async def tolevel(self, ctx: MiniscapeBotContext, *args):
         """Shows the user how much xp they need to get to a (specified) level."""
-        if has_post_permission(ctx.guild.id, ctx.channel.id):
-            if args[0].isdigit():  # ~tolevel 99 artisan
-                level = int(args[0])
-                skill = ' '.join(args[1:])
-            else:  # ~tolevel artisan (e.g. next level)
-                skill = ' '.join(args)
-                try:
-                    level = ctx.user_object.skill_level_mapping[skill] + 1
-                except KeyError:
-                    out = f'{skill} is not a skill.'
-                    await ctx.reply(mention_author=False, embed=discord.Embed(type="rich", description=out, title=""))
-                    return
+        if args[0].isdigit():  # ~tolevel 99 artisan
+            level = int(args[0])
+            skill = ' '.join(args[1:])
+        else:  # ~tolevel artisan (e.g. next level)
+            skill = ' '.join(args)
+            try:
+                level = ctx.user_object.skill_level_mapping[skill] + 1
+            except KeyError:
+                out = f'{skill} is not a skill.'
+                await ctx.reply(mention_author=False, embed=discord.Embed(type="rich", description=out, title=""))
+                return
 
-            result = ctx.user_object.calc_xp_to_level(skill, level)
-            try:  # It succeeded and we got an integer back
-                int(result)
-                xp_formatted = '{:,}'.format(result)
-                out = f'You need {xp_formatted} xp to get level {level} in {skill}.'
-            except ValueError:  # We got an error message back
-                out = result
+        result = ctx.user_object.calc_xp_to_level(skill, level)
+        try:  # It succeeded and we got an integer back
+            int(result)
+            xp_formatted = '{:,}'.format(result)
+            out = f'You need {xp_formatted} xp to get level {level} in {skill}.'
+        except ValueError:  # We got an error message back
+            out = result
 
-            await ctx.reply(mention_author=False, embed=discord.Embed(type="rich", description=out, title=""))
+        await ctx.reply(mention_author=False, embed=discord.Embed(type="rich", description=out, title=""))
 
     @commands.command()
+    @can_post()
     async def eat(self, ctx: MiniscapeBotContext, *args):
         """Sets a food to eat during adventures."""
-        if has_post_permission(ctx.guild.id, ctx.channel.id):
-            out = ch.eat(ctx.user_object, ' '.join(args).lower())
-            await ctx.send(out)
+        out = ch.eat(ctx.user_object, ' '.join(args).lower())
+        await ctx.send(out)
 
     @commands.command()
+    @can_post()
     async def equip(self, ctx: MiniscapeBotContext, *args):
         """Equips an item from a user's inventory."""
-        if has_post_permission(ctx.guild.id, ctx.channel.id):
-            item = ' '.join(args)
-            out = ch.equip_item(ctx.user_object, item.lower())
-            await ctx.send(out)
+        item = ' '.join(args)
+        out = ch.equip_item(ctx.user_object, item.lower())
+        await ctx.send(out)
 
     @commands.command()
+    @can_post()
     async def unequip(self, ctx: MiniscapeBotContext, *args):
         """Unequips an item from a user's equipment."""
-        if has_post_permission(ctx.guild.id, ctx.channel.id):
-            item = ' '.join(args)
-            out = ch.unequip_item(ctx.user_object, item.lower())
-            await ctx.send(out)
+        item = ' '.join(args)
+        out = ch.unequip_item(ctx.user_object, item.lower())
+        await ctx.send(out)
 
     @commands.command(aliases=['drank', 'chug', 'suckle'])
+    @can_post()
     async def drink(self, ctx: MiniscapeBotContext, *args):
         """Drinks a potion."""
-        if has_post_permission(ctx.guild.id, ctx.channel.id):
-            name = ' '.join(args)
-            if ctx.user_object.drink(name):
-                out = f'You drank the {name}! Your stats will be increased for your next adventure.'
-            else:
-                out = f'Unable to drink {name}'
-            await ctx.send(out)
+        name = ' '.join(args)
+        if ctx.user_object.drink(name):
+            out = f'You drank the {name}! Your stats will be increased for your next adventure.'
+        else:
+            out = f'Unable to drink {name}'
+        await ctx.send(out)
 
     @commands.command()
+    @can_post()
     async def tip(self, ctx: MiniscapeBotContext, *args):
         """Posts a funny message if the user is wearing a certain item."""
-        if has_post_permission(ctx.guild.id, ctx.channel.id) and ' '.join(args).lower() == 'fedora':
+        if ' '.join(args).lower() == 'fedora':
             user = User.objects.filter(Q(name__icontains=ctx.author.name) | Q(nick__icontains=ctx.author.name))
             if user:
                 if user[0].equipment_slots[0] == FEDORA:
                     await ctx.send(f'*{ctx.author.name} tips their fedora.*')
 
     @commands.command(aliases=['pray', 'prayers'])
+    @can_post()
     async def prayer(self, ctx: MiniscapeBotContext, *args):
         """Shows a list of available prayers, or sets a user's prayer."""
-        if has_post_permission(ctx.guild.id, ctx.channel.id):
-            if not args:
-                messages = prayer.print_list(ctx.author.id)
-                await self.paginate(ctx, messages)
+        if not args:
+            messages = prayer.print_list(ctx.author.id)
+            await self.paginate(ctx, messages)
+        else:
+            if args[0] == 'info':
+                current_prayer = ' '.join(args[1:])
+                out = prayer.print_info(current_prayer)
             else:
-                if args[0] == 'info':
-                    current_prayer = ' '.join(args[1:])
-                    out = prayer.print_info(current_prayer)
-                else:
-                    out = prayer.set_prayer(ctx.author.id, ' '.join(args))
-                await ctx.send(out)
+                out = prayer.set_prayer(ctx.author.id, ' '.join(args))
+            await ctx.send(out)
 
     # TODO(mitch): reenable trading?
     # @commands.command()
+    # @can_post()
     # async def trade(self, ctx, *args):
     #     """Trades to a person a number of a given object for a given price."""
-    #     if has_post_permission(ctx.guild.id, ctx.channel.id):
     #         if len(args) < 4:
     #             await ctx.send('Arguments missing. '
     #                            'Syntax is `~trade [name] [number] [item] [offer]`.')
@@ -220,87 +221,86 @@ class UserCommands:
     #         ctx.bot.trade_manager.reset_trade(trade, ctx.author.id, name_member.id)
 
     @commands.command(aliases=['ironmeme', 'btwman'])
+    @can_post()
     async def ironman(self, ctx: MiniscapeBotContext):
         """Lets a user become an ironman, by the way."""
-        if has_post_permission(ctx.guild.id, ctx.channel.id):
-            out = (':tools: __**IRONMAN**__ :tools:\n' \
-                   'If you want to become an ironman, please react to this post with a :thumbsup:. '
-                   'This will **RESET** your account and give you the ironman role. '
-                   'You will be unable to trade with other players or gamble. '
-                   'In return, you will be able to proudly display your status as an ironman, '
-                   'by the way.')
-            msg = await ctx.send(out)
+        out = (':tools: __**IRONMAN**__ :tools:\n' \
+               'If you want to become an ironman, please react to this post with a :thumbsup:. '
+               'This will **RESET** your account and give you the ironman role. '
+               'You will be unable to trade with other players or gamble. '
+               'In return, you will be able to proudly display your status as an ironman, '
+               'by the way.')
+        msg = await ctx.send(out)
 
-            if await self.confirm(ctx, msg, out):
-                ctx.user_object.reset_account()
-                ctx.user_object.is_ironman = True
-                ctx.user_object.save()
-                # ironman_role = discord.utils.get(ctx.guild.roles, name="Ironman")
-                # await ctx.author.add_roles(ironman_role, reason='Wanted to become an ironmeme.')
-                name = get_display_name(ctx.author)
-                await msg.edit(content=f':tools: __**IRONMAN**__ :tools:\n'
-                                       f'Congratulations, {name}, you are now '
-                                       'an ironman!')
+        if await self.confirm(ctx, msg, out):
+            ctx.user_object.reset_account()
+            ctx.user_object.is_ironman = True
+            ctx.user_object.save()
+            # ironman_role = discord.utils.get(ctx.guild.roles, name="Ironman")
+            # await ctx.author.add_roles(ironman_role, reason='Wanted to become an ironmeme.')
+            name = get_display_name(ctx.author)
+            await msg.edit(content=f':tools: __**IRONMAN**__ :tools:\n'
+                                   f'Congratulations, {name}, you are now '
+                                   'an ironman!')
 
     @commands.command(aliases=['imaloser', 'makemelame'])
+    @can_post()
     async def deironman(self, ctx: MiniscapeBotContext):
         """Lets a user become an normal user."""
-        if has_post_permission(ctx.guild.id, ctx.channel.id):
-            out = (':tools: __**IRONMAN**__ :tools:\n'
-                   'If you want to remove your ironman status, please react to this post with a '
-                   ':thumbsup:. This will keep your account the same as it is right now, but you '
-                   'will be able to trade with others. If you want to re-ironman, you can type '
-                   '`~ironman`, but you will have to reset your account.')
-            msg = await ctx.send(out)
+        out = (':tools: __**IRONMAN**__ :tools:\n'
+               'If you want to remove your ironman status, please react to this post with a '
+               ':thumbsup:. This will keep your account the same as it is right now, but you '
+               'will be able to trade with others. If you want to re-ironman, you can type '
+               '`~ironman`, but you will have to reset your account.')
+        msg = await ctx.send(out)
 
-            if await self.confirm(ctx, msg, out):
-                ctx.user_object.is_ironman = False
-                ctx.user_object.save()
-                # ironman_role = discord.utils.get(ctx.guild.roles, name="Ironman")
-                # await ctx.author.remove_roles(
-                #     ironman_role, reason="No longer wants to be ironmeme.")
-                name = get_display_name(ctx.author)
-                await msg.edit(
-                    content=f':tools: __**IRONMAN**__ :tools:\n'
-                            f'Congratulations, {name}, you are now a normal user!')
+        if await self.confirm(ctx, msg, out):
+            ctx.user_object.is_ironman = False
+            ctx.user_object.save()
+            # ironman_role = discord.utils.get(ctx.guild.roles, name="Ironman")
+            # await ctx.author.remove_roles(
+            #     ironman_role, reason="No longer wants to be ironmeme.")
+            name = get_display_name(ctx.author)
+            await msg.edit(
+                content=f':tools: __**IRONMAN**__ :tools:\n'
+                        f'Congratulations, {name}, you are now a normal user!')
 
     @commands.command()
+    @can_post()
     async def balance(self, ctx: MiniscapeBotContext, name=None):
         """Checks the user's balance."""
-        if has_post_permission(ctx.guild.id, ctx.channel.id):
-            user: User = ctx.user_object
-            item = Item.objects.get(name="coins")
+        user: User = ctx.user_object
 
-            if name is None:
-                amount = '{:,}'.format(user.get_item_by_item(COINS)[0].amount)
-                name = get_display_name(ctx.author)
-                await ctx.send(f'{name} has {amount} coins')
-            elif name == 'universe':
-                await ctx.send('As all things should be.')
+        if name is None:
+            amount = '{:,}'.format(user.get_item_by_item(COINS)[0].amount)
+            name = get_display_name(ctx.author)
+            await ctx.send(f'{name} has {amount} coins')
+        elif name == 'universe':
+            await ctx.send('As all things should be.')
+        else:
+            user = User.objects.filter(Q(name__icontains=name) | Q(nick__icontains=name))
+            if not user:
+                await ctx.send(f'Name {name} not found in server.')
+            elif len(user) > 1:
+                await ctx.send(f'Input {name} can refer to multiple people.')  # ({members})')
             else:
-                user = User.objects.filter(Q(name__icontains=name) | Q(nick__icontains=name))
-                if not user:
-                    await ctx.send(f'Name {name} not found in server.')
-                elif len(user) > 1:
-                    await ctx.send(f'Input {name} can refer to multiple people.')  # ({members})')
-                else:
-                    user = user[0]
-                    amount = '{:,}'.format(user.get_item_by_item(COINS).amount)
-                    await ctx.send(f'{user.plain_name} has {amount} coins')
+                user = user[0]
+                amount = '{:,}'.format(user.get_item_by_item(COINS).amount)
+                await ctx.send(f'{user.plain_name} has {amount} coins')
 
     @commands.command(aliases=['leaderboards'])
+    @can_post()
     async def leaderboard(self, ctx: MiniscapeBotContext, *args):
         """Allows users to easily compare each others' stats."""
-        if has_post_permission(ctx.guild.id, ctx.channel.id):
-            name = " ".join(args) if args else None
-            msg = await ctx.send("Select an emoji to load a leaderboard.")
-            for emoji in lb_helpers.EMOJI.values():
-                await msg.add_reaction(emoji)
+        name = " ".join(args) if args else None
+        msg = await ctx.send("Select an emoji to load a leaderboard.")
+        for emoji in lb_helpers.EMOJI.values():
+            await msg.add_reaction(emoji)
 
-            while True:
-                reaction, user = await self.bot.wait_for('reaction_add')
-                if user == ctx.author and reaction.message.id == msg.id:
-                    for key in lb_helpers.EMOJI.keys():
-                        if str(reaction.emoji) == lb_helpers.EMOJI[key]:
-                            # await msg.edit(content=None)
-                            await msg.edit(content=lb_helpers.get_leaderboard(key, name))
+        while True:
+            reaction, user = await self.bot.wait_for('reaction_add')
+            if user == ctx.author and reaction.message.id == msg.id:
+                for key in lb_helpers.EMOJI.keys():
+                    if str(reaction.emoji) == lb_helpers.EMOJI[key]:
+                        # await msg.edit(content=None)
+                        await msg.edit(content=lb_helpers.get_leaderboard(key, name))

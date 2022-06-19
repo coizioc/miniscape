@@ -16,7 +16,7 @@ import miniscape.slayer_helpers as sh
 import utils.command_helpers
 from cogs.cmd import *
 from cogs.cmd.channel_permissions import get_channel, ANNOUNCEMENT_KEY
-from cogs.cmd.common import has_post_permission
+from cogs.cmd.checks import can_post
 from config import ARROW_LEFT_EMOJI, ARROW_RIGHT_EMOJI, THUMBS_UP_EMOJI, TICK_SECONDS, MAX_PER_ACTION
 from miniscape import adventures as adv, craft_helpers
 from miniscape.models import Task
@@ -40,78 +40,77 @@ class Miniscape(commands.Cog,
         self.bot.loop.create_task(self.reset_dailies())
 
     @commands.command(aliases=['bes', 'monsters'])
+    @can_post()
     async def bestiary(self, ctx, *args):
         """Shows a list of monsters and information related to those monsters."""
-        if has_post_permission(ctx.guild.id, ctx.channel.id):
-            monster = ' '.join(args)
-            if monster == '':
-                messages = mon.print_list()
-            else:
-                messages = mon.print_monster(monster)
-            await self.paginate(ctx, messages)
+        monster = ' '.join(args)
+        if monster == '':
+            messages = mon.print_list()
+        else:
+            messages = mon.print_monster(monster)
+        await self.paginate(ctx, messages)
 
     @commands.group(aliases=['clues'], invoke_without_command=True)
+    @can_post()
     async def clue(self, ctx, difficulty):
         """Starts a clue scroll."""
-        if has_post_permission(ctx.guild.id, ctx.channel.id):
-            if not difficulty.isdigit():
-                difficulty_names = {
-                    'easy': 1,
-                    'medium': 2,
-                    'hard': 3,
-                    'elite': 4,
-                    'master': 5
-                }
-                if difficulty not in set(difficulty_names.keys()):
-                    await ctx.send(f'Error: {difficulty} not valid clue scroll difficulty.')
-                    return
-                parsed_difficulty = difficulty_names[difficulty]
-            else:
-                if not 0 < int(difficulty) < 6:
-                    await ctx.send(f'Error: {difficulty} not valid clue scroll difficulty.')
-                    return
-                parsed_difficulty = int(difficulty)
-            out = clue_helpers.start_clue(ctx.guild.id, ctx.channel.id, ctx.author.id,
-                                          parsed_difficulty)
-            await ctx.send(out)
+        if not difficulty.isdigit():
+            difficulty_names = {
+                'easy': 1,
+                'medium': 2,
+                'hard': 3,
+                'elite': 4,
+                'master': 5
+            }
+            if difficulty not in set(difficulty_names.keys()):
+                await ctx.send(f'Error: {difficulty} not valid clue scroll difficulty.')
+                return
+            parsed_difficulty = difficulty_names[difficulty]
+        else:
+            if not 0 < int(difficulty) < 6:
+                await ctx.send(f'Error: {difficulty} not valid clue scroll difficulty.')
+                return
+            parsed_difficulty = int(difficulty)
+        out = clue_helpers.start_clue(ctx.guild.id, ctx.channel.id, ctx.author.id,
+                                      parsed_difficulty)
+        await ctx.send(out)
 
     @commands.command()
+    @can_post()
     async def gather(self, ctx, *args):
         """Gathers items."""
-        if has_post_permission(ctx.guild.id, ctx.channel.id):
-            number, name, length = utils.command_helpers.parse_number_name_length(args)
-            if name:
-                if number:
-                    out = craft_helpers.start_gather(
-                        ctx.guild.id, ctx.channel.id, ctx.user_object, name, number=number)
-                elif length:
-                    out = craft_helpers.start_gather(
-                        ctx.guild.id, ctx.channel.id, ctx.user_object, name, length=length)
-                else:
-                    out = "You must provide either a number or length."
-                await ctx.send(out)
+        number, name, length = utils.command_helpers.parse_number_name_length(args)
+        if name:
+            if number:
+                out = craft_helpers.start_gather(
+                    ctx.guild.id, ctx.channel.id, ctx.user_object, name, number=number)
+            elif length:
+                out = craft_helpers.start_gather(
+                    ctx.guild.id, ctx.channel.id, ctx.user_object, name, length=length)
             else:
-                messages = craft_helpers.get_gather_list()
-                await self.paginate(ctx, messages)
+                out = "You must provide either a number or length."
+            await ctx.send(out)
+        else:
+            messages = craft_helpers.get_gather_list()
+            await self.paginate(ctx, messages)
 
     @commands.command()
+    @can_post()
     async def craft(self, ctx, *args):
         """Crafts (a given number of) an item."""
-        if has_post_permission(ctx.guild.id, ctx.channel.id):
-            number, rec = utils.command_helpers.parse_number_and_name(args)
-            if number and rec:
-                out = craft_helpers.craft(ctx.user_object, rec, n=min(number, MAX_PER_ACTION))
-                await ctx.send(out)
+        number, rec = utils.command_helpers.parse_number_and_name(args)
+        if number and rec:
+            out = craft_helpers.craft(ctx.user_object, rec, n=min(number, MAX_PER_ACTION))
+            await ctx.send(out)
 
     @commands.command(aliases=['cock', 'fry', 'grill', 'saute', 'boil'])
+    @can_post()
     async def cook(self, ctx, *args):
         """Cooks (a given amount of) an item."""
-        if has_post_permission(ctx.guild.id, ctx.channel.id):
-            number, food = utils.command_helpers.parse_number_and_name(args)
-            if number and food:
-                out = craft_helpers.cook(ctx.user_object, food, n=min(number, MAX_PER_ACTION))
-                await ctx.send(out)
-
+        number, food = utils.command_helpers.parse_number_and_name(args)
+        if number and food:
+            out = craft_helpers.cook(ctx.user_object, food, n=min(number, MAX_PER_ACTION))
+            await ctx.send(out)
 
     async def confirm(self, ctx, msg, _, timeout=300):
         """Asks the user to confirm an action, and returns whether they confirmed or not."""
