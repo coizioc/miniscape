@@ -12,6 +12,7 @@ import asyncio
 import traceback
 from django.core.exceptions import ObjectDoesNotExist
 from discord.ext import commands
+from discord.ext.commands import CheckFailure
 from miniscape.models import User
 import config
 from pythonjsonlogger import jsonlogger
@@ -80,6 +81,12 @@ class MiniscapeBot(commands.Bot):
             await message.channel.send('A tutorial and a list of commands can be found at '
                                        'https://github.com/coizioc/miniscape/blob/master/README.md')
         await self.process_commands(message)
+
+    async def on_command_error(self, ctx, *args, **kwargs):
+        exc = args[0]
+        if type(exc) == CheckFailure:
+            return
+        raise
 
     @asyncio.coroutine
     def process_commands(self, message):

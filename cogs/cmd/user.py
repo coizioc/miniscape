@@ -100,9 +100,12 @@ class UserCommands:
 
         result = ctx.user_object.calc_xp_to_level(skill, level)
         try:  # It succeeded and we got an integer back
-            int(result)
-            xp_formatted = '{:,}'.format(result)
-            out = f'You need {xp_formatted} xp to get level {level} in {skill}.'
+            result_int = int(result)
+            if result_int < 1:
+                out = f"You are already level {level} in {skill}!"
+            else:
+                xp_formatted = '{:,}'.format(result)
+                out = f'You need {xp_formatted} xp to get level {level} in {skill}.'
         except ValueError:  # We got an error message back
             out = result
 

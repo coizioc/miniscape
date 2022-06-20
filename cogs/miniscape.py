@@ -12,12 +12,13 @@ import miniscape.clue_helpers as clue_helpers
 import miniscape.monster_helpers as mon
 import miniscape.periodicchecker_helpers as pc_helpers
 import miniscape.quest_helpers as quest_helpers
-import miniscape.slayer_helpers as sh
+import miniscape.slayer_helpers as slayer_helpers
 import utils.command_helpers
 from cogs.cmd import *
 from cogs.cmd.channel_permissions import get_channel, ANNOUNCEMENT_KEY
 from cogs.cmd.checks import can_post
 from config import ARROW_LEFT_EMOJI, ARROW_RIGHT_EMOJI, THUMBS_UP_EMOJI, TICK_SECONDS, MAX_PER_ACTION
+from mbot import MiniscapeBotContext
 from miniscape import adventures as adv, craft_helpers
 from miniscape.models import Task
 
@@ -31,7 +32,8 @@ class Miniscape(commands.Cog,
                 RunecraftCommands,
                 RecipeCommands,
                 AdventureCommands,
-                GeneralCommands):
+                GeneralCommands,
+                AdminCommands):
     """Defines Miniscape commands."""
 
     def __init__(self, bot):
@@ -77,19 +79,17 @@ class Miniscape(commands.Cog,
 
     @commands.command()
     @can_post()
-    async def gather(self, ctx, *args):
+    async def gather(self, ctx: MiniscapeBotContext, *args):
         """Gathers items."""
         number, name, length = utils.command_helpers.parse_number_name_length(args)
         if name:
             if number:
-                out = craft_helpers.start_gather(
-                    ctx.guild.id, ctx.channel.id, ctx.user_object, name, number=number)
+                out = craft_helpers.start_gather_new(ctx, name, number=number)
             elif length:
-                out = craft_helpers.start_gather(
-                    ctx.guild.id, ctx.channel.id, ctx.user_object, name, length=length)
+                out = craft_helpers.start_gather_new(ctx, name, length=length)
             else:
-                out = "You must provide either a number or length."
-            await ctx.send(out)
+                out = discord.Embed(title="ERROR", type="rich", description="Must enter either a number or a length")
+            await ctx.reply(mention_author=False, embed=out)
         else:
             messages = craft_helpers.get_gather_list()
             await self.paginate(ctx, messages)
@@ -216,13 +216,13 @@ class Miniscape(commands.Cog,
             person = int(userid)
 
             adventures = {
-                0: sh.get_result,
-                1: sh.get_kill_result,
-                2: quest_helpers.get_result,
-                3: craft_helpers.get_gather,
+                0: slayer_helpers.get_result,
+                1: slayer_helpers.get_kill_result,
+                2: quest_helpers.get_result,  # ported to db
+                3: craft_helpers.get_gather,  # ported to db
                 4: clue_helpers.get_clue_scroll,
-                5: sh.get_reaper_result,
-                6: craft_helpers.get_runecraft_old
+                5: slayer_helpers.get_reaper_result,
+                6: craft_helpers.get_runecraft_old  # ported to db
             }
             try:
                 logging.getLogger(__name__).info(f"About to call function for adventure "
@@ -240,7 +240,9 @@ class Miniscape(commands.Cog,
         tasks = Task.objects.all()
         adv_map = {
             "runecraft": craft_helpers.get_runecrafting_results,
-            "quest": quest_helpers.get_quest_result
+            "quest": quest_helpers.get_quest_result,
+            "gather": craft_helpers.get_gather_results,
+            "kill": slayer_helpers.get_kill_results,
         }
         logger = logging.getLogger(__name__)
         task: Task
@@ -270,6 +272,7 @@ class Miniscape(commands.Cog,
             except Exception as E:
                 # TODO: move this to like a dead-letter queue?
                 logger.error("Unable to complete task %s. Error: %s", str(task), str(E))
+                traceback.print_exc()
 
 
 def setup(bot):

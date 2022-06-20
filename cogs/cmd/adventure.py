@@ -21,6 +21,14 @@ def _get_adv_cancel_text_from_database(ctx: MiniscapeBotContext, task: Task) -> 
         quest = Quest.objects.get(id=json.loads(task.extra_data)["quest_id"])
         return f"{ctx.user_object.mention}, you are no longer doing the quest {quest.name}"
 
+    if task.type == "gather":
+        task.delete()
+        return f"{ctx.user_object.mention}, your gathering session has been cancelled!"
+
+    if task.type == "kill":
+        task.delete()
+        return f"{ctx.user_object.mention}, your killing session has been cancelled!"
+
 
 def _get_adv_text_from_file(ctx: MiniscapeBotContext, task) -> str:
     author: User = ctx.user_object
@@ -80,8 +88,9 @@ class AdventureCommands:
     @can_post()
     async def status(self, ctx):
         """Says what you are currently doing."""
+        out = discord.Embed(title="Current Status", type="rich", description="")
         if adv.is_on_adventure(ctx.author.id):
-            out = adv.print_adventure(ctx.author.id)
+            out.description += adv.print_adventure(ctx.author.id)
         else:
-            out = 'You are not doing anything at the moment.'
-        await ctx.send(out)
+            out.description = 'You are not doing anything at the moment.'
+        await ctx.reply(mention_author=False, embed=out)

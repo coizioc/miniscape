@@ -1,6 +1,17 @@
 from cogs.cmd import channel_permissions as cp
 from discord.ext import commands
 
+ADMINS = [
+    "293219528450637824",  # Coiz
+    "116380350296358914",  # Fury
+    "147501762566291457",  # Cactuss
+    "132049789461200897",  # Bill
+]
+
+ADMIN_CHANNELS = [
+    "988305756191338556",  # Miniscape #admin-commands
+    "578769058560737281",  # Miniscape dev #mitch-testing
+]
 
 def can_post():
     def predicate(ctx: commands.Context):
@@ -25,5 +36,23 @@ def can_post():
                 except KeyError:
                     pass
         return True
+
+    return commands.check(predicate)
+
+
+def is_admin():
+    def predicate(ctx: commands.Context):
+        user = ctx.author.id
+        ret = str(user) in ADMINS
+        return ret
+
+    return commands.check(predicate)
+
+
+def is_in_admin_channel():
+    def predicate(ctx: commands.Context):
+        channel = ctx.channel.id
+        ret = str(channel) in ADMIN_CHANNELS
+        return ret
 
     return commands.check(predicate)

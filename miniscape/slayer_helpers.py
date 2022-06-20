@@ -1,11 +1,15 @@
+import json
 import logging
 
+import discord
 from discord import Member
 
 import utils.command_helpers
+from utils.command_helpers import truncate_task
+from mbot import MiniscapeBotContext
 from miniscape.item_helpers import get_loot_value
 from miniscape.itemconsts import SLAYER_HELMET
-from miniscape.models import User, Monster, PlayerMonsterKills, Item
+from miniscape.models import User, Monster, PlayerMonsterKills, Item, Task, Prayer
 from miniscape import adventures as adv
 from config import XP_FACTOR
 import miniscape.monster_helpers as mon
@@ -16,6 +20,7 @@ import random
 LOWEST_NUM_TO_KILL = 35
 
 SLAYER_HEADER = ':skull_crossbones: __**SLAYER**__ :skull_crossbones:\n'
+PROTECT_ITEM = Prayer.objects.get(name__iexact="protect item")
 
 
 def calc_chance(user: User, monster: Monster, number: int, remove_food=False):
@@ -219,6 +224,91 @@ def get_task(guildid, channelid, author: User):
     return out
 
 
+def start_kill(ctx: MiniscapeBotContext, monster_name, length=0, number=0):
+    out = discord.Embed(title=SLAYER_HEADER, type="rich", description="")
+    user = ctx.user_object
+
+    # Are they already on an adventure?
+    if adv.is_on_adventure(ctx.user_object.id):
+        out.description += adv.print_adventure(ctx.user_object.id)
+        out.description += utils.command_helpers.print_on_adventure_error('kill')
+        return out
+
+    # Does the monster they requested actually exist?
+    monster = Monster.find_by_name_or_nick(monster_name)
+    if not monster:
+        out.description += f"Error: {monster_name} is not a monster"
+        return out
+
+    # Do they have the quest requirement to access it?
+    if monster.quest_req and not user.has_completed_quest(monster.quest_req):
+        out.description += f"You do not have the required quest ({monster.quest_req.name}) to kill this monster"
+        return out
+
+    # Do they have the slayer level for it?
+    if user.slayer_level < monster.slayer_level_req:
+        out.description += f"Error: {monster.name} has a slayer requirement ({monster.slayer_level_req}) higher" \
+                           f"than your slayer level ({user.slayer_level})"
+        return out
+
+    # Validate they sent us numbers for these
+    try:
+        number = int(number)
+        length = int(length)
+    except ValueError:
+        out.description += f"Error: Neither length nor number provided to start_kill. " \
+                           f"Please report this in <#981349203395641364>"
+        return out
+
+    # Did they request a number to kill? e.g. ~kill <NUMBER> <MONSTER>
+    # or did they request a length? e.g. ~kill <MONSTER> <LENGTH>
+    # First branch is for number, elif is for length
+    if number > 0:
+        truncated_num, truncated = truncate_task(user.slayer_level, number)
+        if truncated:
+            out.description += f"Kill request truncated from {number} to {truncated_num}\n\n"
+        number = truncated_num
+        base_time, time = calc_length(user, monster, number)
+        length = math.floor(time / 60)
+    elif length > 0:
+        # Truncate the length if they requested more than they're allowed
+        if length > 180:
+            out.description += f"Kill duration requested truncated from {length} to 180 mins\n"
+            length = 180
+
+        number = calc_number(user, monster, (length+1)*60) - 1
+        truncated_num, truncated = truncate_task(user.slayer_level, number)
+        if truncated:
+            out.description += f"Kill request truncated from {number} to {truncated_num}\n\n"
+        number = truncated_num
+    else:
+        out.description += f"Error: Argument missing"
+        return out
+
+    # What's our chance of killing this many mobs?
+    chance = calc_chance(user, monster, number)
+
+    extra_data = {
+        "monster_id": monster.id,
+        "monster_name": monster.name,
+        "number": number,
+        "length": length,
+        "chance": chance,
+    }
+    task = Task(
+        type="kill",
+        user=user,
+        completion_time=utils.command_helpers.calculate_finish_time_utc(length*60),
+        guild=ctx.guild.id,
+        channel=ctx.channel.id,
+        extra_data=json.dumps(extra_data)
+    )
+    task.save()
+    out.description += f"You are now killing {monster.pluralize(number)} for {length} minutes. " \
+                       f"You have a {chance}% chance of successfully killing this many monsters without dying."
+    return out
+
+
 def get_kill(guildid, channelid, userid, monstername, length=-1, number=-1):
     """Lets the user start killing monsters.."""
     out = f'{SLAYER_HEADER}'
@@ -274,6 +364,64 @@ def get_kill(guildid, channelid, userid, monstername, length=-1, number=-1):
     return out
 
 
+def print_kill_status_new(task: Task, time_left):
+    extra_data = json.loads(task.extra_data)
+    monster = Monster.objects.get(id=extra_data["monster_id"])
+    number = extra_data["number"]
+    length = extra_data["length"]
+    chance = extra_data["chance"]
+
+    out = f'{SLAYER_HEADER}' \
+          f'You are currently killing {monster.pluralize(number, with_zero=True)} for {length} minutes. ' \
+          f'You have a {chance}% chance of killing this many monsters without dying. ' \
+          f'You can see your loot {time_left} minutes.'
+    return out
+
+
+def get_kill_results(task: Task):
+    # Extract info from the task
+    extra_data = json.loads(task.extra_data)
+    monster_id = extra_data["monster_id"]
+    monster = Monster.objects.get(id=monster_id)
+    number = int(extra_data["number"])
+    chance = int(extra_data["chance"])
+    user = task.user
+
+    # Did they die?
+    is_success = adv.is_success(chance)
+    if not is_success and user.prayer_slot == PROTECT_ITEM and random.randint(0, 1):
+        is_success = True
+
+    # Generate loot
+    factor = 1 if is_success else int(chance) / 100
+    factor *= user.luck_factor
+    loot = monster.generate_loot(number, factor)
+
+    # Award loot, kills, xp
+    user.add_kills(monster, number)
+    user.update_inventory(loot)
+
+    xp_gained = monster.xp * number
+    cb_level_before = user.combat_level
+    user.combat_xp += xp_gained
+    cb_level_after = user.combat_level
+
+    # Tell them what they did
+    out = discord.Embed(title=SLAYER_HEADER, type="rich", description="")
+    combat_xp_formatted = '{:,}'.format(xp_gained)
+    out.description += print_loot(loot, user, monster, number, print_header=False)
+
+    out.description += f'\nYou have also gained {combat_xp_formatted} combat xp'
+    if cb_level_after > cb_level_before:
+        out.description += f' and {cb_level_after - cb_level_before} combat levels'
+    out.description += '.\n'
+    if not is_success:
+        out.description += f'You have received lower loot and experience because you have died.\n'
+    user.potion_slot = None
+    user.save()
+    return out
+
+
 def get_kill_result(person, *args):
     """Determines the loot of a monster grind."""
     try:
@@ -315,13 +463,23 @@ def get_kill_result(person, *args):
     return out
 
 
-def print_loot(loot, person: Member, monster: Monster, num_to_kill: int, add_mention=True):
+def print_loot(loot, person, monster: Monster, num_to_kill: int, add_mention=True, print_header=True):
     """Converts a user's loot from a slayer task to a string."""
-    out = f'{SLAYER_HEADER}**'
-    if add_mention:
-        out += f'<@{person}>, '
+    if print_header:
+        out = f'{SLAYER_HEADER}**'
     else:
-        out += f'{person.name}, '
+        out = "**"
+
+    if type(person) == User:
+        if add_mention:
+            out += f'{person.mention}, '
+        else:
+            out += f'{person.name}, '
+    else:
+        if add_mention:
+            out += f'<@{person}>, '
+        else:
+            out += f'{person.name}, '
     #
     out += f'Your loot from your {monster.pluralize(num_to_kill, with_zero=True)} has arrived!**\n'
 

@@ -1,18 +1,18 @@
-import datetime
 import json
 import logging
 import math
 import string
 from collections import Counter
 import random
+
 import discord
 
 import utils.command_helpers
 from miniscape import adventures as adv
 from config import XP_FACTOR, MAX_PER_ACTION
 from mbot import MiniscapeBotContext
-from miniscape import prayer_helpers, command_helpers
-from utils.command_helpers import parse_number_and_name
+from miniscape import prayer_helpers
+from utils.command_helpers import parse_number_and_name, truncate_task
 from miniscape.models import Item, User, Recipe, Prayer, RecipeRequirement, Quest, Task
 from config import GATHER_EMOJI, ARTISAN_EMOJI, RC_EMOJI
 from discord import Embed
@@ -33,11 +33,12 @@ RUNE_MYSTERIES = Quest.objects.get(name__iexact="rune mysteries")
 ABYSS_QUEST = Quest.objects.get(name__iexact="Enter the Abyss")
 POUCHES = list(Item.objects.filter(pouch__gt=0))
 RUNES = list(Item.objects.filter(is_rune=True).order_by("level"))
+GATHER_POTION = Item.objects.get(name__iexact="gatherer's potion")
+SUPER_GATHER_POTION = Item.objects.get(name__iexact="super gatherer's potion")
 
 
 def start_gather(guildid, channelid, user: User, itemname, length=-1, number=-1):
     """Starts a gathering session."""
-    from miniscape import adventures as adv
 
     out = ''
     userid = user.id
@@ -102,6 +103,104 @@ def start_gather(guildid, channelid, user: User, itemname, length=-1, number=-1)
     return out
 
 
+def start_gather_new(ctx: MiniscapeBotContext, item_name, number=0, length=0):
+    out = discord.Embed(title=GATHER_HEADER, type="rich", description="")
+    user = ctx.user_object
+    logger = logging.getLogger(__name__)
+
+    # Are they already on an adventure?
+    if adv.is_on_adventure(ctx.user_object.id):
+        out.description += adv.print_adventure(ctx.user_object.id)
+        out.description += utils.command_helpers.print_on_adventure_error('gathering')
+        return out
+
+    # Does the item they want to gather exist?
+    item: Item = Item.find_by_name_or_nick(item_name)
+    if not item:
+        out.description = f"Error: {item_name} is not an item."
+        return out
+
+    # Can we actually gather the item?
+    if not item.is_gatherable:
+        out.description = f"Error: {item.name} is not gatherable."
+        return out
+
+    # Do we have the quest requirement needed?
+    if item.quest_req and not user.has_completed_quest(item.quest_req):
+        out.description = f"Error: You need to have completed the quest \"{item.quest_req.name}\" " \
+                          f"in order to gather {item.name}."
+        return out
+
+    # Apply boosts as required
+    user_level = user.gather_level
+    if user.potion_slot == GATHER_POTION:
+        user_level += 3
+    elif user.potion_slot == SUPER_GATHER_POTION:
+        user_level += 6
+
+    # Do we have the level to gather it?
+    if user_level < item.level:
+        out.description = f'Error: {item.name} has a gathering requirement ({item.level}) higher than your gathering ' \
+                          f'level ({user.gather_level})'
+        return out
+
+    try:
+        number = int(number)
+        length = int(length)
+    except ValueError:
+        out.description = f"Error: Neither length nor number provided to get_gather. " \
+                          f"Please report this in <#981349203395641364>"
+        return out
+
+    # Did they request a number to gather? e.g. ~gather <NUMBER> <ITEM>
+    # or did they request a length? e.g. ~gather <ITEM> <LENGTH>
+    # First branch is for number, elif is for length
+    if number > 0:
+        truncated_num, truncated = truncate_task(user.gather_level, number)
+        if truncated:
+            out.description += f"Gather request truncated from {number} to {truncated_num}\n\n"
+        number = truncated_num
+
+        base_time, actual_time = calc_length(user, item, number, level=user_level)
+        logger.info(f"User {user.nick} starting gather session for {number} {item.name}. "
+                    f"base_time: {base_time}, actual_time: {actual_time}")
+        length = math.floor(actual_time / 60)
+    elif length > 0:
+        # Truncate the length if they requested more than they're allowed
+        if length > 180:
+            out.description += f"Gather duration requested truncated from {length} to 180 mins\n"
+            length = 180
+
+        # Figure out how many we would've gathered
+        num = calc_number(user, item, length * 60, level=user_level)
+        truncated_num, truncated = truncate_task(user, num)
+        if truncated:
+            out.description += f"Gather request truncated from {num} to {truncated_num}\n\n"
+
+        number = truncated_num
+    else:
+        out.description = f"Error: Argument missing"
+        return out
+
+    # Save our task to the db
+    extra_data = {
+        "num": number,
+        "length": length,
+        "item": item.id,
+    }
+    task = Task(
+        type="gather",
+        user=user,
+        completion_time=utils.command_helpers.calculate_finish_time_utc(length*60),
+        guild=ctx.guild.id,
+        channel=ctx.channel.id,
+        extra_data=json.dumps(extra_data)
+    )
+    task.save()
+    out.description += f"You are now gathering {item.pluralize(number)} for {length} minutes."
+    return out
+
+
 def print_status(userid, time_left, *args):
     """Prints a gathering and how long until it is finished."""
     itemid, item_name, number, length = args[0]
@@ -129,6 +228,17 @@ def print_rc_status2(task: Task, time_left):
     out += f"You are currently crafting {item.pluralize(extra_data['num'])} " \
            f"for {extra_data['length']} minutes.\n" \
            f"You will finish in {time_left} minutes\n"
+    return out
+
+
+def print_gather_status(task: Task, time_left):
+    extra_data = json.loads(task.extra_data)
+    item = Item.objects.get(id=extra_data["item"])
+    number = extra_data["num"]
+    length = extra_data["length"]
+    out = f"{GATHER_HEADER}" \
+          f"You are currently gathering {item.pluralize(number)} for {length} minutes. " \
+          f"You will finish in {time_left} minutes"
     return out
 
 
@@ -303,6 +413,38 @@ def get_gather_list():
     return messages
 
 
+def get_gather_results(task: Task):
+    # Extract data from the task
+    extra_data = json.loads(task.extra_data)
+    number = int(extra_data["num"])
+    length = extra_data["length"]
+    item_id = extra_data["item"]
+    item = Item.objects.get(id=item_id)
+    user = task.user
+
+    # Give the user their items and xp, figure out if they leveled up
+    user.update_inventory({item: number})
+    xp = XP_FACTOR * number * item.xp
+    gather_level_before = user.gather_level
+    user.gather_xp += xp
+    gather_level_after = user.gather_level
+
+    # Tell the user the good news
+    xp_formatted = '{:,}'.format(xp)
+    out = discord.Embed(title=GATHER_HEADER, type="rich", description="")
+    out.description = f'{user.mention}, your gathering session has finished!\n' \
+                      f'You have gathered {item.pluralize(number)} and have gained {xp_formatted} gathering xp!\n'
+
+    # Tell them they leveled up if they did
+    if gather_level_after > gather_level_before:
+        out.description += f'In addition, you have gained {gather_level_after - gather_level_before} gathering levels!'
+
+    # Yeet their potion and save the user, and delete the task
+    user.potion_slot = None
+    user.save()
+    return out
+
+
 def get_gather(person, *args):
     try:
         itemid, item_name, number, length = args[0]
@@ -340,10 +482,10 @@ def calc_burn(user: User, item: Item):
     return 100 - min(100, chance)
 
 
-def calc_length(user: User, item: Item, number):
+def calc_length(user: User, item: Item, number, level=None):
     """Calculates the length of gathering a number of an item."""
     user_prayer = user.prayer_slot
-    gather_level = user.gather_level
+    gather_level = level if level else user.gather_level
     item_xp = item.xp
     item_level = item.level
 
@@ -379,9 +521,9 @@ def calc_length(user: User, item: Item, number):
     return base_time, round(time)
 
 
-def calc_number(user: User, item: Item, time):
+def calc_number(user: User, item: Item, time, level=None):
     """Calculates the number of items that can be gathered in a given time period."""
-    gather_level = user.gather_level
+    gather_level = level if level else user.gather_level
     item_xp = item.xp
     item_level = item.level
     if item.is_tree:

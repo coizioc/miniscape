@@ -1,8 +1,10 @@
+import discord
 from discord.ext import commands
 
 import miniscape.slayer_helpers as sh
 import utils.command_helpers
 from cogs.cmd.checks import can_post
+from mbot import MiniscapeBotContext
 
 
 class CombatCommands:
@@ -23,7 +25,7 @@ class CombatCommands:
 
     @commands.group(invoke_without_command=True, aliases=['grind', 'fring', 'dab', 'yeet'])
     @can_post()
-    async def kill(self, ctx, *args):
+    async def kill(self, ctx: MiniscapeBotContext, *args):
         """Lets the user kill monsters for a certain number or a certain amount of time."""
         number, monster, length = utils.command_helpers.parse_number_name_length(args)
         if monster:
@@ -45,13 +47,15 @@ class CombatCommands:
                 await self.paginate(ctx, messages)
                 return
             elif number:
-                out = sh.get_kill(
-                    ctx.guild.id, ctx.channel.id, ctx.author.id, monster, number=number)
+                out = sh.start_kill(ctx, monster, number=number)
             elif length:
-                out = sh.get_kill(
-                    ctx.guild.id, ctx.channel.id, ctx.author.id, monster, length=length)
+                out = sh.start_kill(ctx, monster, length=length)
             else:
-                out = 'Error: there must be a number or length of kill in args.'
+                out = discord.Embed(title="ERROR", type="rich",
+                                    description='Error: there must be a number or length of kill in args.')
         else:
-            out = 'Arguments not valid. Please put in the form `[number] [monster name] [length]`'
-        await ctx.send(out)
+            out = discord.Embed(title="ERROR", type="rich",
+                               description='Arguments not valid. Please put in the form '
+                                           '`~kill [number] [monster name]` or '
+                                           '`~kill [monster name] [length in minutes]')
+        await ctx.reply(mention_author=False, embed=out)

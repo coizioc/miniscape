@@ -4,7 +4,7 @@ import random
 
 from config import ADVENTURES_FILE
 from errors import AdventureNotFoundError
-from miniscape import slayer_helpers as sh, clue_helpers, quest_helpers, craft_helpers
+from miniscape import slayer_helpers as sh, clue_helpers, quest_helpers, craft_helpers, slayer_helpers
 
 # An adventure in the adventure file is stored as the following (with semicolon delimiters in between):
 # adventureid, userid, completion_time, guildid, channelid, *args
@@ -115,6 +115,8 @@ def print_adventure(userid):
         adventures = {
             "runecraft": craft_helpers.print_rc_status2,
             "quest": quest_helpers.print_status2,
+            "gather": craft_helpers.print_gather_status,
+            "kill": slayer_helpers.print_kill_status_new,
         }
         time_left = get_delta(adventure.completion_time)
         ret = adventures[adventure.type](adventure, time_left)

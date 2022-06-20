@@ -1,6 +1,7 @@
 # This file should be free of any project-specific imports. Non-project imports (like stdlib, 3rd party) should be fine
 import datetime
 import math
+from typing import Tuple
 
 
 def parse_number_and_name(args):
@@ -134,8 +135,22 @@ def calculate_finish_time_utc(task_length):
     return datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=task_length)
 
 
-
 def print_on_adventure_error(adventure):
     """Prints a string saying that the user cannot do two adventures at once."""
     out = f'Please finish that first before starting a new {adventure}.'
     return out
+
+
+# truncate_task takes in a level to parse on and a number to make a judgement on. If the user has level 99, then
+# truncate_task sends back the minimum of (1000, num_requested) as well as a boolean indicating it did The Thing.
+# If user is < 99, then it does the same with 500 instead of 1000
+def truncate_task(level: int, num: int) -> Tuple[int, bool]:
+    if num > 1000:
+        if level >= 99:
+            return 1000, True
+
+    if num > 500:
+        if level < 99:
+            return 500, True
+
+    return num, False
