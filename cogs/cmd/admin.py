@@ -19,6 +19,7 @@ class AdminCommands:
             out.description += str(task) + "\n\n"
 
         for task in get_list():
+            task = task.split(';')
             user = User.objects.get(id=task[1])
             out.description += f"User {user.nick} is performing adventure type {task[0]} until {task[2]}. Extra" \
                                f"args: {str(args[5:])}\n\n"
