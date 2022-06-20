@@ -13,6 +13,7 @@ ADMIN_CHANNELS = [
     "578769058560737281",  # Miniscape dev #mitch-testing
 ]
 
+
 def can_post():
     def predicate(ctx: commands.Context):
         guildid = ctx.guild.id

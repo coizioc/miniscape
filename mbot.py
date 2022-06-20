@@ -86,7 +86,7 @@ class MiniscapeBot(commands.Bot):
         exc = args[0]
         if type(exc) == CheckFailure:
             return
-        raise
+        raise args[0]
 
     @asyncio.coroutine
     def process_commands(self, message):
