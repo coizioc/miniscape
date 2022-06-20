@@ -225,9 +225,13 @@ def print_rc_status2(task: Task, time_left):
     out = ""
     extra_data = json.loads(task.extra_data)
     item = Item.objects.get(id=extra_data["item_id"])
+    if time_left <= 0:
+        time_msg = "soon"
+    else:
+        time_msg = f"in {time_left} minute(s)"
     out += f"You are currently crafting {item.pluralize(extra_data['num'])} " \
            f"for {extra_data['length']} minutes.\n" \
-           f"You will finish in {time_left} minutes\n"
+           f"You will finish {time_msg}.\n"
     return out
 
 
@@ -236,9 +240,12 @@ def print_gather_status(task: Task, time_left):
     item = Item.objects.get(id=extra_data["item"])
     number = extra_data["num"]
     length = extra_data["length"]
-    out = f"{GATHER_HEADER}" \
-          f"You are currently gathering {item.pluralize(number)} for {length} minutes. " \
-          f"You will finish in {time_left} minutes"
+    if time_left <= 0:
+        time_msg = "soon"
+    else:
+        time_msg = f"in {time_left} minute(s)"
+    out = f"You are currently gathering {item.pluralize(number)} for {length} minutes. " \
+          f"You will finish {time_msg}.\n"
     return out
 
 
@@ -654,7 +661,7 @@ def cook(user: User, food, n=1):
 
 
 def start_runecraft(ctx: MiniscapeBotContext, *args, pure=False):
-    out = discord.Embed(title="Runecrafting", type="rich", description=RUNECRAFT_HEADER)
+    out = discord.Embed(title=RUNECRAFT_HEADER, type="rich", description="")
 
     # Do all of our error checking first
     number, rune = parse_number_and_name(args)

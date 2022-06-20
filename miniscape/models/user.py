@@ -1,6 +1,7 @@
 import logging
 import string
 from collections import Counter
+from typing import Tuple, List, Dict
 
 from django.db import models
 
@@ -334,7 +335,7 @@ class User(models.Model):
         else:
             return False
 
-    def has_item_amount_by_counter(self, loot: Counter({Item: int})):
+    def has_item_amount_by_counter(self, loot: Counter({Item: int})) -> bool:
         for item, amt in loot.items():
             if not self.has_item_amount_by_item(item, amt):
                 return False
@@ -355,7 +356,7 @@ class User(models.Model):
 
         return None
 
-    def get_item_count(self, item=None, itemid=None, itemname=None):
+    def get_item_count(self, item=None, itemid=None, itemname=None) -> int:
         """ Returns the number of items in user inventory by either object, name, or ID"""
         if item:
             ui = self.get_items_by_obj(item)
@@ -380,7 +381,7 @@ class User(models.Model):
         items = self.userinventory_set.filter(item__id__in=items).order_by('item__name')
         return items
 
-    def get_items_by_obj(self, item):
+    def get_items_by_obj(self, item) -> Item:
         item, created = self.userinventory_set.get_or_create(item=item)
         if created:
             item.amount = 0
@@ -442,8 +443,8 @@ class User(models.Model):
                            amount=amount)
         ui.save()
 
-    def lock_item(self, itemname):
-        item: UserInventory = self.get_item_by_name(itemname)
+    def lock_item(self, item_name):
+        item: UserInventory = self.get_item_by_name(item_name)
         if not item:
             return False
         else:
@@ -452,8 +453,8 @@ class User(models.Model):
             item.save()
             return True
 
-    def unlock_item(self, itemname):
-        item: UserInventory = self.get_item_by_name(itemname)
+    def unlock_item(self, item_name) -> bool:
+        item: UserInventory = self.get_item_by_name(item_name)
         if not item:
             return False
         else:
@@ -462,7 +463,7 @@ class User(models.Model):
             item.save()
             return True
 
-    def monster_kills(self, search=None):
+    def monster_kills(self, search=None):  # Returns a queryset of MonsterKill objects but idk how to represent that
         if search:
             return self.playermonsterkills_set. \
                 filter(monster__name__icontains=search) \
@@ -480,7 +481,7 @@ class User(models.Model):
         mk.amount += num
         mk.save()
 
-    def can_use_prayer(self, prayer: Prayer):
+    def can_use_prayer(self, prayer: Prayer) -> bool:
         # Validate prayer level
         if self.prayer_level >= prayer.level_required:
             # Validate quest req
@@ -490,7 +491,7 @@ class User(models.Model):
         # Default
         return False
 
-    def drink(self, potion):
+    def drink(self, potion) -> bool:
         found_item = Item.find_by_name_or_nick(potion)
         if not self.has_item_by_item(found_item):
             return False
@@ -573,17 +574,17 @@ class User(models.Model):
         self.is_ironman = False
         self.save()
 
-    def has_quest_req_for_quest(self, quest: Quest, cached=None):
+    def has_quest_req_for_quest(self, quest: Quest, cached=None) -> bool:
         complete = cached if cached else self.completed_quests_list
         for quest in quest.quest_reqs.all():
             if quest not in complete:
                 return False
         return True
 
-    def has_completed_quest(self, quest):
+    def has_completed_quest(self, quest) -> bool:
         return quest in self.completed_quests_list
 
-    def has_items_for_quest(self, quest: Quest):
+    def has_items_for_quest(self, quest: Quest) -> bool:
         quest_items = quest.required_items
         if quest_items:
             quest_items = {qir.item: qir.amount for qir in quest_items}
@@ -592,7 +593,7 @@ class User(models.Model):
         else:
             return True
 
-    def print_account(self, print_equipment=True):
+    def print_account(self, print_equipment=True) -> str:
         name_to_use = self.nick if self.nick else self.name
         out = f'{config.COMBAT_EMOJI} __**{name_to_use}**__ {config.COMBAT_EMOJI}\n'
 
@@ -608,7 +609,7 @@ class User(models.Model):
             out += self.print_equipment()
         return out
 
-    def print_equipment(self, with_header=False):
+    def print_equipment(self, with_header=False) -> str:
         armour_print_order = ['Head', 'Back', 'Neck', 'Ammunition', 'Main-Hand', 'Torso', 'Off-Hand',
                               'Legs', 'Hands', 'Feet', 'Ring', 'Pocket', 'Hatchet', 'Pickaxe', 'Potion']
 
@@ -648,7 +649,7 @@ class User(models.Model):
 
         return out
 
-    def calc_xp_to_level(self, skill: str, level: int):
+    def calc_xp_to_level(self, skill: str, level: int) -> int:
         """Calculates the xp needed to get to a level."""
         author_levels = self.skill_level_mapping
         author_xps = self.skill_xp_mapping
@@ -669,7 +670,7 @@ class User(models.Model):
         return xp_needed
 
     @property
-    def usable_prayers(self):
+    def usable_prayers(self) -> List[Prayer]:
         prayers = Prayer.objects.filter(level_required__lte=self.prayer_level)
         ret = []
         for p in prayers:
@@ -681,27 +682,27 @@ class User(models.Model):
         return ret
 
     @property
-    def completed_quests_list(self):
+    def completed_quests_list(self) -> List[Quest]:
         return [uq.quest for uq in self.userquest_set.all()]
 
     @property
-    def num_quests_complete(self):
+    def num_quests_complete(self) -> int:
         return len(self.completed_quests_list)
 
     @property
-    def is_eating(self):
+    def is_eating(self) -> bool:
         return self.active_food is not None
 
     @property
-    def max_possible_level(self):
+    def max_possible_level(self) -> int:
         return 99 * len(self.level_fields)
 
     @staticmethod
-    def _calc_level(xp):
+    def _calc_level(xp) -> int:
         return xp_to_level(xp)
 
     @property
-    def all_armour(self):
+    def all_armour(self) -> Dict[str, Item]:
         return {'Head': self.head_slot,
                 'Back': self.back_slot,
                 'Neck': self.neck_slot,
@@ -720,7 +721,7 @@ class User(models.Model):
                 }
 
     @property
-    def damage(self):
+    def damage(self) -> int:
         damage = 0
         for item in self.equipment_slots:
             if item:
@@ -728,7 +729,7 @@ class User(models.Model):
         return damage
 
     @property
-    def accuracy(self):
+    def accuracy(self) -> int:
         accuracy = 0
         for item in self.equipment_slots:
             if item:
@@ -736,7 +737,7 @@ class User(models.Model):
         return accuracy
 
     @property
-    def armour(self):
+    def armour(self) -> int:
         armour = 0
         for item in self.equipment_slots:
             if item:
@@ -744,7 +745,7 @@ class User(models.Model):
         return armour
 
     @property
-    def prayer_bonus(self):
+    def prayer_bonus(self) -> int:
         prayer_bonus = 0
         for item in self.equipment_slots:
             if item:
@@ -752,55 +753,57 @@ class User(models.Model):
         return prayer_bonus
 
     @property
-    def equipment_stats(self):
+    def equipment_stats(self) -> Tuple[int, int, int, int]:
         return self.damage, self.accuracy, self.armour, self.prayer_bonus
 
     @property
-    def combat_level(self):
+    def combat_level(self) -> int:
         return self._calc_level(self.combat_xp)
 
     @property
-    def slayer_level(self):
+    def slayer_level(self) -> int:
         return self._calc_level(self.slayer_xp)
 
     @property
-    def gather_level(self):
+    def gather_level(self) -> int:
         return self._calc_level(self.gather_xp)
 
     @property
-    def artisan_level(self):
+    def artisan_level(self) -> int:
         return self._calc_level(self.artisan_xp)
 
     @property
-    def cook_level(self):
+    def cook_level(self) -> int:
         return self._calc_level(self.cook_xp)
 
     @property
-    def prayer_level(self):
+    def prayer_level(self) -> int:
         return self._calc_level(self.prayer_xp)
 
     @property
-    def rc_level(self):
+    def rc_level(self) -> int:
         return self._calc_level(self.rc_xp)
 
     @property
-    def total_level(self):
+    def total_level(self) -> int:
         return sum(self.level_fields)
 
     @property
-    def is_maxed(self):
-        return self.total_level == self.max_possible_level
-
-    @property
-    def total_xp(self):
+    def total_xp(self) -> int:
         return sum(self.xp_fields)
 
     @property
-    def plain_name(self):
+    def is_maxed(self) -> bool:
+        return self.total_level == self.max_possible_level
+
+
+
+    @property
+    def plain_name(self) -> str:
         return self.name.split("#")[0]
 
     @property
-    def clue_counts(self):
+    def clue_counts(self) -> List[Tuple[str, int]]:
         return [('easy', self.easy_clues),
                 ('medium', self.medium_clues),
                 ('hard', self.hard_clues),
@@ -814,8 +817,12 @@ class User(models.Model):
         return max(1, prayer_luck, ring_luck)
 
     @property
-    def mention(self):
+    def mention(self) -> str:
         return f"<@{self.id}>"
+
+    @property
+    def display_name(self) -> str:
+        return self.nick if self.nick else self.name
 
     def __repr__(self):
         return "User ID %d: %s" % (self.id, self.name)

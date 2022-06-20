@@ -216,8 +216,8 @@ class Miniscape(commands.Cog,
             person = int(userid)
 
             adventures = {
-                0: slayer_helpers.get_result,
-                1: slayer_helpers.get_kill_result,
+                0: slayer_helpers.get_result,  # Ported to db
+                1: slayer_helpers.get_kill_result,  # ported to db
                 2: quest_helpers.get_result,  # ported to db
                 3: craft_helpers.get_gather,  # ported to db
                 4: clue_helpers.get_clue_scroll,
@@ -243,6 +243,7 @@ class Miniscape(commands.Cog,
             "quest": quest_helpers.get_quest_result,
             "gather": craft_helpers.get_gather_results,
             "kill": slayer_helpers.get_kill_results,
+            "slayer": slayer_helpers.get_slayer_result,
         }
         logger = logging.getLogger(__name__)
         task: Task

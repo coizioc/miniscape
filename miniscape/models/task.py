@@ -22,7 +22,7 @@ class Task(models.Model):
         return self.__str__()
 
     def __str__(self):
-        return f"{self.type} task for user {self.user.nick}. Extra data: {self.extra_data}"
+        return f"{self.type} task for user {self.user.display_name}. Extra data: {self.extra_data}"
 
     @property
     def is_completed(self):

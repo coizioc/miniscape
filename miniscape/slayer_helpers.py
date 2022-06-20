@@ -1,5 +1,6 @@
 import json
 import logging
+from typing import Dict, Counter
 
 import discord
 from discord import Member
@@ -31,14 +32,14 @@ def calc_chance(user: User, monster: Monster, number: int, remove_food=False):
 
     prayer_chance = 0
     if user.prayer_slot is not None:
-        if 10 <= user.prayer_slot.id <= 12:   # if user is using protect from mage/range/melee
+        if 10 <= user.prayer_slot.id <= 12:  # if user is using protect from mage/range/melee
             monster_affinity = monster.affinity
-            if monster_affinity == 0 and user.prayer_slot.id == 12\
+            if monster_affinity == 0 and user.prayer_slot.id == 12 \
                     or monster_affinity == 1 and user.prayer_slot.id == 11 \
                     or monster_affinity == 2 and user.prayer_slot.id == 10:
                 prayer_chance = user.prayer_slot.chance
 
-    chance = (200 * (1 + user.combat_level / 99) * player_arm) /\
+    chance = (200 * (1 + user.combat_level / 99) * player_arm) / \
              (number / 50 * monster.damage * dam_multiplier + (1 + monster.level / 200)) + chance_bonus
 
     if user.equipment_slots[0] == SLAYER_HELMET:
@@ -172,6 +173,182 @@ def print_task(userid, reaper=False):
     return out
 
 
+def get_slayer_task(ctx: MiniscapeBotContext):
+    out = discord.Embed(title=SLAYER_HEADER, description="", type="rich")
+
+    # Are they already on an adventure?
+    if adv.is_on_adventure(ctx.user_object.id):
+        out.description += adv.print_adventure(ctx.user_object.id)
+        out.description += utils.command_helpers.print_on_adventure_error('kill')
+        return out
+
+    # Generate a task for them
+    chance_threshold = 50
+    level_ratio_threshold = 0.8
+    for _ in range(1000):
+        monster: Monster = mon.get_random(ctx.user_object, wants_boss=False)
+        minimum = monster.min_assignable
+        num = random.randint(minimum, minimum + 15 + (3 * ctx.user_object.slayer_level))
+        _, length = calc_length(ctx.user_object, monster, num)
+        chance = calc_chance(ctx.user_object, monster, num)
+
+        if 600 <= length <= 3600 \
+                and chance >= chance_threshold \
+                and monster.level / ctx.user_object.combat_level >= level_ratio_threshold:
+            # Success
+            break
+        else:
+            log_str = f"Failed to give task to user. " \
+                      f"User: {ctx.user_object.display_name}, Monster: {monster.name}. " \
+                      f"Conditionals: " \
+                      f"number: {num}, " \
+                      f"chance: {chance} (threshold of {chance_threshold}), " \
+                      f"level ratio: {monster.level / ctx.user_object.combat_level} (threshold {level_ratio_threshold})"
+            logging.getLogger(__name__).info(log_str)
+            continue  # For breakpoints :^)
+    else:
+        out.description = "Error: gear too low to fight any monsters. Please equip some better gear and try again. " \
+                          "If you are new, type `~starter` to get a bronze kit."
+        return out
+
+    combat_perk_proc = False
+    if ctx.user_object.combat_level == 99 and not random.randint(0, 19):  # 5% chance
+        length *= 0.7
+        combat_perk_proc = True
+
+    extra_data = {
+        "monster_id": monster.id,
+        "monster_name": monster.name,
+        "number": num,
+        "chance": chance,
+        "luck_factor": ctx.user_object.luck_factor,
+        "length": length,
+    }
+    task = Task(
+        type="slayer",
+        user=ctx.user_object,
+        completion_time=utils.command_helpers.calculate_finish_time_utc(length),
+        guild=ctx.guild.id,
+        channel=ctx.channel.id,
+        extra_data=json.dumps(extra_data)
+    )
+    task.save()
+
+    out.description += print_task_greeting(task)
+    if combat_perk_proc:
+        out.description += "Your time has been reduced by 30% due to your combat perk!"
+
+    return out
+
+
+def print_slayer_status(task: Task, time_left):
+    data = json.loads(task.extra_data)
+    monster = Monster.objects.get(id=data["monster_id"])
+    return f'You are currently slaying {monster.pluralize(data["number"], with_zero=True)}. ' \
+           f'You can see the results of this slayer task {time_left} minutes. ' \
+           f'You have a {data["chance"]}% chance of succeeding without dying. '
+
+
+def get_slayer_result(task: Task):
+    data = json.loads(task.extra_data)
+    monster = Monster.objects.get(id=data["monster_id"])
+    user = task.user
+
+    krg = KillResultGenerator(monster, data["number"], data["luck_factor"], data["chance"], task_type="slayer")
+    krg.full_generate()
+
+    krg.award_loot(user)
+    krg.award_combat_xp(user)
+    krg.award_slayer_xp(user)
+
+    out = discord.Embed(title=SLAYER_HEADER, type="rich", description="")
+    out.description = krg.print_results_str(user)
+
+    user.potion_slot = None
+    user.save()
+    return out
+
+
+class KillResultGenerator:
+    def __init__(self, monster: Monster, num: int, luck_factor: int, chance: int, task_type: str = "kill"):
+        self.monster = monster
+        self.number = num
+        self.luck_factor = luck_factor
+        self.chance = chance
+        self.task_type = task_type
+        self.is_success = False
+        self.loot = None
+        self.combat_xp = 0
+        self.slayer_xp = 0
+        self.combat_level_diff = 0
+        self.slayer_level_diff = 0
+
+    def determine_success(self):
+        if random.randint(0, 100) <= int(self.chance):
+            self.is_success = True
+        else:
+            self.is_success = False
+
+    def generate_loot(self):
+        factor = 1 if self.is_success else int(self.chance) / 100
+        factor *= self.luck_factor
+        self.loot = self.monster.generate_loot(self.number, factor)
+
+    def calc_combat_xp(self):
+        factor = 1 if self.is_success else int(self.chance) / 100
+        factor = factor * 0.7 if self.task_type == "slayer" else factor
+        self.combat_xp = factor * XP_FACTOR * self.monster.xp * self.number
+
+    def calc_slayer_xp(self):
+        factor = 1 if self.is_success else int(self.chance) / 100
+        self.slayer_xp = factor * XP_FACTOR * self.monster.xp * self.number
+
+    def full_generate(self):
+        self.determine_success()
+        self.generate_loot()
+        self.calc_combat_xp()
+        self.calc_slayer_xp()
+
+    def award_loot(self, user: User):
+        user.add_kills(self.monster, self.number)
+        user.update_inventory(self.loot)
+
+    def award_combat_xp(self, user: User):
+        level_before = user.combat_level
+        user.combat_xp += self.combat_xp
+        level_after = user.combat_level
+        self.combat_level_diff = level_after - level_before
+
+    def award_slayer_xp(self, user: User):
+        level_before = user.slayer_level
+        user.slayer_xp += self.slayer_xp
+        level_after = user.slayer_level
+        self.slayer_level_diff = level_after - level_before
+
+    def print_results_str(self, user: User, slayer=False, reaper=False):
+        out = print_loot(self.loot, user, self.monster, self.number, print_header=False)
+        out += f"\nYou have also gained {'{:,}'.format(math.floor(self.combat_xp))} combat xp"
+
+        if self.task_type == "slayer":
+            out += f" and {'{:,}'.format(math.floor(self.slayer_xp))} slayer xp."
+        else:
+            out += "."
+
+        if self.combat_level_diff:
+            out += f"Additionally, you have gained {self.combat_level_diff} combat levels."
+
+        if self.slayer_level_diff:
+            if self.combat_level_diff:  # Cheeky comment about "x and y and also z"
+                out = f' Also, as well, you have gained {self.slayer_level_diff} slayer level(s)'
+            else:
+                out += f" Additionally, you have gained {self.slayer_level_diff} slayer level(s)"
+
+        out += ".\n"
+        if not self.is_success:
+            out += f"You have received lower loot and experience because you have died.\n"
+        return out
+
+
 def get_task(guildid, channelid, author: User):
     """Assigns a user a slayer task provided they are not in the middle of another adventure."""
     out = SLAYER_HEADER
@@ -188,8 +365,7 @@ def get_task(guildid, channelid, author: User):
             chance = calc_chance(author, monster, num_to_kill)
 
             mon_level = monster.level
-            #if 0.25 <= task_length / base_time <= 2 \
-            if 600 <= task_length  \
+            if 600 <= task_length \
                     and chance >= 20 \
                     and mon_level / cb_level >= 0.8 \
                     and task_length <= 3600:
@@ -199,8 +375,7 @@ def get_task(guildid, channelid, author: User):
                           f"User: {author.name}, Monster: {monster.name}\n" \
                           f"Conditionals: \n" \
                           f"  num to kill: {num_to_kill}\n" \
-                          f"  task_length / base_time: {task_length / base_time}\n" \
-                          f"  chance: {chance}\n"\
+                          f"  chance: {chance}\n" \
                           f"  mon levl / cb lvl: {mon_level / cb_level}\n"
                 logging.getLogger(__name__).info(log_str)
                 continue  # For breakpoints :^)
@@ -212,7 +387,9 @@ def get_task(guildid, channelid, author: User):
             task_length *= 0.7
             cb_perk = True
 
-        task = utils.command_helpers.format_adventure_line(0, author.id, utils.command_helpers.calculate_finish_time(task_length), guildid, channelid, monster.id,
+        task = utils.command_helpers.format_adventure_line(0, author.id,
+                                                           utils.command_helpers.calculate_finish_time(task_length),
+                                                           guildid, channelid, monster.id,
                                                            monster.name, num_to_kill, chance)
         adv.write(task)
         out += print_task(author.id)
@@ -276,7 +453,7 @@ def start_kill(ctx: MiniscapeBotContext, monster_name, length=0, number=0):
             out.description += f"Kill duration requested truncated from {length} to 180 mins\n"
             length = 180
 
-        number = calc_number(user, monster, (length+1)*60) - 1
+        number = calc_number(user, monster, (length + 1) * 60) - 1
         truncated_num, truncated = truncate_task(user.slayer_level, number)
         if truncated:
             out.description += f"Kill request truncated from {number} to {truncated_num}\n\n"
@@ -294,11 +471,12 @@ def start_kill(ctx: MiniscapeBotContext, monster_name, length=0, number=0):
         "number": number,
         "length": length,
         "chance": chance,
+        "luck_factor": ctx.user_object.luck_factor,
     }
     task = Task(
         type="kill",
         user=user,
-        completion_time=utils.command_helpers.calculate_finish_time_utc(length*60),
+        completion_time=utils.command_helpers.calculate_finish_time_utc(length * 60),
         guild=ctx.guild.id,
         channel=ctx.channel.id,
         extra_data=json.dumps(extra_data)
@@ -353,7 +531,9 @@ def get_kill(guildid, channelid, userid, monstername, length=-1, number=-1):
 
         chance = calc_chance(user, monster, number)
 
-        grind = utils.command_helpers.format_adventure_line(1, userid, utils.command_helpers.calculate_finish_time(length * 60), guildid, channelid,
+        grind = utils.command_helpers.format_adventure_line(1, userid,
+                                                            utils.command_helpers.calculate_finish_time(length * 60),
+                                                            guildid, channelid,
                                                             monster.id, monster_name, number, length, chance)
         adv.write(grind)
         out += f'You are now killing {monster.pluralize(number, with_zero=True)} for {length} minutes. ' \
@@ -387,36 +567,18 @@ def get_kill_results(task: Task):
     chance = int(extra_data["chance"])
     user = task.user
 
-    # Did they die?
-    is_success = adv.is_success(chance)
-    if not is_success and user.prayer_slot == PROTECT_ITEM and random.randint(0, 1):
-        is_success = True
-
-    # Generate loot
-    factor = 1 if is_success else int(chance) / 100
-    factor *= user.luck_factor
-    loot = monster.generate_loot(number, factor)
+    # Generate our loot etc
+    krg = KillResultGenerator(monster, number, user.luck_factor, chance)
+    krg.full_generate()
 
     # Award loot, kills, xp
-    user.add_kills(monster, number)
-    user.update_inventory(loot)
-
-    xp_gained = monster.xp * number
-    cb_level_before = user.combat_level
-    user.combat_xp += xp_gained
-    cb_level_after = user.combat_level
+    krg.award_loot(user)
+    krg.award_combat_xp(user)
 
     # Tell them what they did
     out = discord.Embed(title=SLAYER_HEADER, type="rich", description="")
-    combat_xp_formatted = '{:,}'.format(xp_gained)
-    out.description += print_loot(loot, user, monster, number, print_header=False)
+    out.description = krg.print_results_str(user)
 
-    out.description += f'\nYou have also gained {combat_xp_formatted} combat xp'
-    if cb_level_after > cb_level_before:
-        out.description += f' and {cb_level_after - cb_level_before} combat levels'
-    out.description += '.\n'
-    if not is_success:
-        out.description += f'You have received lower loot and experience because you have died.\n'
     user.potion_slot = None
     user.save()
     return out
@@ -446,7 +608,7 @@ def get_kill_result(person, *args):
     user.update_inventory(loot)
     out = print_loot(loot, person, monster, num_to_kill)
 
-    xp_gained = monster.xp*num_to_kill
+    xp_gained = monster.xp * num_to_kill
     cb_level_before = user.combat_level
     user.combat_xp += xp_gained
     cb_level_after = user.combat_level
@@ -566,7 +728,7 @@ def get_reaper_result(person, *args):
 
     # Give player their loot
     logging.getLogger(__name__).info("Generating loot for reaper task: %d %s" % (num_to_kill,
-                                                                                  monster.name))
+                                                                                 monster.name))
     loot = monster.generate_loot(num_to_kill, factor)
     logging.getLogger(__name__).info("Generated loot for reaper task: %s" % loot)
     loot[Item.objects.get(id=291)] += 1
@@ -578,7 +740,7 @@ def get_reaper_result(person, *args):
     cb_level_before = user.combat_level
     slay_level_before = user.slayer_level
     user.slayer_xp += xp_gained
-    user.combat_xp += round(0.7*xp_gained)
+    user.combat_xp += round(0.7 * xp_gained)
     cb_level_after = user.combat_level
     slay_level_after = user.slayer_level
 
@@ -605,7 +767,7 @@ def get_reaper_result(person, *args):
 def get_reaper_task(guildid, channelid, userid):
     """Assigns a user a reaper task provided they are not in the middle of another adventure."""
     out = SLAYER_HEADER
-    user: User= User.objects.get(id=userid)
+    user: User = User.objects.get(id=userid)
     if user.slayer_level < 50:
         out += "Your slayer level is too low to start a reaper task. You need at least 50 slayer."
         return out
@@ -634,7 +796,9 @@ def get_reaper_task(guildid, channelid, userid):
             task_length *= 0.7
             cb_perk = True
 
-        task = utils.command_helpers.format_adventure_line(5, userid, utils.command_helpers.calculate_finish_time(task_length), guildid, channelid, monster.id,
+        task = utils.command_helpers.format_adventure_line(5, userid,
+                                                           utils.command_helpers.calculate_finish_time(task_length),
+                                                           guildid, channelid, monster.id,
                                                            monster.name, num_to_kill, chance)
         adv.write(task)
         out += print_task(userid, reaper=True)
@@ -692,7 +856,17 @@ def print_reaper_status(userid, time_left, *args):
     return out
 
 
-def print_task(userid, reaper=False):
+def print_task_greeting(task: Task):
+    data = json.loads(task.extra_data)
+    monster = Monster.objects.get(id=data["monster_id"])
+
+    return f"New {task.type} task received: " \
+           f"Kill __{monster.pluralize(data['number'], with_zero=True)}__!\n" \
+           f"This will take {math.ceil(data['length'] / 60)} minutes " \
+           f"and has a success rate of {data['chance']}%."
+
+
+def print_task(userid="", reaper=False, task=None):
     """Converts a user's task into a string."""
     taskid, userid, task_length, monsterid, monster_name, num_to_kill, chance = get_task_info(userid)
     if reaper:

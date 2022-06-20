@@ -1,4 +1,5 @@
 import json
+from collections import Counter
 
 import discord
 from discord.ext import commands
@@ -28,6 +29,13 @@ def _get_adv_cancel_text_from_database(ctx: MiniscapeBotContext, task: Task) -> 
     if task.type == "kill":
         task.delete()
         return f"{ctx.user_object.mention}, your killing session has been cancelled!"
+
+    if task.type == "slayer":
+        if ctx.user_object.has_item_by_item(REAPER_TOKEN):
+            ctx.user_object.update_inventory(Counter({REAPER_TOKEN: 1}), remove=True)
+            task.delete()
+            return f"{ctx.user_object.mention}, your slayer task has been cancelled!"
+        return f"{ctx.user_object.mention}, you need a reaper token in order to cancel a slayer task"
 
 
 def _get_adv_text_from_file(ctx: MiniscapeBotContext, task) -> str:

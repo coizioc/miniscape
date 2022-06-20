@@ -13,8 +13,8 @@ class CombatCommands:
     @can_post()
     async def slayer(self, ctx):
         """Gives the user a slayer task."""
-        out = sh.get_task(ctx.guild.id, ctx.channel.id, ctx.user_object)
-        await ctx.send(out)
+        out = sh.get_slayer_task(ctx)
+        await ctx.reply(mention_author=False, embed=out)
 
     @commands.command()
     @can_post()
@@ -57,5 +57,5 @@ class CombatCommands:
             out = discord.Embed(title="ERROR", type="rich",
                                description='Arguments not valid. Please put in the form '
                                            '`~kill [number] [monster name]` or '
-                                           '`~kill [monster name] [length in minutes]')
+                                           '`~kill [monster name] [length in minutes]`')
         await ctx.reply(mention_author=False, embed=out)

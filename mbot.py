@@ -12,7 +12,7 @@ import asyncio
 import traceback
 from django.core.exceptions import ObjectDoesNotExist
 from discord.ext import commands
-from discord.ext.commands import CheckFailure
+from discord.ext.commands import CheckFailure, CommandNotFound
 from miniscape.models import User
 import config
 from pythonjsonlogger import jsonlogger
@@ -86,6 +86,10 @@ class MiniscapeBot(commands.Bot):
         exc = args[0]
         if type(exc) == CheckFailure:
             return
+        if type(exc) == CommandNotFound:
+            if ctx.guild.id != 478964156545105960:
+                await ctx.reply("Invalid command")
+
         raise args[0]
 
     @asyncio.coroutine

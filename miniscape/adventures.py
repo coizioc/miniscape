@@ -117,6 +117,7 @@ def print_adventure(userid):
             "quest": quest_helpers.print_status2,
             "gather": craft_helpers.print_gather_status,
             "kill": slayer_helpers.print_kill_status_new,
+            "slayer": slayer_helpers.print_slayer_status,
         }
         time_left = get_delta(adventure.completion_time)
         ret = adventures[adventure.type](adventure, time_left)
