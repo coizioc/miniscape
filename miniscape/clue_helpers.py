@@ -1,11 +1,15 @@
+import json
 import math
 import string
 import random
 from collections import Counter
 
+import discord
+
 import utils.command_helpers
+from mbot import MiniscapeBotContext
 from miniscape.item_helpers import get_loot_value
-from miniscape.models import User, Quest, Item, ClueLoot
+from miniscape.models import User, Quest, Item, ClueLoot, Task
 from miniscape import adventures as adv
 
 DIFFICULTY = {
@@ -35,13 +39,12 @@ def calc_length(userid, difficulty):
 
     time = base_time / (quest_multiplier * player_damage / 200)
 
-    if time/base_time < 0.8:
+    if time / base_time < 0.8:
         time = 0.8 * base_time
     return round(time)
 
 
 def get_clue_scroll(person, *args):
-
     try:
         difficulty, length = args[0]
     except ValueError as e:
@@ -170,4 +173,75 @@ def start_clue(guildid, channelid, userid, difficulty):
         out = adv.print_adventure(userid)
         out += utils.command_helpers.print_on_adventure_error('clue scroll')
     user.save()
+    return out
+
+
+# TODO(mitch): Use the number arg
+def start_clue_new(ctx: MiniscapeBotContext, difficulty, num=1):
+    out = discord.Embed(type="rich", title=CLUE_HEADER, description="")
+    if adv.is_on_adventure(ctx.user_object.id):
+        out.description += adv.print_adventure(ctx.user_object.id)
+        out += utils.command_helpers.print_on_adventure_error("clue scroll")
+        return out
+
+    # TODO(mitch): Do this with names instead of awful int math
+    scrollid = str(EASY_CLUE_SCROLL_ID + difficulty - 1)
+    scroll = Item.objects.get(id=scrollid)
+    if not ctx.user_object.has_item_amount_by_item(scroll, num):
+        out.description += f"Error: You do not have a {scroll.name} in your inventory. "
+        return out
+
+    length = math.floor(calc_length(ctx.user_object.id, difficulty) / 60)
+    extra_data = {
+        "length": length,
+        "num": num,
+        "difficulty": difficulty,
+        "item_name": scroll.name,
+    }
+    task = Task(
+        type="clue",
+        user=ctx.user_object,
+        completion_time=utils.command_helpers.calculate_finish_time_utc(length * 60),
+        guild=ctx.guild.id,
+        channel=ctx.channel.id,
+        extra_data=json.dumps(extra_data)
+    )
+    task.save()
+    out.description += f'You are now doing a {DIFFICULTY[difficulty]} clue scroll for {length} minutes.'
+    return out
+
+
+def print_clue_status(task: Task, time_left):
+    data = json.loads(task.extra_data)
+    length = data["length"]
+    difficulty = data["difficulty"]
+
+    if time_left <= 0:
+        time_msg = "soon :tm:"
+    else:
+        time_msg = f"in {time_left} minutes"
+
+    return f'You are currently doing a {DIFFICULTY[int(difficulty)]} clue scroll for {length} minutes. ' \
+           f'You will finish {time_msg}. '
+
+
+def get_clue_results(task: Task):
+    data = json.loads(task.extra_data)
+    difficulty = data["difficulty"]
+    length = data["length"]
+
+    itemname = DIFFICULTY[int(difficulty)] + ' clue scroll'
+    item = Item.objects.get(name=itemname)
+
+    loot = get_loot(item)
+
+    attr_name = DIFFICULTY[difficulty] + '_clues'
+    setattr(task.user, attr_name, getattr(task.user, attr_name, 0) + 1)
+    task.user.update_inventory(loot)
+
+    out = discord.Embed(title=CLUE_HEADER, type="rich", description="")
+    out.description += f'{task.user.mention}, you have finished your {DIFFICULTY[int(difficulty)]} clue scroll! ' \
+                       f'You have received the following items:\n'
+
+    out.description += print_loot(loot, item)
     return out

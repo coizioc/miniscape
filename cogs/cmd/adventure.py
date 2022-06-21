@@ -41,6 +41,10 @@ def _get_adv_cancel_text_from_database(ctx: MiniscapeBotContext, task: Task) -> 
         task.delete()
         return f"{ctx.user_object.mention}, your reaper task has been cancelled!"
 
+    if task.type == "clue":
+        task.delete()
+        return f"{ctx.user_object.mention}, you are no longer solving a clue scroll."
+
 
 def _get_adv_text_from_file(ctx: MiniscapeBotContext, task) -> str:
     author: User = ctx.user_object

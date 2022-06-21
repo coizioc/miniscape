@@ -65,17 +65,16 @@ class Miniscape(commands.Cog,
                 'master': 5
             }
             if difficulty not in set(difficulty_names.keys()):
-                await ctx.send(f'Error: {difficulty} not valid clue scroll difficulty.')
+                await ctx.reply(f'Error: {difficulty} not valid clue scroll difficulty.', mention_author=False)
                 return
             parsed_difficulty = difficulty_names[difficulty]
         else:
             if not 0 < int(difficulty) < 6:
-                await ctx.send(f'Error: {difficulty} not valid clue scroll difficulty.')
+                await ctx.reply(f'Error: {difficulty} not valid clue scroll difficulty.', mention_author=False)
                 return
             parsed_difficulty = int(difficulty)
-        out = clue_helpers.start_clue(ctx.guild.id, ctx.channel.id, ctx.author.id,
-                                      parsed_difficulty)
-        await ctx.send(out)
+        out = clue_helpers.start_clue_new(ctx, parsed_difficulty)
+        await ctx.reply(mention_author=False, embed=out)
 
     @commands.command()
     @can_post()
@@ -101,7 +100,7 @@ class Miniscape(commands.Cog,
         number, rec = utils.command_helpers.parse_number_and_name(args)
         if number and rec:
             out = craft_helpers.craft(ctx.user_object, rec, n=min(number, MAX_PER_ACTION))
-            await ctx.send(out)
+            await ctx.reply(out, mention_author=False)
 
     @commands.command(aliases=['cock', 'fry', 'grill', 'saute', 'boil'])
     @can_post()
@@ -110,7 +109,7 @@ class Miniscape(commands.Cog,
         number, food = utils.command_helpers.parse_number_and_name(args)
         if number and food:
             out = craft_helpers.cook(ctx.user_object, food, n=min(number, MAX_PER_ACTION))
-            await ctx.send(out)
+            await ctx.reply(out, mention_author=False)
 
     async def confirm(self, ctx, msg, _, timeout=300):
         """Asks the user to confirm an action, and returns whether they confirmed or not."""
@@ -245,6 +244,7 @@ class Miniscape(commands.Cog,
             "kill": slayer_helpers.get_kill_results,
             "slayer": slayer_helpers.get_slayer_result,
             "reaper": slayer_helpers.get_reaper_result_new,
+            "clue": clue_helpers.get_clue_results,
         }
         logger = logging.getLogger(__name__)
         task: Task
