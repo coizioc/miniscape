@@ -128,22 +128,20 @@ class Miniscape(commands.Cog,
 
     async def paginate(self, ctx, messages):
         """Provides an interface for printing a paginated set of messages."""
+        out = discord.Embed(type="rich", title="", description="")
         if isinstance(messages, str):
-            print(messages)
-            await ctx.send(messages)
+            out.description = messages
+            await ctx.reply(mention_author=False, embed=out)
             return
-        """else:
-            for msg in messages:
-                await ctx.send(msg)
-            return"""
 
         if len(messages) == 1:
-            await ctx.send(messages[0])
+            out.description = messages[0]
+            await ctx.reply(mention_author=False, embed=out)
             return
 
         current_page = 0
-        out = messages[current_page]
-        msg = await ctx.send(out)
+        out.description = messages[current_page]
+        msg = await ctx.reply(mention_author=False, embed=out)
         await msg.add_reaction(ARROW_LEFT_EMOJI)
         await msg.add_reaction(ARROW_RIGHT_EMOJI)
 
@@ -154,17 +152,15 @@ class Miniscape(commands.Cog,
                 if str(reaction.emoji) == ARROW_LEFT_EMOJI:
                     if current_page > 0:
                         current_page -= 1
-                        out = messages[current_page]
-                        out += f"\n{current_page + 1}/{len(messages)}"
-                        #await msg.edit(content=None)
-                        await msg.edit(content=out)
+                        out.description = messages[current_page]
+                        out.description += f"\n{current_page + 1}/{len(messages)}"
+                        await msg.edit(embed=out)
                 elif str(reaction.emoji) == ARROW_RIGHT_EMOJI:
                     if current_page < len(messages) - 1:
                         current_page += 1
-                        out = messages[current_page]
-                        out += f"\n{current_page + 1}/{len(messages)}"
-                        #await msg.edit(content=None)
-                        await msg.edit(content=out)
+                        out.description = messages[current_page]
+                        out.description += f"\n{current_page + 1}/{len(messages)}"
+                        await msg.edit(embed=out)
 
     async def reset_dailies(self):
         """Checks if the current time is a different day and resets everyone's daily progress."""
