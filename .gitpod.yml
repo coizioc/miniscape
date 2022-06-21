@@ -7,6 +7,8 @@ tasks:
     - sudo apt install python3.8-dev -y
     - git checkout reborn
     - source venv/bin/activate && pip install -r requirements.txt
+    - sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+    - cp /home/gitpod/.dotfiles/.zshrc /home/gitpod/.zshrc
 
 
 

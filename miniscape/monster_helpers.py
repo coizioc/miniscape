@@ -24,15 +24,19 @@ AFFINITIES = {
     3: "None"
 }
 
+SLAYER_LEVEL_THRESHOLD = 0.8
+SLAYER_CHANCE_THRESHOLD = 50
+
 
 def get_random(author: User, wants_boss=False):
     """Randomly selects and returns a monster (given a particular boolean key)."""
-
+    min_level = 0 if wants_boss else author.combat_level * SLAYER_LEVEL_THRESHOLD
     monsters = Monster.objects.filter(Q(quest_req=None) | Q(quest_req__in=author.completed_quests_list),
+                                      Q(is_dragon__in=[False, author.offhand_slot.is_anti_dragon]),
                                       is_boss=wants_boss,
                                       is_slayable=not wants_boss,
                                       slayer_level_req__lte=author.slayer_level,
-                                      is_dragon=author.offhand_slot.is_anti_dragon)
+                                      level__gte=min_level)
     return random.sample(set(monsters), 1)[0]
 
 

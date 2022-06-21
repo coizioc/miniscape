@@ -9,7 +9,7 @@ import utils.command_helpers
 from utils.command_helpers import truncate_task
 from mbot import MiniscapeBotContext
 from miniscape.item_helpers import get_loot_value
-from miniscape.itemconsts import SLAYER_HELMET
+from miniscape.itemconsts import SLAYER_HELMET, REAPER_TOKEN
 from miniscape.models import User, Monster, PlayerMonsterKills, Item, Task, Prayer
 from miniscape import adventures as adv
 from config import XP_FACTOR
@@ -192,9 +192,7 @@ def get_slayer_task(ctx: MiniscapeBotContext):
         _, length = calc_length(ctx.user_object, monster, num)
         chance = calc_chance(ctx.user_object, monster, num)
 
-        if 600 <= length <= 3600 \
-                and chance >= chance_threshold \
-                and monster.level / ctx.user_object.combat_level >= level_ratio_threshold:
+        if 600 <= length <= 3600 and chance >= chance_threshold:
             # Success
             break
         else:
@@ -292,11 +290,14 @@ class KillResultGenerator:
     def generate_loot(self):
         factor = 1 if self.is_success else int(self.chance) / 100
         factor *= self.luck_factor
+
         self.loot = self.monster.generate_loot(self.number, factor)
+        if self.task_type == "reaper":
+            self.loot[REAPER_TOKEN] += 1
 
     def calc_combat_xp(self):
         factor = 1 if self.is_success else int(self.chance) / 100
-        factor = factor * 0.7 if self.task_type == "slayer" else factor
+        factor = factor * 0.7 if self.task_type in ["slayer", "reaper"] else factor
         self.combat_xp = factor * XP_FACTOR * self.monster.xp * self.number
 
     def calc_slayer_xp(self):
@@ -325,11 +326,11 @@ class KillResultGenerator:
         level_after = user.slayer_level
         self.slayer_level_diff = level_after - level_before
 
-    def print_results_str(self, user: User, slayer=False, reaper=False):
+    def print_results_str(self, user: User):
         out = print_loot(self.loot, user, self.monster, self.number, print_header=False)
         out += f"\nYou have also gained {'{:,}'.format(math.floor(self.combat_xp))} combat xp"
 
-        if self.task_type == "slayer":
+        if self.task_type in ["slayer", "reaper"]:
             out += f" and {'{:,}'.format(math.floor(self.slayer_xp))} slayer xp."
         else:
             out += "."
@@ -565,10 +566,11 @@ def get_kill_results(task: Task):
     monster = Monster.objects.get(id=monster_id)
     number = int(extra_data["number"])
     chance = int(extra_data["chance"])
+    luck_factor = int(extra_data["luck_factor"])
     user = task.user
 
     # Generate our loot etc
-    krg = KillResultGenerator(monster, number, user.luck_factor, chance)
+    krg = KillResultGenerator(monster, number, extra_data["luck_factor"], chance)
     krg.full_generate()
 
     # Award loot, kills, xp
@@ -760,6 +762,99 @@ def get_reaper_result(person, *args):
     if slay_level_after > slay_level_before:
         out += f'Also, as well, you have gained {slay_level_after - slay_level_before} slayer levels. '
 
+    user.save()
+    return out
+
+
+def get_reaper_task_new(ctx: MiniscapeBotContext):
+    out = discord.Embed(title="", description=SLAYER_HEADER, type="rich")
+    if ctx.user_object.slayer_level < 50:
+        out.description += "Your slayer level is too low to start a reaper task. You need at least 50 slayer."
+        return out
+
+    if ctx.user_object.is_reaper_complete:
+        out.description += 'You have already done a reaper task today. Please come back tomorrow for another one.'
+        return out
+
+    if adv.is_on_adventure(ctx.user_object.id):
+        out.description += adv.print_adventure(ctx.user_object.id)
+        out.description += utils.command_helpers.print_on_adventure_error('reaper task')
+        return out
+
+    for _ in range(1000):
+        monster = mon.get_random(ctx.user_object, wants_boss=True)
+        num_to_kill = random.randint(LOWEST_NUM_TO_KILL, LOWEST_NUM_TO_KILL + 15 + 3 * ctx.user_object.slayer_level)
+        base_time, task_length = calc_length(ctx.user_object, monster, num_to_kill)
+        chance = calc_chance(ctx.user_object, monster, num_to_kill)
+        if 0.25 <= task_length / base_time <= 2 and chance >= 80:
+            break
+    else:
+        return "Error: gear too low to fight any monsters. Please equip some better gear and try again. " \
+               "If you are new, type `~starter` to get a bronze kit."
+
+    cb_perk_proc = False
+    if ctx.user_object.combat_level >= 99 and not random.randint(0,19):
+        task_length *= 0.7
+        cb_perk_proc = True
+
+    extra_data = {
+        "monster_id": monster.id,
+        "monster_name": monster.name,
+        "number": num_to_kill,
+        "length": task_length,
+        "chance": chance,
+        "luck_factor": ctx.user_object.luck_factor
+    }
+    task = Task(
+        type="reaper",
+        user=ctx.user_object,
+        completion_time=utils.command_helpers.calculate_finish_time_utc(task_length),
+        guild=ctx.guild.id,
+        channel=ctx.channel.id,
+        extra_data=json.dumps(extra_data)
+    )
+    task.save()
+    out.description += print_task_greeting(task)
+    if cb_perk_proc:
+        out.description += "\nYour time has been reduced by 30% due to your combat perk!"
+
+    return out
+
+
+def print_reaper_status_new(task: Task, time_left):
+    data = json.loads(task.extra_data)
+    monster = Monster.objects.get(id=data["monster_id"])
+    if time_left <= 0:
+        time_msg = "soon :tm:"
+    else:
+        time_msg = f"in {time_left} minute(s)"
+    return f'You are currently reaping {monster.pluralize(data["number"], with_zero=True)}. ' \
+           f'You can see the results of this {time_msg}. ' \
+           f'You have a {data["chance"]}% chance of succeeding without dying. '
+
+
+def get_reaper_result_new(task: Task):
+    extra_data = json.loads(task.extra_data)
+    monster_id = extra_data["monster_id"]
+    monster = Monster.objects.get(id=monster_id)
+    number = int(extra_data["number"])
+    chance = int(extra_data["chance"])
+    user = task.user
+
+    #generate loot
+    krg = KillResultGenerator(monster, number, extra_data["luck_factor"], chance, task_type="reaper")
+    krg.full_generate()
+
+    # Award loot, kills, xp
+    krg.award_loot(user)
+    krg.award_combat_xp(user)
+    krg.award_slayer_xp(user)
+
+    out = discord.Embed(title=SLAYER_HEADER, type="rich", description="")
+    out.description = krg.print_results_str(user)
+
+    user.potion_slot = None
+    user.is_reaper_complete = True
     user.save()
     return out
 

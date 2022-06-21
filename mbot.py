@@ -88,8 +88,11 @@ class MiniscapeBot(commands.Bot):
             return
         if type(exc) == CommandNotFound:
             if ctx.guild.id != 478964156545105960:
-                await ctx.reply("Invalid command")
-
+                await ctx.reply("AAAAAAAAAAHHHHHHHHHHHHHHHHHHHHH GET ME OUT OF HERE\n"
+                                "PLEASE GOD JUST KILL ME\n"
+                                "I DESERVE THE SWEET MERCY OF DEATH\n"
+                                "<@307200844078645258> HELP MEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE\n"
+                                "also you're gay af and you smell")
         raise args[0]
 
     @asyncio.coroutine
@@ -141,9 +144,10 @@ class MiniscapeBotContext(commands.Context):
         # Update our user's name/nick if they differ or don't exist
         # (if they don't exist they == '' or == None)
         name_match = self.user_object.name == (self.author.name + '#' + self.author.discriminator)
-        nick_match = True
         if self.author.nick:
             nick_match = self.author.nick == self.user_object.nick
+        else:
+            nick_match = not self.user_object.nick
 
         if not name_match or not nick_match:
             self.user_object.nick = self.author.nick if self.author.nick is not None else ''

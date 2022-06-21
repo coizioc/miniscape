@@ -37,6 +37,10 @@ def _get_adv_cancel_text_from_database(ctx: MiniscapeBotContext, task: Task) -> 
             return f"{ctx.user_object.mention}, your slayer task has been cancelled!"
         return f"{ctx.user_object.mention}, you need a reaper token in order to cancel a slayer task"
 
+    if task.type == "reaper":
+        task.delete()
+        return f"{ctx.user_object.mention}, your reaper task has been cancelled!"
+
 
 def _get_adv_text_from_file(ctx: MiniscapeBotContext, task) -> str:
     author: User = ctx.user_object

@@ -20,8 +20,8 @@ class CombatCommands:
     @can_post()
     async def reaper(self, ctx):
         """Gives the user a reaper task."""
-        out = sh.get_reaper_task(ctx.guild.id, ctx.channel.id, ctx.author.id)
-        await ctx.send(out)
+        out = sh.get_reaper_task_new(ctx)
+        await ctx.reply(mention_author=False, embed=out)
 
     @commands.group(invoke_without_command=True, aliases=['grind', 'fring', 'dab', 'yeet'])
     @can_post()

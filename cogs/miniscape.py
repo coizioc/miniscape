@@ -244,6 +244,7 @@ class Miniscape(commands.Cog,
             "gather": craft_helpers.get_gather_results,
             "kill": slayer_helpers.get_kill_results,
             "slayer": slayer_helpers.get_slayer_result,
+            "reaper": slayer_helpers.get_reaper_result_new,
         }
         logger = logging.getLogger(__name__)
         task: Task
