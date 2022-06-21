@@ -227,8 +227,8 @@ def print_clue_status(task: Task, time_left):
 
 def get_clue_results(task: Task):
     data = json.loads(task.extra_data)
+    num = data["num"]
     difficulty = data["difficulty"]
-    length = data["length"]
 
     itemname = DIFFICULTY[int(difficulty)] + ' clue scroll'
     item = Item.objects.get(name=itemname)
@@ -238,6 +238,7 @@ def get_clue_results(task: Task):
     attr_name = DIFFICULTY[difficulty] + '_clues'
     setattr(task.user, attr_name, getattr(task.user, attr_name, 0) + 1)
     task.user.update_inventory(loot)
+    task.user.update_inventory(Counter({item: num}), remove=True)
 
     out = discord.Embed(title=CLUE_HEADER, type="rich", description="")
     out.description += f'{task.user.mention}, you have finished your {DIFFICULTY[int(difficulty)]} clue scroll! ' \
